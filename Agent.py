@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from tools.utility import smooth_cv
 
 dt = 0.2
+# weights for calculate interior cost
 WEIGHT_DELAY = 1
 WEIGHT_DEVIATION = 0.5
 WEIGHT_CHANGE = 0.2
@@ -96,28 +97,28 @@ def cal_cost_interior(track, target):
     cv, s = get_central_vertices(target)
 
     # find the on-reference point of the track starting
-    init_dis2cv = np.amin(np.linalg.norm(cv - track[0,]))
+    init_dis2cv = np.amin(np.linalg.norm(cv - track[0, ]))
     init_min_dis2cv = np.amin(init_dis2cv)
     init_index = np.where(init_min_dis2cv == init_dis2cv)
 
     # find the on-reference point of the track end
-    end_dis2cv = np.amin(np.linalg.norm(cv - track[-1,]))
+    end_dis2cv = np.amin(np.linalg.norm(cv - track[-1, ]))
     end_init_dis2cv = np.amin(end_dis2cv)
     end_index = np.where(end_init_dis2cv == end_dis2cv)
 
     # calculate the on-reference distance of the given track (the longer the better)
     travel_distance = s[end_index] - s[init_index]
-    # cost of travel delay
+    # 1. cost of travel delay
     cost_travel_distance = - travel_distance
 
     # initialize an array to store distance from each point in the track to cv
     dis2cv = np.array(np.size(track, 0), 1)
     for i in range(np.size(track, 0)):
         dis2cv[i] = np.amin(np.linalg.norm(cv - track[0, ]))
-    # cost of lane deviation
+    # 2. cost of lane deviation
     cost_mean_deviation = dis2cv.mean()
 
-    # cost of change plan
+    # 3. cost of change plan
     cost_plan_change = 0
 
     # overall cost
