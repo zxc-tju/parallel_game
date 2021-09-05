@@ -126,6 +126,7 @@ def cal_cost_interior(track, target):
                     WEIGHT_DEVIATION * cost_mean_deviation + \
                     WEIGHT_CHANGE * cost_plan_change
 
+    # TODO: test it!
     return cost_interior
 
 
