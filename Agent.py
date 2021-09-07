@@ -97,26 +97,29 @@ def cal_cost_interior(track, target):
     cv, s = get_central_vertices(target)
 
     # find the on-reference point of the track starting
-    init_dis2cv = np.amin(np.linalg.norm(cv - track[0, ]))
+    # test = cv - track[0, ]
+    init_dis2cv = np.linalg.norm(cv - track[0, ], axis=1)
     init_min_dis2cv = np.amin(init_dis2cv)
     init_index = np.where(init_min_dis2cv == init_dis2cv)
 
     # find the on-reference point of the track end
-    end_dis2cv = np.amin(np.linalg.norm(cv - track[-1, ]))
+    end_dis2cv = np.linalg.norm(cv - track[-1, ], axis=1)
     end_init_dis2cv = np.amin(end_dis2cv)
     end_index = np.where(end_init_dis2cv == end_dis2cv)
 
     # calculate the on-reference distance of the given track (the longer the better)
     travel_distance = s[end_index] - s[init_index]
     # 1. cost of travel delay
-    cost_travel_distance = - travel_distance
-
+    cost_travel_distance = - travel_distance / (np.size(track, 0) - 1)
+    print('cost of travel delay:',  cost_travel_distance)
     # initialize an array to store distance from each point in the track to cv
-    dis2cv = np.array(np.size(track, 0), 1)
+    dis2cv = np.zeros([np.size(track, 0), 1])
     for i in range(np.size(track, 0)):
-        dis2cv[i] = np.amin(np.linalg.norm(cv - track[0, ]))
+        dis2cv[i] = np.amin(np.linalg.norm(cv - track[i, ], axis=1))
+
     # 2. cost of lane deviation
     cost_mean_deviation = dis2cv.mean()
+    print('cost of lane deviation:', cost_mean_deviation)
 
     # 3. cost of change plan
     cost_plan_change = 0
@@ -126,7 +129,6 @@ def cal_cost_interior(track, target):
                     WEIGHT_DEVIATION * cost_mean_deviation + \
                     WEIGHT_CHANGE * cost_plan_change
 
-    # TODO: test it!
     return cost_interior
 
 
@@ -161,11 +163,17 @@ if __name__ == '__main__':
     # plt.axis('equal')
     # plt.show()
 
-    "test get_central_vertices"
-    target = 'gs'
-    cv, s = get_central_vertices(target)
-    x = cv[:, 0]
-    y = cv[:, 1]
-    plt.plot(x, y, 'r-')
-    plt.axis('equal')
-    plt.show()
+    # "test get_central_vertices"
+    # target = 'gs'
+    # cv, s = get_central_vertices(target)
+    # x = cv[:, 0]
+    # y = cv[:, 1]
+    # plt.plot(x, y, 'r-')
+    # plt.axis('equal')
+    # plt.show()
+
+    "test cal_cost_interior"
+    track_test = np.array([[0, -15], [5, -13], [10, -10]])
+    target = 'lt'
+    cost_it = cal_cost_interior(track_test, target)
+    print('cost is :', cost_it)

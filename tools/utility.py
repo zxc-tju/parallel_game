@@ -25,6 +25,6 @@ def smooth_cv(cv_init, point_num=100):
     new_cv = np.array([x_smooth, y_smooth]).T
 
     delta_new_cv = new_cv[1:, ]-new_cv[:-1, ]
-    s_accumulated = np.linalg.norm(delta_new_cv, axis=1)
-
+    s_accumulated = np.cumsum(np.linalg.norm(delta_new_cv, axis=1))
+    s_accumulated = np.concatenate(([0], s_accumulated), axis=0)
     return new_cv, s_accumulated
