@@ -55,16 +55,16 @@ def utility_lt(self_info, inter_info):
 
         :param u: num_step by 4 array, where the 1\2 columns are control of "self" agent
                   and 3\4 columns "inter" agent
-        :return: utility of the "self" agent under the control x
+        :return: utility of the "self" agent under the control u
         """
         track_self = kinematic_model(u[:, 0:1], self_info[0:2])
         track_inter = kinematic_model(u[:, 0:1], self_info[0:2])
         track_all = [track_self, track_inter]
-        ut_self = np.cos(self_info[3]) * cal_cost_interior(track_self, self_info[4]) + \
-                  np.sin(self_info[3]) * cal_cost_group(track_all, self_info, inter_info[4])
+        ut_self = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
+                  np.sin(self_info[3]) * cal_group_cost(track_all, self_info[4], inter_info[4])
 
-        ut_inter = np.cos(inter_info[3]) * cal_cost_interior(track_inter, inter_info[4]) + \
-                   np.sin(inter_info[3]) * cal_cost_group(track_all, self_info, inter_info[4])
+        ut_inter = np.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
+                   np.sin(inter_info[3]) * cal_group_cost(track_all, self_info[4], inter_info[4])
 
         return ut_self + ut_inter
 
@@ -93,11 +93,10 @@ def kinematic_model(u, init_state):
     return np.array(track)
 
 
-def cal_cost_interior(track, target):
+def cal_interior_cost(track, target):
     cv, s = get_central_vertices(target)
 
     # find the on-reference point of the track starting
-    # test = cv - track[0, ]
     init_dis2cv = np.linalg.norm(cv - track[0, ], axis=1)
     init_min_dis2cv = np.amin(init_dis2cv)
     init_index = np.where(init_min_dis2cv == init_dis2cv)
@@ -132,8 +131,12 @@ def cal_cost_interior(track, target):
     return cost_interior
 
 
-def cal_cost_group(x_bi, target1, target2):
-    cost_group = 0
+def cal_group_cost(track_packed):
+    track_self, track_inter = track_packed
+    rel_distance = np.linalg.norm(track_self - track_inter, axis=1)
+    min_rel_distance = np.amin(rel_distance)
+    min_index = np.where(min_rel_distance == rel_distance)
+    cost_group = min_rel_distance * min_index[0] / (np.size(track_self, 0))
     return cost_group
 
 
@@ -172,8 +175,9 @@ if __name__ == '__main__':
     # plt.axis('equal')
     # plt.show()
 
-    "test cal_cost_interior"
-    track_test = np.array([[0, -15], [5, -13], [10, -10]])
-    target = 'lt'
-    cost_it = cal_cost_interior(track_test, target)
+    "test cal_cost"
+    track_test = [np.array([[0, -15], [5, -13], [10, -10]]), np.array([[20, -2], [10, -2], [0, -2]])]
+    target1 = 'lt'
+    target2 = 'gs'
+    cost_it = cal_group_cost(track_test, target1, target2)
     print('cost is :', cost_it)
