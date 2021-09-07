@@ -3,6 +3,7 @@ from Agent import Agent
 import numpy as np
 
 INITIAL_IPV = math.pi / 4
+INITIAL_GUESS = math.pi / 4
 
 
 def simulate():
@@ -18,8 +19,9 @@ def simulate():
     # generate LT and GS agents
     agent_lt = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt')
     agent_lt.ipv = INITIAL_IPV
+    agent_lt.ipv_guess = INITIAL_GUESS
     agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs')
-    agent_gs.ipv = INITIAL_IPV
+    agent_gs.ipv_guess = INITIAL_GUESS
 
     while True:
         agent_lt.solve_game(agent_gs)

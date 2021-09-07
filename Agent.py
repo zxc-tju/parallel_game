@@ -12,6 +12,11 @@ WEIGHT_DELAY = 1
 WEIGHT_DEVIATION = 0.5
 WEIGHT_CHANGE = 0.2
 
+MAX_STEERING_ANGLE = math.pi / 6
+MAX_ACCELERATION = 5
+
+TRACK_LEN = 20
+
 
 class Agent:
     def __init__(self, position, velocity, heading, target):
@@ -45,10 +50,23 @@ class Agent:
                       self.ipv_guess,
                       inter_agent.target]
 
-        fun = utility_lt(self_info, inter_info)
+        fun = utility(self_info, inter_info)
+
+        # cons = ({'type': 'ineq', 'fun': constraint_steer()},
+        #         {'type': 'ineq', 'fun': constraint_accelerate()},
+        #         )
+        cons = {'type': 'ineq', 'fun': constraint_steer()}
+        u0 = np.ones([TRACK_LEN * 4, 1])
+
+        res = minimize(fun, u0, constraints=cons, method='SLSQP')
+
+        print(res.fun)
+        print(res.success)
+        x = np.reshape(res.x, [TRACK_LEN, 4])
+        print(x)
 
 
-def utility_lt(self_info, inter_info):
+def utility(self_info, inter_info):
     def fun(u):
         """
         Calculate the utility from the perspective of "self" agent
@@ -57,18 +75,33 @@ def utility_lt(self_info, inter_info):
                   and 3\4 columns "inter" agent
         :return: utility of the "self" agent under the control u
         """
-        track_self = kinematic_model(u[:, 0:1], self_info[0:2])
-        track_inter = kinematic_model(u[:, 0:1], self_info[0:2])
+        track_self = kinematic_model(u[0:TRACK_LEN*2-1], self_info[0:3])
+        track_inter = kinematic_model(u[TRACK_LEN*2:TRACK_LEN*4-1], inter_info[0:3])
         track_all = [track_self, track_inter]
-        ut_self = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
-                  np.sin(self_info[3]) * cal_group_cost(track_all, self_info[4], inter_info[4])
-
-        ut_inter = np.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
-                   np.sin(inter_info[3]) * cal_group_cost(track_all, self_info[4], inter_info[4])
+        ut_self = math.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
+                  math.sin(self_info[3]) * cal_group_cost(track_all)
+        ut_inter = math.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
+                   math.sin(inter_info[3]) * cal_group_cost(track_all)
 
         return ut_self + ut_inter
 
     return fun
+
+
+def constraint_steer():
+    def con(u):
+        steering = np.concatenate((u[0:TRACK_LEN-1], u[TRACK_LEN*2:TRACK_LEN*3-1],), axis=0)
+        return MAX_STEERING_ANGLE - np.abs(steering)
+
+    return con
+
+
+def constraint_accelerate():
+    def con(u):
+        acc = np.concatenate((u[TRACK_LEN:TRACK_LEN*2-1], u[TRACK_LEN*3:],), axis=0)
+        return MAX_ACCELERATION - np.abs(acc)
+
+    return con
 
 
 def kinematic_model(u, init_state):
@@ -81,6 +114,8 @@ def kinematic_model(u, init_state):
     v = np.sqrt(v[0] ** 2 + v[1] ** 2)
 
     track = [[x, y, psi, v]]
+
+    u = np.array([u[0:TRACK_LEN-1], u[TRACK_LEN:TRACK_LEN*2-1]])
     for i in range(len(u)):
         a = u[i][0]
         delta = u[i][1]
@@ -97,12 +132,12 @@ def cal_interior_cost(track, target):
     cv, s = get_central_vertices(target)
 
     # find the on-reference point of the track starting
-    init_dis2cv = np.linalg.norm(cv - track[0, ], axis=1)
+    init_dis2cv = np.linalg.norm(cv - track[0, 0:2], axis=1)
     init_min_dis2cv = np.amin(init_dis2cv)
     init_index = np.where(init_min_dis2cv == init_dis2cv)
 
     # find the on-reference point of the track end
-    end_dis2cv = np.linalg.norm(cv - track[-1, ], axis=1)
+    end_dis2cv = np.linalg.norm(cv - track[-1, 0:2], axis=1)
     end_init_dis2cv = np.amin(end_dis2cv)
     end_index = np.where(end_init_dis2cv == end_dis2cv)
 
@@ -110,15 +145,15 @@ def cal_interior_cost(track, target):
     travel_distance = s[end_index] - s[init_index]
     # 1. cost of travel delay
     cost_travel_distance = - travel_distance / (np.size(track, 0) - 1)
-    print('cost of travel delay:',  cost_travel_distance)
+    # print('cost of travel delay:', cost_travel_distance)
     # initialize an array to store distance from each point in the track to cv
     dis2cv = np.zeros([np.size(track, 0), 1])
     for i in range(np.size(track, 0)):
-        dis2cv[i] = np.amin(np.linalg.norm(cv - track[i, ], axis=1))
+        dis2cv[i] = np.amin(np.linalg.norm(cv - track[i, 0:2], axis=1))
 
     # 2. cost of lane deviation
     cost_mean_deviation = dis2cv.mean()
-    print('cost of lane deviation:', cost_mean_deviation)
+    # print('cost of lane deviation:', cost_mean_deviation)
 
     # 3. cost of change plan
     cost_plan_change = 0
@@ -127,6 +162,7 @@ def cal_interior_cost(track, target):
     cost_interior = WEIGHT_DELAY * cost_travel_distance + \
                     WEIGHT_DEVIATION * cost_mean_deviation + \
                     WEIGHT_CHANGE * cost_plan_change
+    print('interior cost:', cost_interior)
 
     return cost_interior
 
@@ -135,17 +171,18 @@ def cal_group_cost(track_packed):
     track_self, track_inter = track_packed
     rel_distance = np.linalg.norm(track_self - track_inter, axis=1)
     min_rel_distance = np.amin(rel_distance)
-    min_index = np.where(min_rel_distance == rel_distance)
-    cost_group = min_rel_distance * min_index[0] / (np.size(track_self, 0))
+    min_index = np.where(min_rel_distance == rel_distance)[0]
+    cost_group = - min_rel_distance * min_index[0] / (np.size(track_self, 0))
+    print('group cost:', cost_group)
     return cost_group
 
 
 def get_central_vertices(cv_type):
     cv_init = None
     if cv_type == 'lt':  # left turn
-        cv_init = np.array([[0, -15], [5, -14.14], [10.6, -10.6], [15, 0]])
+        cv_init = np.array([[0, -15], [5, -14.14], [10.6, -10.6], [15, 0], [15, 100]])
     elif cv_type == 'gs':  # go straight
-        cv_init = np.array([[20, -2], [10, -2], [0, -2], [-20, -2]])
+        cv_init = np.array([[20, -2], [10, -2], [0, -2], [-150, -2]])
     assert cv_init is not None
     cv_smoothed, s_accumulated = smooth_cv(cv_init)
     return cv_smoothed, s_accumulated
@@ -153,7 +190,7 @@ def get_central_vertices(cv_type):
 
 if __name__ == '__main__':
     "test kinematic_model"
-    # action = np.concatenate((0 * np.ones((100, 1)),  0.5 * np.ones((100, 1))), axis=1)
+    # action = np.concatenate((0 * np.ones((TRACK_LEN, 1)),  0.5 * np.ones((TRACK_LEN, 1))), axis=0)
     # position = np.array([0, 0])
     # velocity = np.array([3, 3])
     # heading = np.array([math.pi/4])
@@ -166,7 +203,7 @@ if __name__ == '__main__':
     # plt.axis('equal')
     # plt.show()
 
-    # "test get_central_vertices"
+    "test get_central_vertices"
     # target = 'gs'
     # cv, s = get_central_vertices(target)
     # x = cv[:, 0]
@@ -175,9 +212,32 @@ if __name__ == '__main__':
     # plt.axis('equal')
     # plt.show()
 
-    "test cal_cost"
-    track_test = [np.array([[0, -15], [5, -13], [10, -10]]), np.array([[20, -2], [10, -2], [0, -2]])]
-    target1 = 'lt'
-    target2 = 'gs'
-    cost_it = cal_group_cost(track_test, target1, target2)
-    print('cost is :', cost_it)
+    # "test cal_cost"
+    # track_test = [np.array([[0, -15], [5, -13], [10, -10]]), np.array([[20, -2], [10, -2], [0, -2]])]
+    # # track_test = [np.array([[0, -15], [5, -13], [10, -10]]), np.array([[0, -14], [5, -11], [10, -9]])]
+    # target1 = 'lt'
+    # target2 = 'gs'
+    # cost_it = cal_group_cost(track_test)
+    # print('cost is :', cost_it)
+
+    "test solve game"
+    # INITIAL_IPV = math.pi / 4
+    INITIAL_IPV = 0
+    # INITIAL_GUESS = math.pi / 4
+    INITIAL_GUESS = 0
+    init_position_lt = np.array([3, -9])
+    init_velocity_lt = np.array([0, 0])
+    init_heading_lt = np.array([0])
+    # initial state of the go-straight vehicle
+    init_position_gs = np.array([18, -2])
+    init_velocity_gs = np.array([0, 0])
+    init_heading_gs = np.array([math.pi])
+
+    # generate LT and GS agents
+    agent_lt = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt')
+    agent_lt.ipv = INITIAL_IPV
+    agent_lt.ipv_guess = INITIAL_GUESS
+    agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs')
+    agent_gs.ipv_guess = INITIAL_GUESS
+
+    agent_lt.solve_game(agent_gs)
