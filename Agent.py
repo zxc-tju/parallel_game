@@ -2,20 +2,24 @@
 from gt_planner import GTPlanner
 import numpy as np
 import math
-from scipy.optimize import minimize
+from scipy.optimize import minimize, fmin
 from matplotlib import pyplot as plt
 from tools.utility import smooth_cv
 
-dt = 0.2
+dt = 0.1
 # weights for calculate interior cost
-WEIGHT_DELAY = 1
-WEIGHT_DEVIATION = 0.5
+WEIGHT_DELAY = 5
+WEIGHT_DEVIATION = 1
 WEIGHT_CHANGE = 0.2
 
 MAX_STEERING_ANGLE = math.pi / 6
-MAX_ACCELERATION = 5
+MAX_ACCELERATION = 3.0
 
 TRACK_LEN = 20
+
+# math.pi / 4
+INITIAL_IPV = 0
+INITIAL_GUESS = 0
 
 
 class Agent:
@@ -51,19 +55,22 @@ class Agent:
                       inter_agent.target]
 
         fun = utility(self_info, inter_info)
+        # fun = ut_test(self_info, inter_info)
+        u0 = np.zeros([TRACK_LEN * 4, 1])
 
-        # cons = ({'type': 'ineq', 'fun': constraint_steer()},
-        #         {'type': 'ineq', 'fun': constraint_accelerate()},
-        #         )
-        cons = {'type': 'ineq', 'fun': constraint_steer()}
-        u0 = np.ones([TRACK_LEN * 4, 1])
+        bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(TRACK_LEN)] + \
+              [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(TRACK_LEN)]
+        bds = bds + bds
 
-        res = minimize(fun, u0, constraints=cons, method='SLSQP')
+        # res = fmin(fun, u0)
+        res = minimize(fun, u0, method='Powell', bounds=bds)
 
-        print(res.fun)
-        print(res.success)
-        x = np.reshape(res.x, [TRACK_LEN, 4])
+        # print(res.success)
+        x = np.reshape(res.x, [4, TRACK_LEN]).T
+        track_self = kinematic_model(x[:, 0:2], self_info[0:3])
+        track_inter = kinematic_model(x[:, 2:], inter_info[0:3])
         print(x)
+        return track_self, track_inter
 
 
 def utility(self_info, inter_info):
@@ -75,36 +82,34 @@ def utility(self_info, inter_info):
                   and 3\4 columns "inter" agent
         :return: utility of the "self" agent under the control u
         """
-        track_self = kinematic_model(u[0:TRACK_LEN*2-1], self_info[0:3])
-        track_inter = kinematic_model(u[TRACK_LEN*2:TRACK_LEN*4-1], inter_info[0:3])
+        track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3])
+        track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
         track_all = [track_self, track_inter]
-        ut_self = math.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
-                  math.sin(self_info[3]) * cal_group_cost(track_all)
-        ut_inter = math.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
-                   math.sin(inter_info[3]) * cal_group_cost(track_all)
+        # print(np.sin(self_info[3]))
+        ut_self = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
+                  np.sin(self_info[3]) * cal_group_cost(track_all)
+
+        ut_inter = np.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
+                   np.sin(inter_info[3]) * cal_group_cost(track_all)
 
         return ut_self + ut_inter
 
     return fun
 
 
-def constraint_steer():
-    def con(u):
-        steering = np.concatenate((u[0:TRACK_LEN-1], u[TRACK_LEN*2:TRACK_LEN*3-1],), axis=0)
-        return MAX_STEERING_ANGLE - np.abs(steering)
-
-    return con
-
-
-def constraint_accelerate():
-    def con(u):
-        acc = np.concatenate((u[TRACK_LEN:TRACK_LEN*2-1], u[TRACK_LEN*3:],), axis=0)
-        return MAX_ACCELERATION - np.abs(acc)
-
-    return con
+def ut_test(self_info, inter_info):
+    def v(u):
+        track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3])
+        dis1 = np.linalg.norm(track_self[0, :]-track_self[-1, :])
+        track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
+        dis2 = np.linalg.norm(track_inter[0, :] - track_inter[-1, :])
+        return -dis1-dis2
+    return v
 
 
 def kinematic_model(u, init_state):
+    if not np.size(u, 0) == TRACK_LEN:
+        u = np.array([u[0:TRACK_LEN], u[TRACK_LEN:]]).T
     r_len = 0.8
     f_len = 1
     pos, v, h = init_state
@@ -112,10 +117,8 @@ def kinematic_model(u, init_state):
     y = pos[1]
     psi = h[0]
     v = np.sqrt(v[0] ** 2 + v[1] ** 2)
-
     track = [[x, y, psi, v]]
 
-    u = np.array([u[0:TRACK_LEN-1], u[TRACK_LEN:TRACK_LEN*2-1]])
     for i in range(len(u)):
         a = u[i][0]
         delta = u[i][1]
@@ -162,7 +165,7 @@ def cal_interior_cost(track, target):
     cost_interior = WEIGHT_DELAY * cost_travel_distance + \
                     WEIGHT_DEVIATION * cost_mean_deviation + \
                     WEIGHT_CHANGE * cost_plan_change
-    print('interior cost:', cost_interior)
+    # print('interior cost:', cost_interior)
 
     return cost_interior
 
@@ -173,7 +176,7 @@ def cal_group_cost(track_packed):
     min_rel_distance = np.amin(rel_distance)
     min_index = np.where(min_rel_distance == rel_distance)[0]
     cost_group = - min_rel_distance * min_index[0] / (np.size(track_self, 0))
-    print('group cost:', cost_group)
+    # print('group cost:', cost_group)
     return cost_group
 
 
@@ -190,7 +193,7 @@ def get_central_vertices(cv_type):
 
 if __name__ == '__main__':
     "test kinematic_model"
-    # action = np.concatenate((0 * np.ones((TRACK_LEN, 1)),  0.5 * np.ones((TRACK_LEN, 1))), axis=0)
+    # action = np.concatenate((1 * np.ones((TRACK_LEN, 1)),  0.3 * np.ones((TRACK_LEN, 1))), axis=1)
     # position = np.array([0, 0])
     # velocity = np.array([3, 3])
     # heading = np.array([math.pi/4])
@@ -200,6 +203,7 @@ if __name__ == '__main__':
     # y = trajectory[:, 1]
     # plt.figure()
     # plt.plot(x, y, 'r-')
+    # # plt.plot(trajectory[:, 3], 'r-')
     # plt.axis('equal')
     # plt.show()
 
@@ -221,16 +225,12 @@ if __name__ == '__main__':
     # print('cost is :', cost_it)
 
     "test solve game"
-    # INITIAL_IPV = math.pi / 4
-    INITIAL_IPV = 0
-    # INITIAL_GUESS = math.pi / 4
-    INITIAL_GUESS = 0
-    init_position_lt = np.array([3, -9])
-    init_velocity_lt = np.array([0, 0])
+    init_position_lt = np.array([6, -13])
+    init_velocity_lt = np.array([1, 2])
     init_heading_lt = np.array([0])
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([0, 0])
+    init_velocity_gs = np.array([-2, 0])
     init_heading_gs = np.array([math.pi])
 
     # generate LT and GS agents
@@ -240,4 +240,12 @@ if __name__ == '__main__':
     agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs')
     agent_gs.ipv_guess = INITIAL_GUESS
 
-    agent_lt.solve_game(agent_gs)
+    track_s, track_i = agent_lt.solve_game(agent_gs)
+    cv_init_it = np.array([[0, -15], [5, -14.14], [10.6, -10.6], [15, 0], [15, 100]])
+    plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r--')
+    cv_init_gs = np.array([[20, -2], [10, -2], [0, -2], [-150, -2]])
+    plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b--')
+    plt.plot(track_s[:, 0], track_s[:, 1], 'r-')
+    plt.plot(track_i[:, 0], track_i[:, 1], 'b-')
+    plt.axis('equal')
+    plt.show()
