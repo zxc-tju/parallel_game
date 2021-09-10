@@ -20,11 +20,11 @@ MAX_STEERING_ANGLE = math.pi / 3
 MAX_ACCELERATION = 3.0
 
 # initial self IPV and guess on interacting agent's IPV
-INITIAL_IPV = math.pi / 8
-INITIAL_IPV_GUESS = math.pi / 12
+INITIAL_IPV = 0
+INITIAL_IPV_GUESS = 0
 
 # weight of interior and group cost
-WEIGHT_INT = 1
+WEIGHT_INT = 3
 WEIGHT_GRP = 1
 
 
@@ -37,9 +37,8 @@ class Agent:
         self.trajectory = [self.position, self.velocity, self.heading]
         self.ipv = None
         self.ipv_guess = None  # a guess on interacting counterpart's ipv
-        self.trj_solution = []
+        self.trj_solution = np.repeat([position], TRACK_LEN + 1, axis=0)
         self.trj_solution_for_inter_agent = []
-
 
     def solve_game_KKT(self, inter_agent):
         """
@@ -61,7 +60,7 @@ class Agent:
                       self.ipv_guess,
                       inter_agent.target]
 
-        fun = utility(self_info, inter_info)
+        fun = utility_KKT(self_info, inter_info)
         cons = {'type': 'ineq', 'fun': con_inter_opt(self_info, inter_info)}
 
         u0 = np.zeros([TRACK_LEN * 4, 1])
@@ -70,7 +69,7 @@ class Agent:
               [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(TRACK_LEN)]
         bds = bds + bds
 
-        res = minimize(fun, u0, bounds=bds, method='SLSQP')
+        res = minimize(fun, u0, bounds=bds, method='SLSQP', constraints=cons)
 
         print(res.success)
         x = np.reshape(res.x, [4, TRACK_LEN]).T
@@ -79,8 +78,27 @@ class Agent:
         print(x)
         return track_self, track_inter
 
+    def solve_game_IBR(self, inter_track):
+        self_info = [self.position,
+                     self.velocity,
+                     self.heading,
+                     self.ipv,
+                     self.target]
+        fun = utility_IBR(self_info, inter_track)
+        u0 = np.zeros([TRACK_LEN * 2, 1])
+        bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(TRACK_LEN)] + \
+              [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(TRACK_LEN)]
 
-def utility(self_info, inter_info):
+        res = minimize(fun, u0, bounds=bds, method='SLSQP')
+
+        print(res.success)
+        x = np.reshape(res.x, [2, TRACK_LEN]).T
+        track = kinematic_model(x, self_info[0:3])
+        print(x)
+        return track
+
+
+def utility_KKT(self_info, inter_info):
     def fun(u):
         """
         Calculate the utility from the perspective of "self" agent
@@ -91,7 +109,7 @@ def utility(self_info, inter_info):
         """
         track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3])
         track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
-        track_all = [track_self, track_inter]
+        track_all = [track_self[:, 0:2], track_inter[:, 0:2]]
         # print(np.sin(self_info[3]))
         ut_self = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
                   np.sin(self_info[3]) * cal_group_cost(track_all)
@@ -99,7 +117,25 @@ def utility(self_info, inter_info):
         ut_inter = np.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
                    np.sin(inter_info[3]) * cal_group_cost(track_all)
         return ut_self + ut_inter
+    return fun
 
+
+def utility_IBR(self_info, inter_track):
+    def fun(u):
+        """
+        Calculate the utility from the perspective of "self" agent
+
+        :param u: num_step by 4 array, where the 1\2 columns are control of "self" agent
+                  and 3\4 columns "inter" agent
+        :return: utility of the "self" agent under the control u
+        """
+        track_self = kinematic_model(u, self_info[0:3])
+        track_inter = inter_track
+        track_all = [track_self[:, 0:2], track_inter[:, 0:2]]
+        # print(np.sin(self_info[3]))
+        ut = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
+             np.sin(self_info[3]) * cal_group_cost(track_all)
+        return ut
     return fun
 
 
@@ -119,7 +155,8 @@ def cal_interior_cost(track, target):
     # calculate the on-reference distance of the given track (the longer the better)
     travel_distance = s[end_index] - s[init_index]
     # 1. cost of travel delay
-    cost_travel_distance = - travel_distance / (np.size(track, 0) - 1)
+    # cost_travel_distance = - travel_distance / (np.size(track, 0) - 1)
+    cost_travel_distance = - travel_distance
     # print('cost of travel delay:', cost_travel_distance)
     # initialize an array to store distance from each point in the track to cv
     dis2cv = np.zeros([np.size(track, 0), 1])
@@ -137,7 +174,7 @@ def cal_interior_cost(track, target):
     cost_interior = WEIGHT_DELAY * cost_travel_distance + \
                     WEIGHT_DEVIATION * cost_mean_deviation + \
                     WEIGHT_CHANGE * cost_plan_change
-    print('interior cost:', cost_interior)
+    # print('interior cost:', cost_interior)
     return cost_interior * WEIGHT_INT
 
 
@@ -146,13 +183,9 @@ def cal_group_cost(track_packed):
     rel_distance = np.linalg.norm(track_self - track_inter, axis=1)
     min_rel_distance = np.amin(rel_distance)
     min_index = np.where(min_rel_distance == rel_distance)[0]
-    cost_group = -min_rel_distance**2 * min_index[0] / (np.size(track_self, 0))
-    # if min_rel_distance > 3:
-    #     cost_group = 0
-    # else:
-    #     cost_group = 10./np.exp(min_rel_distance - 3)
+    cost_group = -min_rel_distance * min_index[0] / (np.size(track_self, 0))
 
-    print('group cost:', cost_group)
+    # print('group cost:', cost_group)
     return cost_group * WEIGHT_GRP
 
 
@@ -163,16 +196,17 @@ def con_inter_opt(self_info, inter_info):
         track_inter1 = kinematic_model(1.01 * u[TRACK_LEN * 2:], inter_info[0:3])
         track_inter2 = kinematic_model(0.99 * u[TRACK_LEN * 2:], inter_info[0:3])
 
-        ut_inter1 = np.cos(inter_info[3]) * cal_interior_cost(1.01 * track_inter1, inter_info[4]) + \
-                    np.sin(inter_info[3]) * cal_group_cost([track_self, 1.01 * track_inter1])
-        ut_inter2 = np.cos(inter_info[3]) * cal_interior_cost(0.99 * track_inter2, inter_info[4]) + \
-                    np.sin(inter_info[3]) * cal_group_cost([track_self, 0.99 * track_inter2])
+        ut_inter1 = np.cos(inter_info[3]) * cal_interior_cost(track_inter1, inter_info[4]) + \
+                    np.sin(inter_info[3]) * cal_group_cost([track_self, track_inter1])
+        ut_inter2 = np.cos(inter_info[3]) * cal_interior_cost(track_inter2, inter_info[4]) + \
+                    np.sin(inter_info[3]) * cal_group_cost([track_self, track_inter2])
 
-        delta_ut = np.abs(ut_inter2 - ut_inter1) / 2
-        print('delta_ut', delta_ut[0])
+        delta_ut = np.abs(ut_inter2 - ut_inter1)
+        print('delta_ut', MAX_DELTA_UT - delta_ut[0])
 
         return MAX_DELTA_UT - delta_ut[0]
         # return delta_ut
+
     return con
 
 
@@ -258,9 +292,15 @@ if __name__ == '__main__':
     agent_lt.ipv = INITIAL_IPV
     agent_lt.ipv_guess = INITIAL_IPV_GUESS
     agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs')
+    agent_gs.ipv = INITIAL_IPV
     agent_gs.ipv_guess = INITIAL_IPV_GUESS
 
-    track_s, track_i = agent_lt.solve_game_KKT(agent_gs)
+    # track_s, track_i = agent_lt.solve_game_KKT(agent_gs)
+
+    track_s = agent_lt.solve_game_IBR(agent_gs.trj_solution)
+    agent_lt.trj_solution = track_s
+    track_i = agent_gs.solve_game_IBR(agent_lt.trj_solution)
+    agent_gs.trj_solution = track_i
 
     cv_init_it, _ = get_central_vertices('lt')
     cv_init_gs, _ = get_central_vertices('gs')
