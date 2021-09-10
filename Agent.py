@@ -11,7 +11,7 @@ dt = 0.2
 TRACK_LEN = 30
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
-WEIGHT_DELAY = 10
+WEIGHT_DELAY = 1
 WEIGHT_DEVIATION = 0.6
 WEIGHT_CHANGE = 0.2
 
@@ -24,8 +24,8 @@ INITIAL_IPV = 0
 INITIAL_IPV_GUESS = 0
 
 # weight of interior and group cost
-WEIGHT_INT = 3
-WEIGHT_GRP = 1
+WEIGHT_INT = 5
+WEIGHT_GRP = 0
 
 
 class Agent:
@@ -153,7 +153,8 @@ def cal_interior_cost(track, target):
     end_index = np.where(end_init_dis2cv == end_dis2cv)
 
     # calculate the on-reference distance of the given track (the longer the better)
-    travel_distance = s[end_index] - s[init_index]
+    # travel_distance = s[end_index] - s[init_index]
+    travel_distance = np.linalg.norm(track[-1, 0:2] - track[0, 0:2]) / TRACK_LEN
     # 1. cost of travel delay
     # cost_travel_distance = - travel_distance / (np.size(track, 0) - 1)
     cost_travel_distance = - travel_distance
