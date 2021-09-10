@@ -8,24 +8,23 @@ from tools.utility import smooth_cv
 
 # simulation setting
 dt = 0.2
-TRACK_LEN = 30
+TRACK_LEN = 20
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
-WEIGHT_DELAY = 1
+WEIGHT_DELAY = 2
 WEIGHT_DEVIATION = 0.6
 WEIGHT_CHANGE = 0.2
 
 # parameters of action bounds
-MAX_STEERING_ANGLE = math.pi / 3
+MAX_STEERING_ANGLE = math.pi / 6
 MAX_ACCELERATION = 3.0
 
-# initial self IPV and guess on interacting agent's IPV
-INITIAL_IPV = 0
+# initial guess on interacting agent's IPV
 INITIAL_IPV_GUESS = 0
 
 # weight of interior and group cost
 WEIGHT_INT = 5
-WEIGHT_GRP = 0
+WEIGHT_GRP = 2
 
 
 class Agent:
@@ -36,7 +35,7 @@ class Agent:
         self.target = target
         self.trajectory = [self.position, self.velocity, self.heading]
         self.ipv = None
-        self.ipv_guess = None  # a guess on interacting counterpart's ipv
+        self.ipv_guess = INITIAL_IPV_GUESS  # a guess on interacting counterpart's ipv
         self.trj_solution = np.repeat([position], TRACK_LEN + 1, axis=0)
         self.trj_solution_for_inter_agent = []
 
@@ -63,13 +62,15 @@ class Agent:
         fun = utility_KKT(self_info, inter_info)
         cons = {'type': 'ineq', 'fun': con_inter_opt(self_info, inter_info)}
 
-        u0 = np.zeros([TRACK_LEN * 4, 1])
+        u0 = np.zeros([TRACK_LEN * 4])
 
         bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(TRACK_LEN)] + \
               [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(TRACK_LEN)]
         bds = bds + bds
 
-        res = minimize(fun, u0, bounds=bds, method='SLSQP', constraints=cons)
+        res = minimize(fun, u0, bounds=bds, method='trust-constr', constraints=cons, options={'disp': True})
+        # res = minimize(fun, u0, bounds=bds, constraints=cons, method='L-BFGS-B', tol=1e-11, options={'disp': True, 'maxiter': 300, 'maxfun': 1500000})
+        # res = minimize(fun, u0, bounds=bds, constraints=cons, method='COBYLA', tol=1e-11, options={'disp': True, 'maxiter': 300, 'MAXFUN': 1500000})
 
         print(res.success)
         x = np.reshape(res.x, [4, TRACK_LEN]).T
@@ -94,7 +95,7 @@ class Agent:
         print(res.success)
         x = np.reshape(res.x, [2, TRACK_LEN]).T
         track = kinematic_model(x, self_info[0:3])
-        print(x)
+        # print(x)
         return track
 
 
@@ -110,12 +111,13 @@ def utility_KKT(self_info, inter_info):
         track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3])
         track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
         track_all = [track_self[:, 0:2], track_inter[:, 0:2]]
-        # print(np.sin(self_info[3]))
-        ut_self = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
-                  np.sin(self_info[3]) * cal_group_cost(track_all)
 
+        group_cost = cal_group_cost(track_all)
+        # print(group_cost)
+        ut_self = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
+                  np.sin(self_info[3]) * group_cost
         ut_inter = np.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
-                   np.sin(inter_info[3]) * cal_group_cost(track_all)
+                   np.sin(inter_info[3]) * group_cost
         return ut_self + ut_inter
     return fun
 
@@ -203,9 +205,9 @@ def con_inter_opt(self_info, inter_info):
                     np.sin(inter_info[3]) * cal_group_cost([track_self, track_inter2])
 
         delta_ut = np.abs(ut_inter2 - ut_inter1)
-        print('delta_ut', MAX_DELTA_UT - delta_ut[0])
+        # print('delta_ut', MAX_DELTA_UT - delta_ut)
 
-        return MAX_DELTA_UT - delta_ut[0]
+        return MAX_DELTA_UT - delta_ut
         # return delta_ut
 
     return con
@@ -288,20 +290,32 @@ if __name__ == '__main__':
     init_velocity_gs = np.array([-2, 0])
     init_heading_gs = np.array([math.pi])
 
-    # generate LT and GS agents
+    # generate LT and virtual GS agents
     agent_lt = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt')
-    agent_lt.ipv = INITIAL_IPV
-    agent_lt.ipv_guess = INITIAL_IPV_GUESS
     agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs')
-    agent_gs.ipv = INITIAL_IPV
+    agent_lt.ipv = -math.pi/6
+    agent_gs.ipv = 0
+    agent_lt.ipv_guess = INITIAL_IPV_GUESS
     agent_gs.ipv_guess = INITIAL_IPV_GUESS
+    agent_lt.trj_solution_for_inter_agent = np.repeat([init_position_gs], TRACK_LEN + 1, axis=0)
+    agent_gs.trj_solution_for_inter_agent = np.repeat([init_position_lt], TRACK_LEN + 1, axis=0)
 
     # track_s, track_i = agent_lt.solve_game_KKT(agent_gs)
 
-    track_s = agent_lt.solve_game_IBR(agent_gs.trj_solution)
-    agent_lt.trj_solution = track_s
-    track_i = agent_gs.solve_game_IBR(agent_lt.trj_solution)
-    agent_gs.trj_solution = track_i
+    # planning for left-turn agent
+    track_s = np.repeat([init_position_lt], TRACK_LEN + 1, axis=0)
+    track_last = np.zeros_like(track_s)
+    count = 0
+    while np.linalg.norm(track_s[:, 0:2]-track_last[:, 0:2]) > 1e-3:
+        count += 1
+        print(count)
+        track_last = track_s
+        track_s = agent_lt.solve_game_IBR(agent_lt.trj_solution_for_inter_agent)
+        agent_lt.trj_solution = track_s
+        track_i = agent_gs.solve_game_IBR(agent_lt.trj_solution)
+        agent_lt.trj_solution_for_inter_agent = track_i
+        if count > 30:
+            break
 
     cv_init_it, _ = get_central_vertices('lt')
     cv_init_gs, _ = get_central_vertices('gs')
@@ -314,5 +328,5 @@ if __name__ == '__main__':
         plt.axis('equal')
         plt.xlim(5, 25)
         plt.ylim(-10, 10)
-        plt.pause(0.1)
+        plt.pause(0.3)
     plt.show()
