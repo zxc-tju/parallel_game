@@ -8,11 +8,11 @@ from tools.utility import smooth_cv
 
 # simulation setting
 dt = 0.2
-TRACK_LEN = 20
-
+TRACK_LEN = 30
+MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 10
-WEIGHT_DEVIATION = 0.5
+WEIGHT_DEVIATION = 0.6
 WEIGHT_CHANGE = 0.2
 
 # parameters of action bounds
@@ -20,12 +20,12 @@ MAX_STEERING_ANGLE = math.pi / 3
 MAX_ACCELERATION = 3.0
 
 # initial self IPV and guess on interacting agent's IPV
-INITIAL_IPV = math.pi / 4
-INITIAL_IPV_GUESS = math.pi / 4
+INITIAL_IPV = math.pi / 8
+INITIAL_IPV_GUESS = math.pi / 12
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-WEIGHT_GRP = 1/30
+WEIGHT_GRP = 1
 
 
 class Agent:
@@ -40,7 +40,8 @@ class Agent:
         self.trj_solution = []
         self.trj_solution_for_inter_agent = []
 
-    def solve_game(self, inter_agent):
+
+    def solve_game_KKT(self, inter_agent):
         """
         solve the game with an interacting counterpart
         :param inter_agent: interacting counterpart [Agent]
@@ -61,16 +62,17 @@ class Agent:
                       inter_agent.target]
 
         fun = utility(self_info, inter_info)
+        cons = {'type': 'ineq', 'fun': con_inter_opt(self_info, inter_info)}
+
         u0 = np.zeros([TRACK_LEN * 4, 1])
 
         bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(TRACK_LEN)] + \
               [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(TRACK_LEN)]
         bds = bds + bds
 
-        # res = fmin(fun, u0)
-        res = minimize(fun, u0, method='Powell', bounds=bds)
+        res = minimize(fun, u0, bounds=bds, method='SLSQP')
 
-        # print(res.success)
+        print(res.success)
         x = np.reshape(res.x, [4, TRACK_LEN]).T
         track_self = kinematic_model(x[:, 0:2], self_info[0:3])
         track_inter = kinematic_model(x[:, 2:], inter_info[0:3])
@@ -97,31 +99,8 @@ def utility(self_info, inter_info):
         ut_inter = np.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
                    np.sin(inter_info[3]) * cal_group_cost(track_all)
         return ut_self + ut_inter
+
     return fun
-
-
-def kinematic_model(u, init_state):
-    if not np.size(u, 0) == TRACK_LEN:
-        u = np.array([u[0:TRACK_LEN], u[TRACK_LEN:]]).T
-    r_len = 0.8
-    f_len = 1
-    pos, v, h = init_state
-    x = pos[0]
-    y = pos[1]
-    psi = h[0]
-    v = np.sqrt(v[0] ** 2 + v[1] ** 2)
-    track = [[x, y, psi, v]]
-
-    for i in range(len(u)):
-        a = u[i][0]
-        delta = u[i][1]
-        beta = math.atan((r_len / (r_len + f_len)) * math.tan(delta))
-        x = x + v * np.cos(psi + beta) * dt
-        y = y + v * np.sin(psi + beta) * dt
-        psi = psi + (v / f_len) * np.sin(beta) * dt
-        v = v + a * dt
-        track.append([x, y, psi, v])
-    return np.array(track)
 
 
 def cal_interior_cost(track, target):
@@ -158,7 +137,7 @@ def cal_interior_cost(track, target):
     cost_interior = WEIGHT_DELAY * cost_travel_distance + \
                     WEIGHT_DEVIATION * cost_mean_deviation + \
                     WEIGHT_CHANGE * cost_plan_change
-    # print('interior cost:', cost_interior)
+    print('interior cost:', cost_interior)
     return cost_interior * WEIGHT_INT
 
 
@@ -167,9 +146,34 @@ def cal_group_cost(track_packed):
     rel_distance = np.linalg.norm(track_self - track_inter, axis=1)
     min_rel_distance = np.amin(rel_distance)
     min_index = np.where(min_rel_distance == rel_distance)[0]
-    cost_group = - min_rel_distance * min_index[0] / (np.size(track_self, 0))
-    # print('group cost:', cost_group)
+    cost_group = -min_rel_distance**2 * min_index[0] / (np.size(track_self, 0))
+    # if min_rel_distance > 3:
+    #     cost_group = 0
+    # else:
+    #     cost_group = 10./np.exp(min_rel_distance - 3)
+
+    print('group cost:', cost_group)
     return cost_group * WEIGHT_GRP
+
+
+def con_inter_opt(self_info, inter_info):
+    def con(u):
+        track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3])
+        # track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
+        track_inter1 = kinematic_model(1.01 * u[TRACK_LEN * 2:], inter_info[0:3])
+        track_inter2 = kinematic_model(0.99 * u[TRACK_LEN * 2:], inter_info[0:3])
+
+        ut_inter1 = np.cos(inter_info[3]) * cal_interior_cost(1.01 * track_inter1, inter_info[4]) + \
+                    np.sin(inter_info[3]) * cal_group_cost([track_self, 1.01 * track_inter1])
+        ut_inter2 = np.cos(inter_info[3]) * cal_interior_cost(0.99 * track_inter2, inter_info[4]) + \
+                    np.sin(inter_info[3]) * cal_group_cost([track_self, 0.99 * track_inter2])
+
+        delta_ut = np.abs(ut_inter2 - ut_inter1) / 2
+        print('delta_ut', delta_ut[0])
+
+        return MAX_DELTA_UT - delta_ut[0]
+        # return delta_ut
+    return con
 
 
 def get_central_vertices(cv_type):
@@ -181,6 +185,30 @@ def get_central_vertices(cv_type):
     assert cv_init is not None
     cv_smoothed, s_accumulated = smooth_cv(cv_init)
     return cv_smoothed, s_accumulated
+
+
+def kinematic_model(u, init_state):
+    if not np.size(u, 0) == TRACK_LEN:
+        u = np.array([u[0:TRACK_LEN], u[TRACK_LEN:]]).T
+    r_len = 0.8
+    f_len = 1
+    pos, v, h = init_state
+    x = pos[0]
+    y = pos[1]
+    psi = h[0]
+    v = np.sqrt(v[0] ** 2 + v[1] ** 2)
+    track = [[x, y, psi, v]]
+
+    for i in range(len(u)):
+        a = u[i][0]
+        delta = u[i][1]
+        beta = math.atan((r_len / (r_len + f_len)) * math.tan(delta))
+        x = x + v * np.cos(psi + beta) * dt
+        y = y + v * np.sin(psi + beta) * dt
+        psi = psi + (v / f_len) * np.sin(beta) * dt
+        v = v + a * dt
+        track.append([x, y, psi, v])
+    return np.array(track)
 
 
 if __name__ == '__main__':
@@ -208,7 +236,7 @@ if __name__ == '__main__':
     # plt.axis('equal')
     # plt.show()
 
-    # "test cal_cost"
+    "test cal_cost"
     # track_test = [np.array([[0, -15], [5, -13], [10, -10]]), np.array([[20, -2], [10, -2], [0, -2]])]
     # # track_test = [np.array([[0, -15], [5, -13], [10, -10]]), np.array([[0, -14], [5, -11], [10, -9]])]
     # target1 = 'lt'
@@ -217,12 +245,12 @@ if __name__ == '__main__':
     # print('cost is :', cost_it)
 
     "test solve game"
-    init_position_lt = np.array([13.5, -5])
+    init_position_lt = np.array([13, -7])
     init_velocity_lt = np.array([0, 2])
-    init_heading_lt = np.array([math.pi/3])
+    init_heading_lt = np.array([math.pi / 3])
     # initial state of the go-straight vehicle
-    init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([0, 0])
+    init_position_gs = np.array([20, -2])
+    init_velocity_gs = np.array([-2, 0])
     init_heading_gs = np.array([math.pi])
 
     # generate LT and GS agents
@@ -232,18 +260,18 @@ if __name__ == '__main__':
     agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs')
     agent_gs.ipv_guess = INITIAL_IPV_GUESS
 
-    track_s, track_i = agent_lt.solve_game(agent_gs)
-    cv_init_it, _ = get_central_vertices('lt')
+    track_s, track_i = agent_lt.solve_game_KKT(agent_gs)
 
+    cv_init_it, _ = get_central_vertices('lt')
     cv_init_gs, _ = get_central_vertices('gs')
     plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b--')
     for t in range(TRACK_LEN):
-        plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r--')
-        plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b--')
+        plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
+        plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
         plt.plot(track_s[t, 0], track_s[t, 1], 'r*')
         plt.plot(track_i[t, 0], track_i[t, 1], 'b*')
         plt.axis('equal')
-        plt.xlim(0, 30)
-        plt.ylim(-15, 15)
+        plt.xlim(5, 25)
+        plt.ylim(-10, 10)
         plt.pause(0.1)
     plt.show()

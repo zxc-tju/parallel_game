@@ -23,8 +23,8 @@ def simulate():
     agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs')
     agent_gs.ipv_guess = INITIAL_GUESS
 
-    agent_lt.solve_game(agent_gs)
-    agent_gs.solve_game(agent_lt)
+    agent_lt.solve_game_KKT(agent_gs)
+    agent_gs.solve_game_KKT(agent_lt)
 
 
 if __name__ == '__main__':
