@@ -2,9 +2,9 @@
 from gt_planner import GTPlanner
 import numpy as np
 import math
-from scipy.optimize import minimize, fmin
+from scipy.optimize import minimize
 from matplotlib import pyplot as plt
-from tools.utility import smooth_cv
+from tools.utility import get_central_vertices, kinematic_model
 
 # simulation setting
 dt = 0.2
@@ -34,58 +34,59 @@ class Agent:
         self.heading = heading
         self.target = target
         self.trajectory = [self.position, self.velocity, self.heading]
-        self.ipv = None
-        self.ipv_guess = INITIAL_IPV_GUESS  # a guess on interacting counterpart's ipv
         self.trj_solution = np.repeat([position], TRACK_LEN + 1, axis=0)
         self.trj_solution_for_inter_agent = []
+        self.virtual_inter_agent = None
+        self.ipv = 0
 
-    def solve_game_KKT(self, inter_agent):
-        """
-        solve the game with an interacting counterpart
-        :param inter_agent: interacting counterpart [Agent]
-        :return:
-        """
-        # accessible info. on interacting counterpart:
-        #   1. trajectory history: inter_agent.trajectory
-        #   2. ipv guess: self.ipv_guess
+    # def solve_game_KKT(self, inter_agent):
+    #     """
+    #     solve the game with an interacting counterpart
+    #     :param inter_agent: interacting counterpart [Agent]
+    #     :return:
+    #     """
+    #     # accessible info. on interacting counterpart:
+    #     #   1. trajectory history: inter_agent.trajectory
+    #     #   2. ipv guess: self.ipv_guess
+    #     self_info = [self.position,
+    #                  self.velocity,
+    #                  self.heading,
+    #                  self.ipv,
+    #                  self.target]
+    #     inter_info = [inter_agent.position,
+    #                   inter_agent.velocity,
+    #                   inter_agent.heading,
+    #                   self.ipv_guess,
+    #                   inter_agent.target]
+    #
+    #     fun = utility_KKT(self_info, inter_info)
+    #     cons = {'type': 'ineq', 'fun': con_inter_opt(self_info, inter_info)}
+    #
+    #     u0 = np.zeros([TRACK_LEN * 4])
+    #
+    #     bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(TRACK_LEN)] + \
+    #           [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(TRACK_LEN)]
+    #     bds = bds + bds
+    #
+    #     res = minimize(fun, u0, bounds=bds, method='trust-constr', constraints=cons, options={'disp': True})
+    #     # res = minimize(fun, u0, bounds=bds, constraints=cons, method='L-BFGS-B', tol=1e-11, options={'disp': True, 'maxiter': 300, 'maxfun': 1500000})
+    #     # res = minimize(fun, u0, bounds=bds, constraints=cons, method='COBYLA', tol=1e-11, options={'disp': True, 'maxiter': 300, 'MAXFUN': 1500000})
+    #
+    #     print(res.success)
+    #     x = np.reshape(res.x, [4, TRACK_LEN]).T
+    #     track_self = kinematic_model(x[:, 0:2], self_info[0:3])
+    #     track_inter = kinematic_model(x[:, 2:], inter_info[0:3])
+    #     print(x)
+    #     return track_self, track_inter
+
+    def solve_game_IBR(self):
         self_info = [self.position,
                      self.velocity,
                      self.heading,
                      self.ipv,
                      self.target]
-        inter_info = [inter_agent.position,
-                      inter_agent.velocity,
-                      inter_agent.heading,
-                      self.ipv_guess,
-                      inter_agent.target]
 
-        fun = utility_KKT(self_info, inter_info)
-        cons = {'type': 'ineq', 'fun': con_inter_opt(self_info, inter_info)}
-
-        u0 = np.zeros([TRACK_LEN * 4])
-
-        bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(TRACK_LEN)] + \
-              [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(TRACK_LEN)]
-        bds = bds + bds
-
-        res = minimize(fun, u0, bounds=bds, method='trust-constr', constraints=cons, options={'disp': True})
-        # res = minimize(fun, u0, bounds=bds, constraints=cons, method='L-BFGS-B', tol=1e-11, options={'disp': True, 'maxiter': 300, 'maxfun': 1500000})
-        # res = minimize(fun, u0, bounds=bds, constraints=cons, method='COBYLA', tol=1e-11, options={'disp': True, 'maxiter': 300, 'MAXFUN': 1500000})
-
-        print(res.success)
-        x = np.reshape(res.x, [4, TRACK_LEN]).T
-        track_self = kinematic_model(x[:, 0:2], self_info[0:3])
-        track_inter = kinematic_model(x[:, 2:], inter_info[0:3])
-        print(x)
-        return track_self, track_inter
-
-    def solve_game_IBR(self, inter_track):
-        self_info = [self.position,
-                     self.velocity,
-                     self.heading,
-                     self.ipv,
-                     self.target]
-        fun = utility_IBR(self_info, inter_track)
+        fun = utility_IBR(self_info, self.virtual_inter_agent.trj_solution)
         u0 = np.zeros([TRACK_LEN * 2, 1])
         bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(TRACK_LEN)] + \
               [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(TRACK_LEN)]
@@ -94,32 +95,32 @@ class Agent:
 
         print(res.success)
         x = np.reshape(res.x, [2, TRACK_LEN]).T
-        track = kinematic_model(x, self_info[0:3])
+        self.trj_solution = kinematic_model(x, self_info[0:3])
         # print(x)
-        return track
+        # return track
 
 
-def utility_KKT(self_info, inter_info):
-    def fun(u):
-        """
-        Calculate the utility from the perspective of "self" agent
-
-        :param u: num_step by 4 array, where the 1\2 columns are control of "self" agent
-                  and 3\4 columns "inter" agent
-        :return: utility of the "self" agent under the control u
-        """
-        track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3])
-        track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
-        track_all = [track_self[:, 0:2], track_inter[:, 0:2]]
-
-        group_cost = cal_group_cost(track_all)
-        # print(group_cost)
-        ut_self = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
-                  np.sin(self_info[3]) * group_cost
-        ut_inter = np.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
-                   np.sin(inter_info[3]) * group_cost
-        return ut_self + ut_inter
-    return fun
+# def utility_KKT(self_info, inter_info):
+#     def fun(u):
+#         """
+#         Calculate the utility from the perspective of "self" agent
+#
+#         :param u: num_step by 4 array, where the 1\2 columns are control of "self" agent
+#                   and 3\4 columns "inter" agent
+#         :return: utility of the "self" agent under the control u
+#         """
+#         track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3])
+#         track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
+#         track_all = [track_self[:, 0:2], track_inter[:, 0:2]]
+#
+#         group_cost = cal_group_cost(track_all)
+#         # print(group_cost)
+#         ut_self = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
+#                   np.sin(self_info[3]) * group_cost
+#         ut_inter = np.cos(inter_info[3]) * cal_interior_cost(track_inter, inter_info[4]) + \
+#                    np.sin(inter_info[3]) * group_cost
+#         return ut_self + ut_inter
+#     return fun
 
 
 def utility_IBR(self_info, inter_track):
@@ -213,41 +214,6 @@ def con_inter_opt(self_info, inter_info):
     return con
 
 
-def get_central_vertices(cv_type):
-    cv_init = None
-    if cv_type == 'lt':  # left turn
-        cv_init = np.array([[0, -15], [5, -14.14], [10.6, -10.6], [15, 0], [15, 100]])
-    elif cv_type == 'gs':  # go straight
-        cv_init = np.array([[20, -2], [10, -2], [0, -2], [-150, -2]])
-    assert cv_init is not None
-    cv_smoothed, s_accumulated = smooth_cv(cv_init)
-    return cv_smoothed, s_accumulated
-
-
-def kinematic_model(u, init_state):
-    if not np.size(u, 0) == TRACK_LEN:
-        u = np.array([u[0:TRACK_LEN], u[TRACK_LEN:]]).T
-    r_len = 0.8
-    f_len = 1
-    pos, v, h = init_state
-    x = pos[0]
-    y = pos[1]
-    psi = h[0]
-    v = np.sqrt(v[0] ** 2 + v[1] ** 2)
-    track = [[x, y, psi, v]]
-
-    for i in range(len(u)):
-        a = u[i][0]
-        delta = u[i][1]
-        beta = math.atan((r_len / (r_len + f_len)) * math.tan(delta))
-        x = x + v * np.cos(psi + beta) * dt
-        y = y + v * np.sin(psi + beta) * dt
-        psi = psi + (v / f_len) * np.sin(beta) * dt
-        v = v + a * dt
-        track.append([x, y, psi, v])
-    return np.array(track)
-
-
 if __name__ == '__main__':
     "test kinematic_model"
     # action = np.concatenate((1 * np.ones((TRACK_LEN, 1)),  0.3 * np.ones((TRACK_LEN, 1))), axis=1)
@@ -293,7 +259,7 @@ if __name__ == '__main__':
     # generate LT and virtual GS agents
     agent_lt = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt')
     agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs')
-    agent_lt.ipv = -math.pi/6
+    agent_lt.ipv = math.pi/3
     agent_gs.ipv = 0
     agent_lt.ipv_guess = INITIAL_IPV_GUESS
     agent_gs.ipv_guess = INITIAL_IPV_GUESS
