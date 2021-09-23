@@ -1,5 +1,4 @@
 """create agents for simulation"""
-from gt_planner import GTPlanner
 import numpy as np
 import math
 from scipy.optimize import minimize
