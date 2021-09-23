@@ -2,9 +2,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.interpolate import splrep, splev
 import math
-# simulation setting
-dt = 0.2
-TRACK_LEN = 20
 
 
 def smooth_cv(cv_init, point_num=100):
@@ -45,25 +42,28 @@ def get_central_vertices(cv_type):
     return cv_smoothed, s_accumulated
 
 
-def kinematic_model(u, init_state):
+def kinematic_model(u, init_state, TRACK_LEN, dt):
     if not np.size(u, 0) == TRACK_LEN:
         u = np.array([u[0:TRACK_LEN], u[TRACK_LEN:]]).T
     r_len = 0.8
     f_len = 1
-    pos, v, h = init_state
-    x = pos[0]
-    y = pos[1]
-    psi = h[0]
-    v = np.sqrt(v[0] ** 2 + v[1] ** 2)
-    track = [[x, y, psi, v]]
+    x, y, vx, vy, h = init_state
+    # track = [init_state]
+    psi = h
+    track = [[x, y, vx, vy, h]]
+    v_temp = np.sqrt(vx ** 2 + vy ** 2)
 
     for i in range(len(u)):
         a = u[i][0]
         delta = u[i][1]
         beta = math.atan((r_len / (r_len + f_len)) * math.tan(delta))
-        x = x + v * np.cos(psi + beta) * dt
-        y = y + v * np.sin(psi + beta) * dt
-        psi = psi + (v / f_len) * np.sin(beta) * dt
-        v = v + a * dt
-        track.append([x, y, psi, v])
+        x = x + v_temp * np.cos(psi + beta) * dt
+        y = y + v_temp * np.sin(psi + beta) * dt
+        psi = psi + (v_temp / f_len) * np.sin(beta) * dt
+        v_temp = v_temp + a * dt
+
+        vx = v_temp*np.cos(psi)
+        vy = v_temp*np.sin(psi)
+
+        track.append([x, y, vx, vy, psi])
     return np.array(track)
