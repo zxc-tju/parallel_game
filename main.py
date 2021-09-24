@@ -12,11 +12,10 @@ num_step = 20
 
 INITIAL_IPV_LEFT_TURN = 0 * math.pi / 4
 INITIAL_IPV_GO_STRAIGHT = math.pi / 4
-virtual_agent_IPV_range = [-1, 0, 1, 2, 3]
+virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 
 def simulate():
-
     # initial state of the left-turn vehicle
     init_position_lt = np.array([13, -7])
     init_velocity_lt = np.array([2, 0.3])
@@ -44,12 +43,12 @@ def simulate():
 
         # interaction with parallel virtual agents
         virtual_gs_track_collection = []
-        for idx in virtual_agent_IPV_range:
+        for ipv_temp in virtual_agent_IPV_range:
 
-            print('idx: ', idx)
+            # print('idx: ', ipv_temp)
             count_lt = 0  # count number of iteration
             virtual_inter_gs = copy.deepcopy(agent_gs)
-            virtual_inter_gs.ipv = math.pi / 6 * idx
+            virtual_inter_gs.ipv = ipv_temp
             agent_lt_temp = copy.deepcopy(agent_lt)
             track_last_lt_temp = np.zeros_like(agent_lt.trj_solution)  # initialize a track reservation
 
@@ -83,11 +82,11 @@ def simulate():
 
         # interaction with parallel virtual agents
         virtual_lt_track_collection = []
-        for idx in virtual_agent_IPV_range:
-            print('idx: ', idx)
+        for ipv_temp in virtual_agent_IPV_range:
+            # print('idx: ', ipv_temp)
             virtual_inter_lt = copy.deepcopy(agent_lt)
             agent_gs_temp = copy.deepcopy(agent_gs)
-            virtual_inter_lt.ipv = math.pi / 6 * idx
+            virtual_inter_lt.ipv = ipv_temp
 
             while np.linalg.norm(agent_gs_temp.trj_solution[:, 0:2] - track_last_gs[:, 0:2]) > 1e-3:
                 count_gs += 1
@@ -142,16 +141,48 @@ def simulate():
         # plt.show()
 
         plt.figure()
-        for t in range(num_step):
-            # central vertices
-            plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
-            plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
-            # potion at each time step
-            plt.plot(agent_lt.trajectory[t, 0], agent_lt.trajectory[t, 1], 'r*-')
-            plt.plot(agent_gs.trajectory[t, 0], agent_gs.trajectory[t, 1], 'b*-')
-            plt.axis('equal')
-            plt.xlim(5, 25)
-            plt.ylim(-15, 15)
+        # central vertices
+        plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
+        plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
+        # position at each time step
+        plt.scatter(agent_lt.trajectory[:, 0],
+                    agent_lt.trajectory[:, 1],
+                    s=100,
+                    alpha=0.6,
+                    color='red',
+                    label='left-turn')
+        plt.scatter(agent_gs.trajectory[:, 0],
+                    agent_gs.trajectory[:, 1],
+                    s=100,
+                    alpha=0.6,
+                    color='blue',
+                    label='go-straight')
+
+        for t in range(len(agent_lt.trajectory)):
+            plt.plot([agent_lt.trajectory[t, 0], agent_gs.trajectory[t, 0]],
+                     [agent_lt.trajectory[t, 1], agent_gs.trajectory[t, 1]], color='black')
+        plt.axis('equal')
+        plt.xlim(5, 25)
+        plt.ylim(-15, 15)
+
+        plt.figure()
+
+        x_range = np.array(range(len(agent_lt.estimated_inter_agent.ipv_collection)))
+        y_lt = np.array(agent_lt.estimated_inter_agent.ipv_collection)
+        y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
+        plt.fill_between(x_range, y_lt-y_error_lt, y_lt+y_error_lt,
+                         alpha=0.4,
+                         color='blue',
+                         label='estimated gs IPV')
+        plt.plot(x_range, INITIAL_IPV_GO_STRAIGHT * np.ones_like(x_range), label='actual gs IPV')
+
+        y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
+        y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
+        plt.fill_between(x_range, y_gs - y_error_gs, y_lt + y_error_gs,
+                         alpha=0.4,
+                         color='red',
+                         label='estimated lt IPV')
+        plt.plot(x_range, INITIAL_IPV_LEFT_TURN * np.ones_like(x_range), label='actual lt IPV')
 
 
 if __name__ == '__main__':

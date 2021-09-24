@@ -8,7 +8,7 @@ import copy
 
 # simulation setting
 dt = 0.1
-TRACK_LEN = 10
+TRACK_LEN = 15
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 2
@@ -48,6 +48,8 @@ class Agent:
         self.trj_solution_collection = []
         self.estimated_inter_agent = None
         self.ipv = 0
+        self.ipv_collection = []
+        self.ipv_error_collection = []
         self.virtual_track_collection = []
 
     # def solve_game_KKT(self, inter_agent):
@@ -123,7 +125,7 @@ class Agent:
 
         self.trj_solution_collection.append(self.trj_solution)
 
-        # TODO:update IPV
+        # update IPV
         current_time = len(self.trajectory) - 1
         if current_time > 1:
             start_time = max(0, current_time - 6)
@@ -136,13 +138,19 @@ class Agent:
                 virtual_track = candidates[i][0:time_duration, 0:2]
                 actual_track = inter_agent.trajectory[start_time:current_time, 0:2]
                 rel_dis = np.linalg.norm(virtual_track-actual_track, axis=0)
+                # likelihood of each candidate
                 var[i] = np.prod((1/sigma/np.sqrt(2*math.pi))*np.exp(-rel_dis**2/(2*sigma**2)))
-                # print(virtual_track)
-                # print(actual_track)
-                # print(var[i])
+
             weight = var/sum(var)
             print(weight)
-            self.estimated_inter_agent.ipv = sum(virtual_agent_IPV_range * weight) * math.pi / 6
+
+            # weighted sum of all candidates' IPVs
+            self.estimated_inter_agent.ipv = sum(virtual_agent_IPV_range * weight)
+
+            # save updated ipv and estimation error
+            self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
+            error = 1 - np.sqrt(sum(weight ** 2))
+            self.estimated_inter_agent.ipv_error_collection.append(error)
 
     def draw(self):
         cv_init_it, _ = get_central_vertices('lt')
