@@ -26,6 +26,9 @@ INITIAL_IPV_GUESS = 0
 WEIGHT_INT = 5
 WEIGHT_GRP = 1.5
 
+# likelihood function
+sigma = math.pi / 40
+
 
 class Agent:
     def __init__(self, position, velocity, heading, target):
@@ -34,13 +37,18 @@ class Agent:
         self.heading = heading
         self.target = target
         # conducted trajectory
-        self.trajectory = [[self.position, self.velocity, self.heading], ]
+        self.trajectory = np.array([[self.position[0],
+                                    self.position[1],
+                                    self.velocity[0],
+                                    self.velocity[1],
+                                    self.heading], ])
         # trajectory plan at each time step
         self.trj_solution = np.repeat([position], TRACK_LEN + 1, axis=0)
         # collection of trajectory plans at every time step
         self.trj_solution_collection = []
         self.estimated_inter_agent = None
         self.ipv = 0
+        self.virtual_track_collection = []
 
     # def solve_game_KKT(self, inter_agent):
     #     """
@@ -98,7 +106,7 @@ class Agent:
         x = np.reshape(res.x, [2, TRACK_LEN]).T
         self.trj_solution = kinematic_model(x, init_state_4_kine, TRACK_LEN, dt)
 
-    def update_state(self, inter_agent):
+    def update_state(self, inter_agent, virtual_agent_IPV_range):
         self.position = self.trj_solution[1, 0:2]
         self.velocity = self.trj_solution[1, 2:4]
         self.heading = self.trj_solution[1, -1]
@@ -106,9 +114,35 @@ class Agent:
         self.estimated_inter_agent.velocity = inter_agent.trj_solution[1, 2:4]
         self.estimated_inter_agent.heading = inter_agent.trj_solution[1, -1]
 
-        self.trajectory.append([self.position, self.velocity, self.heading])
+        new_track_point = np.array([[self.position[0],
+                                    self.position[1],
+                                    self.velocity[0],
+                                    self.velocity[1],
+                                    self.heading], ])
+        self.trajectory = np.concatenate((self.trajectory, new_track_point), axis=0)
 
         self.trj_solution_collection.append(self.trj_solution)
+
+        # TODO:update IPV
+        current_time = len(self.trajectory) - 1
+        if current_time > 1:
+            start_time = max(0, current_time - 6)
+            time_duration = current_time - start_time
+
+            candidates = self.estimated_inter_agent.virtual_track_collection[start_time]
+            var = np.zeros(len(candidates))
+
+            for i in range(len(candidates)):
+                virtual_track = candidates[i][0:time_duration, 0:2]
+                actual_track = inter_agent.trajectory[start_time:current_time, 0:2]
+                rel_dis = np.linalg.norm(virtual_track-actual_track, axis=0)
+                var[i] = np.prod((1/sigma/np.sqrt(2*math.pi))*np.exp(-rel_dis**2/(2*sigma**2)))
+                # print(virtual_track)
+                # print(actual_track)
+                # print(var[i])
+            weight = var/sum(var)
+            print(weight)
+            self.estimated_inter_agent.ipv = sum(virtual_agent_IPV_range * weight) * math.pi / 6
 
     def draw(self):
         cv_init_it, _ = get_central_vertices('lt')
@@ -231,6 +265,7 @@ def con_inter_opt(self_info, inter_info):
     :param inter_info:
     :return: constraint function
     """
+
     def con(u):
         track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3], TRACK_LEN, dt)
         # track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])

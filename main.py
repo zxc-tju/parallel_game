@@ -12,7 +12,7 @@ num_step = 20
 
 INITIAL_IPV_LEFT_TURN = 0 * math.pi / 4
 INITIAL_IPV_GO_STRAIGHT = math.pi / 4
-virtual_agent_IPV_range = [-1, 0, 1]
+virtual_agent_IPV_range = [-1, 0, 1, 2, 3]
 
 
 def simulate():
@@ -42,25 +42,26 @@ def simulate():
 
         "==plan for left-turn=="
 
-        # # interaction with parallel virtual agents
-        # virtual_gs_track_collection = []
-        # for idx in virtual_agent_IPV_range:
-        #
-        #     print('idx: ', idx)
-        #     count_lt = 0  # count number of iteration
-        #     virtual_inter_gs = copy.deepcopy(agent_gs)
-        #     virtual_inter_gs.ipv = math.pi / 6 * idx
-        #     agent_lt_temp = copy.deepcopy(agent_lt)
-        #     track_last_lt_temp = np.zeros_like(agent_lt.trj_solution)  # initialize a track reservation
-        #
-        #     while np.linalg.norm(agent_lt_temp.trj_solution[:, 0:2] - track_last_lt_temp[:, 0:2]) > 1e-3:
-        #         count_lt += 1
-        #         track_last_lt_temp = agent_lt_temp.trj_solution
-        #         agent_lt_temp.solve_game_IBR(virtual_inter_gs.trj_solution)
-        #         virtual_inter_gs.solve_game_IBR(agent_lt_temp.trj_solution)
-        #         if count_lt > 10:  # limited to less than 10 iterations
-        #             break
-        #     virtual_gs_track_collection.append(virtual_inter_gs.trj_solution)
+        # interaction with parallel virtual agents
+        virtual_gs_track_collection = []
+        for idx in virtual_agent_IPV_range:
+
+            print('idx: ', idx)
+            count_lt = 0  # count number of iteration
+            virtual_inter_gs = copy.deepcopy(agent_gs)
+            virtual_inter_gs.ipv = math.pi / 6 * idx
+            agent_lt_temp = copy.deepcopy(agent_lt)
+            track_last_lt_temp = np.zeros_like(agent_lt.trj_solution)  # initialize a track reservation
+
+            while np.linalg.norm(agent_lt_temp.trj_solution[:, 0:2] - track_last_lt_temp[:, 0:2]) > 1e-3:
+                count_lt += 1
+                track_last_lt_temp = agent_lt_temp.trj_solution
+                agent_lt_temp.solve_game_IBR(virtual_inter_gs.trj_solution)
+                virtual_inter_gs.solve_game_IBR(agent_lt_temp.trj_solution)
+                if count_lt > 10:  # limited to less than 10 iterations
+                    break
+            virtual_gs_track_collection.append(virtual_inter_gs.trj_solution)
+        agent_lt.estimated_inter_agent.virtual_track_collection.append(virtual_gs_track_collection)
 
         # interaction with estimated agent
         count_lt = 0  # count number of iteration
@@ -80,25 +81,28 @@ def simulate():
         count_gs = 0  # count number of iteration
         track_last_gs = np.zeros_like(agent_gs.trj_solution)  # initialize a track reservation
 
-        # # interaction with parallel virtual agents
-        # virtual_lt_track_collection = []
-        # for idx in virtual_agent_IPV_range:
-        #     print('idx: ', idx)
-        #     virtual_inter_lt = copy.deepcopy(agent_lt)
-        #     agent_gs_temp = copy.deepcopy(agent_gs)
-        #     virtual_inter_lt.ipv = math.pi / 6 * idx
-        #
-        #     while np.linalg.norm(agent_gs_temp.trj_solution[:, 0:2] - track_last_gs[:, 0:2]) > 1e-3:
-        #         count_gs += 1
-        #         track_last_gs = agent_gs_temp.trj_solution
-        #         agent_gs_temp.solve_game_IBR(virtual_inter_lt.trj_solution)
-        #         virtual_inter_lt.solve_game_IBR(agent_gs_temp.trj_solution)
-        #         if count_gs > 10:
-        #             count_gs = 0
-        #             break
-        #     virtual_lt_track_collection.append(virtual_inter_lt.trj_solution)
+        # interaction with parallel virtual agents
+        virtual_lt_track_collection = []
+        for idx in virtual_agent_IPV_range:
+            print('idx: ', idx)
+            virtual_inter_lt = copy.deepcopy(agent_lt)
+            agent_gs_temp = copy.deepcopy(agent_gs)
+            virtual_inter_lt.ipv = math.pi / 6 * idx
+
+            while np.linalg.norm(agent_gs_temp.trj_solution[:, 0:2] - track_last_gs[:, 0:2]) > 1e-3:
+                count_gs += 1
+                track_last_gs = agent_gs_temp.trj_solution
+                agent_gs_temp.solve_game_IBR(virtual_inter_lt.trj_solution)
+                virtual_inter_lt.solve_game_IBR(agent_gs_temp.trj_solution)
+                if count_gs > 10:
+                    count_gs = 0
+                    break
+            virtual_lt_track_collection.append(virtual_inter_lt.trj_solution)
+        agent_gs.estimated_inter_agent.virtual_track_collection.append(virtual_lt_track_collection)
 
         # interaction with estimated agent
+        count_gs = 0  # count number of iteration
+        track_last_gs = np.zeros_like(agent_gs.trj_solution)
         while np.linalg.norm(agent_gs.trj_solution[:, 0:2] - track_last_gs[:, 0:2]) > 1e-3:
             count_gs += 1
             track_last_gs = agent_gs.trj_solution
@@ -111,8 +115,10 @@ def simulate():
             agent_gs.draw()
 
         # update state
-        agent_lt.update_state(agent_gs)
-        agent_gs.update_state(agent_lt)
+        agent_lt.update_state(agent_gs, virtual_agent_IPV_range)
+        agent_gs.update_state(agent_lt, virtual_agent_IPV_range)
+        print("estimated gs ipv:", agent_lt.estimated_inter_agent.ipv)
+        print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====visualization===="
     if final_illustration_needed:
@@ -141,8 +147,8 @@ def simulate():
             plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
             plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
             # potion at each time step
-            plt.plot(agent_lt.trajectory[t][0][0], agent_lt.trajectory[t][0][1], 'r*-')
-            plt.plot(agent_gs.trajectory[t][0][0], agent_gs.trajectory[t][0][1], 'b*-')
+            plt.plot(agent_lt.trajectory[t, 0], agent_lt.trajectory[t, 1], 'r*-')
+            plt.plot(agent_gs.trajectory[t, 0], agent_gs.trajectory[t, 1], 'b*-')
             plt.axis('equal')
             plt.xlim(5, 25)
             plt.ylim(-15, 15)
