@@ -5,17 +5,18 @@ from matplotlib import pyplot as plt
 from agent import Agent
 from tools.utility import get_central_vertices
 import time
+import pickle
 
 final_illustration_needed = 1
 in_loop_illustration_needed = 0
 num_step = 20
 
-INITIAL_IPV_LEFT_TURN = 0 * math.pi / 4
-INITIAL_IPV_GO_STRAIGHT = math.pi / 4
+INITIAL_IPV_LEFT_TURN = math.pi / 4
+INITIAL_IPV_GO_STRAIGHT = 0 * math.pi / 4
 virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 
-def simulate():
+def simulate(gs_ipv, lt_ipv):
     # initial state of the left-turn vehicle
     init_position_lt = np.array([13, -7])
     init_velocity_lt = np.array([2, 0.3])
@@ -32,8 +33,10 @@ def simulate():
     agent_lt.estimated_inter_agent = copy.deepcopy(agent_gs)
     agent_gs.estimated_inter_agent = copy.deepcopy(agent_lt)
     # initialize IPV
-    agent_lt.ipv = INITIAL_IPV_LEFT_TURN
-    agent_gs.ipv = INITIAL_IPV_GO_STRAIGHT
+    # agent_lt.ipv = INITIAL_IPV_LEFT_TURN
+    # agent_gs.ipv = INITIAL_IPV_GO_STRAIGHT
+    agent_lt.ipv = lt_ipv * math.pi / 8
+    agent_gs.ipv = gs_ipv * math.pi / 8
 
     "====IRB process===="
     for t in range(num_step):
@@ -119,6 +122,15 @@ def simulate():
         print("estimated gs ipv:", agent_lt.estimated_inter_agent.ipv)
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
+    filename = 'agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi/8' '.pckl'
+    f = open(filename, 'wb')
+    pickle.dump([agent_lt, agent_gs], f)
+    f.close()
+
+    # f = open(filename, 'rb')
+    # agent_lt, agent_gs = pickle.load(f)
+    # f.close()
+
     "====visualization===="
     if final_illustration_needed:
         plt.figure()
@@ -178,7 +190,7 @@ def simulate():
 
         y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
         y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
-        plt.fill_between(x_range, y_gs - y_error_gs, y_lt + y_error_gs,
+        plt.fill_between(x_range, y_gs - y_error_gs, y_gs + y_error_gs,
                          alpha=0.4,
                          color='red',
                          label='estimated lt IPV')
@@ -186,7 +198,9 @@ def simulate():
 
 
 if __name__ == '__main__':
-    tic = time.perf_counter()
-    simulate()
-    toc = time.perf_counter()
-    print(f"whole process takes {toc - tic:0.4f} seconds")
+    # tic = time.perf_counter()
+    for gs_ipv in [-3, -2, -1, 0, 1, 2, 3]:
+        for lt_ipv in [-3, -2, -1, 0, 1, 2, 3]:
+            simulate(gs_ipv, lt_ipv)
+    # toc = time.perf_counter()
+    # print(f"whole process takes {toc - tic:0.4f} seconds")

@@ -8,7 +8,7 @@ import copy
 
 # simulation setting
 dt = 0.1
-TRACK_LEN = 15
+TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 2
