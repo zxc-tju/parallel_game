@@ -13,15 +13,16 @@ num_step = 20
 
 # INITIAL_IPV_LEFT_TURN = math.pi / 4
 # INITIAL_IPV_GO_STRAIGHT = 0 * math.pi / 4
-virtual_agent_IPV_range = np.array([-3.5, -3, -2, -1, 0, 1, 2, 3, 3.5]) * math.pi / 8
+virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
 
-def multi_simulate(process_id, gs_ipv, lt_ipv_set):
-    for lt_ipv in lt_ipv_set:
-        simulate(gs_ipv, lt_ipv)
-        print('go straight: ', gs_ipv)
-        print('left turn: ', lt_ipv)
-        print('process: ', process_id, 'finished')
+def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
+    for gs_ipv in gs_ipv_set:
+        for lt_ipv in lt_ipv_set:
+            simulate(gs_ipv, lt_ipv)
+            print('go straight: ', gs_ipv)
+            print('left turn: ', lt_ipv)
+            print('#======process: ', process_id, 'finished')
 
 
 def simulate(gs_ipv, lt_ipv):
@@ -43,15 +44,14 @@ def simulate(gs_ipv, lt_ipv):
     # initialize IPV
     # agent_lt.ipv = INITIAL_IPV_LEFT_TURN
     # agent_gs.ipv = INITIAL_IPV_GO_STRAIGHT
-    agent_lt.ipv = lt_ipv * math.pi / 8
-    agent_gs.ipv = gs_ipv * math.pi / 8
+    agent_lt.ipv = lt_ipv * math.pi / 9
+    agent_gs.ipv = gs_ipv * math.pi / 9
 
     "====IRB process===="
     for t in range(num_step):
-        print('process:', t, '/', num_step)
+        print('time_step: ', t, '/', num_step)
 
         "==plan for left-turn=="
-
         # ==interaction with parallel virtual agents
         virtual_gs_track_collection = []
         for ipv_temp in virtual_agent_IPV_range:
@@ -129,15 +129,12 @@ def simulate(gs_ipv, lt_ipv):
         print("estimated gs ipv:", agent_lt.estimated_inter_agent.ipv)
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
-    filename = 'agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_8' + '.pckl'
+    "====save data===="
+    filename = './outputs/version2/agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_9' + '.pckl'
     f = open(filename, 'wb')
     pickle.dump([agent_lt, agent_gs], f)
     f.close()
     print('gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv), 'saved')
-
-    # f = open(filename, 'rb')
-    # agent_lt, agent_gs = pickle.load(f)
-    # f.close()
 
     "====visualization===="
     if final_illustration_needed:
@@ -209,15 +206,27 @@ if __name__ == '__main__':
     from multiprocessing import Process
 
     tic = time.perf_counter()
-    # processes = [Process(target=multi_simulate, args=(1, 1, [-3, -2, -1, 0, 1, 2, 3])),
-    #              Process(target=multi_simulate, args=(2, 1, [-3, -2, -1, 0, 1, 2, 3])), ]
+    # lt_ipv_set_full = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
+    # processes = [Process(target=multi_simulate, args=(1, [-4], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(2, [-3], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(3, [-2], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(1, [-1], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(2, [0], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(3, [1], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(1, [2], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(2, [3], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(3, [4], lt_ipv_set_full)),
+    #              ]
     #
-    # [p.start() for p in processes]  # 开启了两个进程
-    # [p.join() for p in processes]  # 等待两个进程依次结束
+    # [p.start() for p in processes]  # 开启进程
+    # [p.join() for p in processes]  # 等待进程依次结束
 
-    for gs_ipv in [-3, -2, -1, 0, 1, 2, 3]:
-        for lt_ipv in [-3, -2, -1, 0, 1, 2, 3]:
+    # for gs_ipv in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
+    #     for lt_ipv in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
+    for gs_ipv in [1]:
+        for lt_ipv in [-4]:
             simulate(gs_ipv, lt_ipv)
+
     toc = time.perf_counter()
 
     print(f"whole process takes {toc - tic:0.4f} seconds")

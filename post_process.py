@@ -7,7 +7,7 @@ import numpy as np
 "====import data===="
 gs_ipv = -1
 lt_ipv = 2
-filename = './outputs/' + 'agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_8' + '.pckl'
+filename = './outputs/version2/' + 'agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_8' + '.pckl'
 f = open(filename, 'rb')
 agent_lt, agent_gs = pickle.load(f)
 f.close()
