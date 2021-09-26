@@ -7,13 +7,13 @@ from tools.utility import get_central_vertices
 import time
 import pickle
 
-final_illustration_needed = 1
+final_illustration_needed = 0
 in_loop_illustration_needed = 0
 num_step = 20
 
-INITIAL_IPV_LEFT_TURN = math.pi / 4
-INITIAL_IPV_GO_STRAIGHT = 0 * math.pi / 4
-virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
+# INITIAL_IPV_LEFT_TURN = math.pi / 4
+# INITIAL_IPV_GO_STRAIGHT = 0 * math.pi / 4
+virtual_agent_IPV_range = np.array([-3.5, -3, -2, -1, 0, 1, 2, 3, 3.5]) * math.pi / 8
 
 
 def simulate(gs_ipv, lt_ipv):
@@ -44,11 +44,10 @@ def simulate(gs_ipv, lt_ipv):
 
         "==plan for left-turn=="
 
-        # interaction with parallel virtual agents
+        # ==interaction with parallel virtual agents
         virtual_gs_track_collection = []
         for ipv_temp in virtual_agent_IPV_range:
 
-            # print('idx: ', ipv_temp)
             count_lt = 0  # count number of iteration
             virtual_inter_gs = copy.deepcopy(agent_gs)
             virtual_inter_gs.ipv = ipv_temp
@@ -65,7 +64,7 @@ def simulate(gs_ipv, lt_ipv):
             virtual_gs_track_collection.append(virtual_inter_gs.trj_solution)
         agent_lt.estimated_inter_agent.virtual_track_collection.append(virtual_gs_track_collection)
 
-        # interaction with estimated agent
+        # ==interaction with estimated agent
         count_lt = 0  # count number of iteration
         track_last_lt = np.zeros_like(agent_lt.trj_solution)  # initialize a track reservation
         while np.linalg.norm(agent_lt.trj_solution[:, 0:2] - track_last_lt[:, 0:2]) > 1e-3:
@@ -83,7 +82,7 @@ def simulate(gs_ipv, lt_ipv):
         count_gs = 0  # count number of iteration
         track_last_gs = np.zeros_like(agent_gs.trj_solution)  # initialize a track reservation
 
-        # interaction with parallel virtual agents
+        # ==interaction with parallel virtual agents
         virtual_lt_track_collection = []
         for ipv_temp in virtual_agent_IPV_range:
             # print('idx: ', ipv_temp)
@@ -102,7 +101,7 @@ def simulate(gs_ipv, lt_ipv):
             virtual_lt_track_collection.append(virtual_inter_lt.trj_solution)
         agent_gs.estimated_inter_agent.virtual_track_collection.append(virtual_lt_track_collection)
 
-        # interaction with estimated agent
+        # ==interaction with estimated agent
         count_gs = 0  # count number of iteration
         track_last_gs = np.zeros_like(agent_gs.trj_solution)
         while np.linalg.norm(agent_gs.trj_solution[:, 0:2] - track_last_gs[:, 0:2]) > 1e-3:
@@ -187,7 +186,7 @@ def simulate(gs_ipv, lt_ipv):
                          alpha=0.4,
                          color='blue',
                          label='estimated gs IPV')
-        plt.plot(x_range, INITIAL_IPV_GO_STRAIGHT * np.ones_like(x_range), label='actual gs IPV')
+        plt.plot(x_range, gs_ipv * math.pi / 8 *  np.ones_like(x_range), label='actual gs IPV')
 
         y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
         y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
@@ -195,15 +194,13 @@ def simulate(gs_ipv, lt_ipv):
                          alpha=0.4,
                          color='red',
                          label='estimated lt IPV')
-        plt.plot(x_range, INITIAL_IPV_LEFT_TURN * np.ones_like(x_range), label='actual lt IPV')
+        plt.plot(x_range, lt_ipv * math.pi / 8 * np.ones_like(x_range), label='actual lt IPV')
 
 
 if __name__ == '__main__':
     tic = time.perf_counter()
     for gs_ipv in [-3, -2, -1, 0, 1, 2, 3]:
         for lt_ipv in [-3, -2, -1, 0, 1, 2, 3]:
-    # for gs_ipv in [3]:
-    #     for lt_ipv in [3]:
             simulate(gs_ipv, lt_ipv)
     toc = time.perf_counter()
     print(f"whole process takes {toc - tic:0.4f} seconds")

@@ -15,21 +15,6 @@ f.close()
 cv_init_it, _ = get_central_vertices('lt')
 cv_init_gs, _ = get_central_vertices('gs')
 
-"====real-time plan at each time step===="
-# plt.figure(1, figsize=(6, 8))
-# for t in range(len(agent_lt.trajectory)-1):
-#     # central vertices
-#     plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
-#     plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
-#
-#     # full tracks at each time step
-#     lt_track = agent_lt.trj_solution_collection[t]
-#     plt.plot(lt_track[:, 0], lt_track[:, 1], '--')
-#     gs_track = agent_gs.trj_solution_collection[t]
-#     plt.plot(gs_track[:, 0], gs_track[:, 1], '--')
-# plt.xlim(8, 20)
-# plt.ylim(-8, 8)
-
 "====final trajectory===="
 plt.figure(2, figsize=(6, 8))
 for t in range(len(agent_lt.trajectory)):

@@ -141,7 +141,7 @@ class Agent:
                 # likelihood of each candidate
                 var[i] = np.prod((1/sigma/np.sqrt(2*math.pi))*np.exp(-rel_dis**2/(2*sigma**2)))
 
-            weight = var/sum(var)
+            weight = np.log10(var)/sum(np.log10(var))
             print(weight)
 
             # weighted sum of all candidates' IPVs
