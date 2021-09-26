@@ -139,9 +139,11 @@ class Agent:
                 actual_track = inter_agent.trajectory[start_time:current_time, 0:2]
                 rel_dis = np.linalg.norm(virtual_track-actual_track, axis=0)
                 # likelihood of each candidate
-                var[i] = np.prod((1/sigma/np.sqrt(2*math.pi))*np.exp(-rel_dis**2/(2*sigma**2)))
+                var[i] = np.log10(np.prod((1/sigma/np.sqrt(2*math.pi))*np.exp(-rel_dis**2/(2*sigma**2))))
+                if var[i] < 0:
+                    var[i] = 0
 
-            weight = np.log10(var)/sum(np.log10(var))
+            weight = var/sum(var)
             print(weight)
 
             # weighted sum of all candidates' IPVs
@@ -266,32 +268,32 @@ def cal_group_cost(track_packed):
     return cost_group * WEIGHT_GRP
 
 
-def con_inter_opt(self_info, inter_info):
-    """
-    this is the constraint for KKT method
-    :param self_info:
-    :param inter_info:
-    :return: constraint function
-    """
-
-    def con(u):
-        track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3], TRACK_LEN, dt)
-        # track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
-        track_inter1 = kinematic_model(1.01 * u[TRACK_LEN * 2:], inter_info[0:3], TRACK_LEN, dt)
-        track_inter2 = kinematic_model(0.99 * u[TRACK_LEN * 2:], inter_info[0:3], TRACK_LEN, dt)
-
-        ut_inter1 = np.cos(inter_info[3]) * cal_interior_cost(track_inter1, inter_info[4]) + \
-                    np.sin(inter_info[3]) * cal_group_cost([track_self, track_inter1])
-        ut_inter2 = np.cos(inter_info[3]) * cal_interior_cost(track_inter2, inter_info[4]) + \
-                    np.sin(inter_info[3]) * cal_group_cost([track_self, track_inter2])
-
-        delta_ut = np.abs(ut_inter2 - ut_inter1)
-        # print('delta_ut', MAX_DELTA_UT - delta_ut)
-
-        return MAX_DELTA_UT - delta_ut
-        # return delta_ut
-
-    return con
+# def con_inter_opt(self_info, inter_info):
+#     """
+#     this is the constraint for KKT method
+#     :param self_info:
+#     :param inter_info:
+#     :return: constraint function
+#     """
+#
+#     def con(u):
+#         track_self = kinematic_model(u[0:TRACK_LEN * 2], self_info[0:3], TRACK_LEN, dt)
+#         # track_inter = kinematic_model(u[TRACK_LEN * 2:], inter_info[0:3])
+#         track_inter1 = kinematic_model(1.01 * u[TRACK_LEN * 2:], inter_info[0:3], TRACK_LEN, dt)
+#         track_inter2 = kinematic_model(0.99 * u[TRACK_LEN * 2:], inter_info[0:3], TRACK_LEN, dt)
+#
+#         ut_inter1 = np.cos(inter_info[3]) * cal_interior_cost(track_inter1, inter_info[4]) + \
+#                     np.sin(inter_info[3]) * cal_group_cost([track_self, track_inter1])
+#         ut_inter2 = np.cos(inter_info[3]) * cal_interior_cost(track_inter2, inter_info[4]) + \
+#                     np.sin(inter_info[3]) * cal_group_cost([track_self, track_inter2])
+#
+#         delta_ut = np.abs(ut_inter2 - ut_inter1)
+#         # print('delta_ut', MAX_DELTA_UT - delta_ut)
+#
+#         return MAX_DELTA_UT - delta_ut
+#         # return delta_ut
+#
+#     return con
 
 
 if __name__ == '__main__':

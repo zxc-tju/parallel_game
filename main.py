@@ -20,9 +20,9 @@ def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
     for gs_ipv in gs_ipv_set:
         for lt_ipv in lt_ipv_set:
             simulate(gs_ipv, lt_ipv)
-            print('go straight: ', gs_ipv)
-            print('left turn: ', lt_ipv)
-            print('#======process: ', process_id, 'finished')
+            # print('go straight: ', gs_ipv)
+            # print('left turn: ', lt_ipv)
+    print('#======process: ', process_id, 'finished')
 
 
 def simulate(gs_ipv, lt_ipv):
@@ -49,7 +49,7 @@ def simulate(gs_ipv, lt_ipv):
 
     "====IRB process===="
     for t in range(num_step):
-        print('time_step: ', t, '/', num_step)
+        # print('time_step: ', t, '/', num_step)
 
         "==plan for left-turn=="
         # ==interaction with parallel virtual agents
@@ -206,26 +206,27 @@ if __name__ == '__main__':
     from multiprocessing import Process
 
     tic = time.perf_counter()
-    # lt_ipv_set_full = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
-    # processes = [Process(target=multi_simulate, args=(1, [-4], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(2, [-3], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(3, [-2], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(1, [-1], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(2, [0], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(3, [1], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(1, [2], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(2, [3], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(3, [4], lt_ipv_set_full)),
-    #              ]
-    #
-    # [p.start() for p in processes]  # 开启进程
-    # [p.join() for p in processes]  # 等待进程依次结束
+    lt_ipv_set_full = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
+    processes = [Process(target=multi_simulate, args=(1, [-4], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(2, [-3], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(3, [-2], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(4, [-1], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(5, [0], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(6, [1], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(7, [2], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(8, [3], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(9, [4], lt_ipv_set_full)),
+                 ]
+
+    [p.start() for p in processes]  # 开启进程
+    [p.join() for p in processes]  # 等待进程依次结束
 
     # for gs_ipv in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
     #     for lt_ipv in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
-    for gs_ipv in [1]:
-        for lt_ipv in [-4]:
-            simulate(gs_ipv, lt_ipv)
+
+    # for gs_ipv in [1]:
+    #     for lt_ipv in [-4]:
+    #         simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()
 
