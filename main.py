@@ -122,10 +122,11 @@ def simulate(gs_ipv, lt_ipv):
         print("estimated gs ipv:", agent_lt.estimated_inter_agent.ipv)
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
-    filename = 'agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi/8' '.pckl'
+    filename = 'agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_8' + '.pckl'
     f = open(filename, 'wb')
     pickle.dump([agent_lt, agent_gs], f)
     f.close()
+    print('gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv), 'saved')
 
     # f = open(filename, 'rb')
     # agent_lt, agent_gs = pickle.load(f)
@@ -198,9 +199,11 @@ def simulate(gs_ipv, lt_ipv):
 
 
 if __name__ == '__main__':
-    # tic = time.perf_counter()
+    tic = time.perf_counter()
     for gs_ipv in [-3, -2, -1, 0, 1, 2, 3]:
         for lt_ipv in [-3, -2, -1, 0, 1, 2, 3]:
+    # for gs_ipv in [3]:
+    #     for lt_ipv in [3]:
             simulate(gs_ipv, lt_ipv)
-    # toc = time.perf_counter()
-    # print(f"whole process takes {toc - tic:0.4f} seconds")
+    toc = time.perf_counter()
+    print(f"whole process takes {toc - tic:0.4f} seconds")
