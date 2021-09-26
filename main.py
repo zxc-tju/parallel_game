@@ -16,11 +16,19 @@ num_step = 20
 virtual_agent_IPV_range = np.array([-3.5, -3, -2, -1, 0, 1, 2, 3, 3.5]) * math.pi / 8
 
 
+def multi_simulate(process_id, gs_ipv, lt_ipv_set):
+    for lt_ipv in lt_ipv_set:
+        simulate(gs_ipv, lt_ipv)
+        print('go straight: ', gs_ipv)
+        print('left turn: ', lt_ipv)
+        print('process: ', process_id, 'finished')
+
+
 def simulate(gs_ipv, lt_ipv):
     # initial state of the left-turn vehicle
     init_position_lt = np.array([13, -7])
     init_velocity_lt = np.array([2, 0.3])
-    init_heading_lt = math.pi/4
+    init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
     init_velocity_gs = np.array([-2, 0])
@@ -182,11 +190,11 @@ def simulate(gs_ipv, lt_ipv):
         x_range = np.array(range(len(agent_lt.estimated_inter_agent.ipv_collection)))
         y_lt = np.array(agent_lt.estimated_inter_agent.ipv_collection)
         y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
-        plt.fill_between(x_range, y_lt-y_error_lt, y_lt+y_error_lt,
+        plt.fill_between(x_range, y_lt - y_error_lt, y_lt + y_error_lt,
                          alpha=0.4,
                          color='blue',
                          label='estimated gs IPV')
-        plt.plot(x_range, gs_ipv * math.pi / 8 *  np.ones_like(x_range), label='actual gs IPV')
+        plt.plot(x_range, gs_ipv * math.pi / 8 * np.ones_like(x_range), label='actual gs IPV')
 
         y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
         y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
@@ -198,7 +206,15 @@ def simulate(gs_ipv, lt_ipv):
 
 
 if __name__ == '__main__':
+    from multiprocessing import Process
+
     tic = time.perf_counter()
+    # processes = [Process(target=multi_simulate, args=(1, 1, [-3, -2, -1, 0, 1, 2, 3])),
+    #              Process(target=multi_simulate, args=(2, 1, [-3, -2, -1, 0, 1, 2, 3])), ]
+    #
+    # [p.start() for p in processes]  # 开启了两个进程
+    # [p.join() for p in processes]  # 等待两个进程依次结束
+
     for gs_ipv in [-3, -2, -1, 0, 1, 2, 3]:
         for lt_ipv in [-3, -2, -1, 0, 1, 2, 3]:
             simulate(gs_ipv, lt_ipv)
