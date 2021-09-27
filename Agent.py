@@ -126,7 +126,7 @@ class Agent:
         self.trj_solution_collection.append(self.trj_solution)
 
         # update IPV
-        current_time = len(self.trajectory) - 1
+        current_time = np.size(self.trajectory, 0) - 1
         if current_time > 1:
             start_time = max(0, current_time - 6)
             time_duration = current_time - start_time
@@ -143,7 +143,7 @@ class Agent:
                 if var[i] < 0:
                     var[i] = 0
 
-            weight = var/sum(var)
+            weight = var/(sum(var) + 1e-6)
             print(weight)
 
             # weighted sum of all candidates' IPVs

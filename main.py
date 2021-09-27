@@ -130,7 +130,7 @@ def simulate(gs_ipv, lt_ipv):
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====save data===="
-    filename = './outputs/version2/agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_9' + '.pckl'
+    filename = './outputs/version3/agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_9' + '.pckl'
     f = open(filename, 'wb')
     pickle.dump([agent_lt, agent_gs], f)
     f.close()
@@ -217,7 +217,6 @@ if __name__ == '__main__':
                  Process(target=multi_simulate, args=(8, [3], lt_ipv_set_full)),
                  Process(target=multi_simulate, args=(9, [4], lt_ipv_set_full)),
                  ]
-
     [p.start() for p in processes]  # 开启进程
     [p.join() for p in processes]  # 等待进程依次结束
 
@@ -225,7 +224,7 @@ if __name__ == '__main__':
     #     for lt_ipv in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
 
     # for gs_ipv in [1]:
-    #     for lt_ipv in [-4]:
+    #     for lt_ipv in [1]:
     #         simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()
