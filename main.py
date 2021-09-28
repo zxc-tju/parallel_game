@@ -32,7 +32,7 @@ def simulate(gs_ipv, lt_ipv):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-2, 0])
+    init_velocity_gs = np.array([-1, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -130,7 +130,7 @@ def simulate(gs_ipv, lt_ipv):
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====save data===="
-    filename = './outputs/version3/agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_9' + '.pckl'
+    filename = './outputs/version5/agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_9' + '.pckl'
     f = open(filename, 'wb')
     pickle.dump([agent_lt, agent_gs], f)
     f.close()
@@ -191,7 +191,7 @@ def simulate(gs_ipv, lt_ipv):
                          alpha=0.4,
                          color='blue',
                          label='estimated gs IPV')
-        plt.plot(x_range, gs_ipv * math.pi / 8 * np.ones_like(x_range), label='actual gs IPV')
+        plt.plot(x_range, gs_ipv * math.pi / 9 * np.ones_like(x_range), label='actual gs IPV')
 
         y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
         y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
@@ -199,7 +199,7 @@ def simulate(gs_ipv, lt_ipv):
                          alpha=0.4,
                          color='red',
                          label='estimated lt IPV')
-        plt.plot(x_range, lt_ipv * math.pi / 8 * np.ones_like(x_range), label='actual lt IPV')
+        plt.plot(x_range, lt_ipv * math.pi / 9 * np.ones_like(x_range), label='actual lt IPV')
 
 
 if __name__ == '__main__':
