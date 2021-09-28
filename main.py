@@ -32,7 +32,7 @@ def simulate(gs_ipv, lt_ipv):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-1, 0])
+    init_velocity_gs = np.array([0, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -130,7 +130,7 @@ def simulate(gs_ipv, lt_ipv):
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====save data===="
-    filename = './outputs/version5/agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_9' + '.pckl'
+    filename = './outputs/version6/agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_9' + '.pckl'
     f = open(filename, 'wb')
     pickle.dump([agent_lt, agent_gs], f)
     f.close()

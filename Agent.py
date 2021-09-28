@@ -12,7 +12,7 @@ TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 2
-WEIGHT_DEVIATION = 0.5
+WEIGHT_DEVIATION = 0.4
 WEIGHT_CHANGE = 0.2
 
 # parameters of action bounds
