@@ -15,12 +15,13 @@ num_step = 20
 
 
 def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
+    count = 0
+    num_all = len(gs_ipv_set) * len(lt_ipv_set)
     for gs_ipv_temp in gs_ipv_set:
         for lt_ipv_temp in lt_ipv_set:
             simulate(gs_ipv_temp, lt_ipv_temp)
-            # print('go straight: ', gs_ipv)
-            # print('left turn: ', lt_ipv)
-    print('#======process: ', process_id, 'finished')
+            count += 1
+            print('#======process ', process_id, ':', count/num_all*100, '%')
 
 
 def simulate(gs_ipv_sim, lt_ipv_sim):
@@ -74,9 +75,9 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====save data===="
-    filename = './outputs/version6/agents_info' \
+    filename = './outputs/version7/agents_info' \
                + '_gs_' + str(gs_ipv_sim) \
-               + '_lt_' + str(lt_ipv_sim) + '_math.pi_9' + '.pckl'
+               + '_lt_' + str(lt_ipv_sim) + '.pckl'
     f = open(filename, 'wb')
     pickle.dump([agent_lt, agent_gs], f)
     f.close()

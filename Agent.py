@@ -44,7 +44,7 @@ class Agent:
                                               self.velocity[1],
                                               self.heading], ])
         # trajectory plan at each time step
-        self.trj_solution = np.repeat([position], TRACK_LEN + 1, axis=0)
+        self.trj_solution = np.repeat([position], TRACK_LEN, axis=0)
         # collection of trajectory plans at every time step
         self.trj_solution_collection = []
         self.estimated_inter_agent = None
@@ -63,14 +63,14 @@ class Agent:
         p, v, h = self_info[0:3]
         init_state_4_kine = [p[0], p[1], v[0], v[1], h]
         fun = utility_IBR(self_info, inter_track)
-        u0 = np.zeros([track_len * 2, 1])
-        bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(track_len)] + \
-              [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(track_len)]
+        u0 = np.zeros([(track_len - 1) * 2, 1])
+        bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(track_len - 1)] + \
+              [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(track_len - 1)]
 
         res = minimize(fun, u0, bounds=bds, method='SLSQP')
 
         # print(res.success)
-        x = np.reshape(res.x, [2, track_len]).T
+        x = np.reshape(res.x, [2, track_len - 1]).T
         self.trj_solution = kinematic_model(x, init_state_4_kine, track_len, dt)
         return self.trj_solution
 
@@ -287,7 +287,7 @@ def cal_reliability(act_trck, vir_trck_coll):
             var[i] = 0
 
     weight = var / (sum(var) + 1e-6)
-    print(weight)
+    # print(weight)
     return weight
 
 
