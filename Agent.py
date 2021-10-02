@@ -21,6 +21,7 @@ MAX_ACCELERATION = 3.0
 
 # initial guess on interacting agent's IPV
 INITIAL_IPV_GUESS = 0
+virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
 # weight of interior and group cost
 WEIGHT_INT = 5
@@ -36,15 +37,15 @@ class Agent:
         self.velocity = velocity
         self.heading = heading
         self.target = target
-        # conducted trajectory
-        self.trajectory = np.array([[self.position[0],
-                                    self.position[1],
-                                    self.velocity[0],
-                                    self.velocity[1],
-                                    self.heading], ])
-        # trajectory plan at each time step
+        # conducted observed_trajectory
+        self.observed_trajectory = np.array([[self.position[0],
+                                              self.position[1],
+                                              self.velocity[0],
+                                              self.velocity[1],
+                                              self.heading], ])
+        # observed_trajectory plan at each time step
         self.trj_solution = np.repeat([position], TRACK_LEN + 1, axis=0)
-        # collection of trajectory plans at every time step
+        # collection of observed_trajectory plans at every time step
         self.trj_solution_collection = []
         self.estimated_inter_agent = None
         self.ipv = 0
@@ -59,7 +60,7 @@ class Agent:
     #     :return:
     #     """
     #     # accessible info. on interacting counterpart:
-    #     #   1. trajectory history: inter_agent.trajectory
+    #     #   1. observed_trajectory history: inter_agent.observed_trajectory
     #     #   2. ipv guess: self.ipv_guess
     #     self_info = [self.position,
     #                  self.velocity,
@@ -108,7 +109,49 @@ class Agent:
         x = np.reshape(res.x, [2, TRACK_LEN]).T
         self.trj_solution = kinematic_model(x, init_state_4_kine, TRACK_LEN, dt)
 
-    def update_state(self, inter_agent, virtual_agent_IPV_range):
+    def interact_with_parallel_virtual_agents(self, agent_inter):
+        """
+        generate copy of the interacting agent and interact with them
+        :param agent_inter: Agent:interacting agent
+        :return:
+        """
+        virtual_agent_track_collection = []
+
+        for ipv_temp in virtual_agent_IPV_range:
+            # print('idx: ', ipv_temp)
+            count_iter = 0  # count number of iteration
+            last_self_track = np.zeros_like(self.trj_solution)  # initialize a track reservation
+            virtual_inter_agent = copy.deepcopy(agent_inter)
+            agent_self_temp = copy.deepcopy(self)
+            virtual_inter_agent.ipv = ipv_temp
+
+            while np.linalg.norm(agent_self_temp.trj_solution[:, 0:2] - last_self_track[:, 0:2]) > 1e-3:
+                count_iter += 1
+                last_self_track = agent_self_temp.trj_solution
+                agent_self_temp.solve_game_IBR(virtual_inter_agent.trj_solution)
+                virtual_inter_agent.solve_game_IBR(agent_self_temp.trj_solution)
+                if count_iter > 10:
+                    count_iter = 0
+                    break
+            virtual_agent_track_collection.append(virtual_inter_agent.trj_solution)
+        self.estimated_inter_agent.virtual_track_collection.append(virtual_agent_track_collection)
+
+    def interact_with_estimated_virtual_agents(self):
+        """
+        interact with the estimated interacting agent. this agent's IPV is continuously updated.
+        :return:
+        """
+        count_iter = 0  # count number of iteration
+        last_self_track = np.zeros_like(self.trj_solution)  # initialize a track reservation
+        while np.linalg.norm(self.trj_solution[:, 0:2] - last_self_track[:, 0:2]) > 1e-3:
+            count_iter += 1
+            last_self_track = self.trj_solution
+            self.solve_game_IBR(self.estimated_inter_agent.trj_solution)
+            self.estimated_inter_agent.solve_game_IBR(self.trj_solution)
+            if count_iter > 10:  # limited to less than 10 iterations
+                break
+
+    def update_state(self, inter_agent):
         self.position = self.trj_solution[1, 0:2]
         self.velocity = self.trj_solution[1, 2:4]
         self.heading = self.trj_solution[1, -1]
@@ -121,12 +164,12 @@ class Agent:
                                     self.velocity[0],
                                     self.velocity[1],
                                     self.heading], ])
-        self.trajectory = np.concatenate((self.trajectory, new_track_point), axis=0)
+        self.observed_trajectory = np.concatenate((self.observed_trajectory, new_track_point), axis=0)
 
         self.trj_solution_collection.append(self.trj_solution)
 
         # update IPV
-        current_time = np.size(self.trajectory, 0) - 1
+        current_time = np.size(self.observed_trajectory, 0) - 1
         if current_time > 1:
             start_time = max(0, current_time - 6)
             time_duration = current_time - start_time
@@ -136,7 +179,7 @@ class Agent:
 
             for i in range(len(candidates)):
                 virtual_track = candidates[i][0:time_duration, 0:2]
-                actual_track = inter_agent.trajectory[start_time:current_time, 0:2]
+                actual_track = inter_agent.observed_trajectory[start_time:current_time, 0:2]
                 rel_dis = np.linalg.norm(virtual_track-actual_track, axis=0)
                 # likelihood of each candidate
                 var[i] = np.log10(np.prod((1/sigma/np.sqrt(2*math.pi))*np.exp(-rel_dis**2/(2*sigma**2))))
@@ -303,12 +346,12 @@ if __name__ == '__main__':
     # velocity = np.array([3, 3])
     # heading = np.array([math.pi/4])
     # init_info = [position, velocity, heading]
-    # trajectory = kinematic_model(action, init_info)
-    # x = trajectory[:, 0]
-    # y = trajectory[:, 1]
+    # observed_trajectory = kinematic_model(action, init_info)
+    # x = observed_trajectory[:, 0]
+    # y = observed_trajectory[:, 1]
     # plt.figure()
     # plt.plot(x, y, 'r-')
-    # # plt.plot(trajectory[:, 3], 'r-')
+    # # plt.plot(observed_trajectory[:, 3], 'r-')
     # plt.axis('equal')
     # plt.show()
 
