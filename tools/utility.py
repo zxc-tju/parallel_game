@@ -37,6 +37,10 @@ def get_central_vertices(cv_type):
         cv_init = np.array([[0, -15], [5, -14.14], [10.6, -10.6], [15, 0], [15, 100]])
     elif cv_type == 'gs':  # go straight
         cv_init = np.array([[20, -2], [10, -2], [0, -2], [-150, -2]])
+    elif cv_type == 'lt_nds':  # left turn in NDS
+        cv_init = np.array([[17, 42], [20, 27], [27, 17], [40, 17]])
+    elif cv_type == 'gs_nds':  # go straight in NDS
+        cv_init = np.array([[18, -5], [19, 9], [21, 37], [22, 51]])
     assert cv_init is not None
     cv_smoothed, s_accumulated = smooth_cv(cv_init)
     return cv_smoothed, s_accumulated

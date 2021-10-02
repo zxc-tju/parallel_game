@@ -49,6 +49,7 @@ class Agent:
         self.trj_solution_collection = []
         self.estimated_inter_agent = None
         self.ipv = 0
+        self.ipv_error = None
         self.ipv_collection = []
         self.ipv_error_collection = []
         self.virtual_track_collection = []
@@ -126,10 +127,10 @@ class Agent:
         self.estimated_inter_agent.heading = inter_agent.trj_solution[1, -1]
 
         new_track_point = np.array([[self.position[0],
-                                    self.position[1],
-                                    self.velocity[0],
-                                    self.velocity[1],
-                                    self.heading], ])
+                                     self.position[1],
+                                     self.velocity[0],
+                                     self.velocity[1],
+                                     self.heading], ])
         self.observed_trajectory = np.concatenate((self.observed_trajectory, new_track_point), axis=0)
 
         self.trj_solution_collection.append(self.trj_solution)
@@ -157,7 +158,7 @@ class Agent:
             error = 1 - np.sqrt(sum(ipv_weight ** 2))
             self.estimated_inter_agent.ipv_error_collection.append(error)
 
-    def estimate_self_ipv_in_NDS(self, inter_track, self_actual_track):
+    def estimate_self_ipv_in_NDS(self, self_actual_track, inter_track):
         self_virtual_track_collection = []
         # ipv_range = np.random.normal(self.ipv, math.pi/6, 6)
         ipv_range = virtual_agent_IPV_range
@@ -167,19 +168,18 @@ class Agent:
             # generate track with varied ipv
             virtual_track_temp = agent_self_temp.solve_game_IBR(inter_track)
             # save track into a collection
-            self_virtual_track_collection.append(virtual_track_temp)
+            self_virtual_track_collection.append(virtual_track_temp[:, 0:2])
 
         # calculate reliability of each track
         ipv_weight = cal_reliability(self_actual_track, self_virtual_track_collection)
 
         # weighted sum of all candidates' IPVs
         self.ipv = sum(ipv_range * ipv_weight)
+        self.ipv_error = 1 - np.sqrt(sum(ipv_weight ** 2))
 
-        # save updated ipv and estimation error
-        self.ipv_collection.append(self.ipv)
-        mean_ipv_range = np.mean(ipv_range)
-        error = 1 - np.sqrt(sum(ipv_weight) ** 2)
-        self.ipv_error_collection.append(error)
+        # # save updated ipv and estimation error
+        # self.ipv_collection.append(self.ipv)
+        # self.ipv_error_collection.append(self.ipv_error)
 
     def draw(self):
         cv_init_it, _ = get_central_vertices('lt')
@@ -278,13 +278,22 @@ def cal_reliability(act_trck, vir_trck_coll):
     :param vir_trck_coll: virtual_track_collection
     :return:
     """
+    sigma_nds = 0.2
     candidates_num = len(vir_trck_coll)
     var = np.zeros(candidates_num)
     for i in range(candidates_num):
         virtual_track = vir_trck_coll[i]
-        rel_dis = np.linalg.norm(virtual_track - act_trck, axis=0)
+        rel_dis = np.linalg.norm(virtual_track - act_trck, axis=1)
         # likelihood of each candidate
-        var[i] = np.log10(np.prod((1 / sigma / np.sqrt(2 * math.pi)) * np.exp(-rel_dis ** 2 / (2 * sigma ** 2))))
+        var[i] = np.log10(
+            np.prod(
+                (10 / sigma_nds / np.sqrt(2 * math.pi))
+                * np.exp(-rel_dis ** 2 / (2 * sigma_nds ** 2))
+            )
+        )
+        # print(1 / sigma_nds / np.sqrt(2 * math.pi))
+        # print(np.exp(-rel_dis ** 2 / (2 * sigma_nds ** 2)))
+        # print(np.prod((1 / sigma_nds / np.sqrt(2 * math.pi))* np.exp(-rel_dis ** 2 / (2 * sigma_nds ** 2))))
         if var[i] < 0:
             var[i] = 0
 

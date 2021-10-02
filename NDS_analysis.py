@@ -39,32 +39,37 @@ def analyze_nds(case_id):
             init_id += 1
 
     # identify IPV
-    for i in range(np.size(gs_info_multi, 0)):
-        if inter_d[i] - inter_o[i] > 0:  # interaction is solid
+    for t in range(np.size(lt_info, 0)):
+        inter_id = 0
+        for i in range(np.size(gs_info_multi, 0)):
+            if inter_o[i] <= t < inter_d[i]:
+                inter_id = i
+        start_time = max(int(inter_o[inter_id]), t - 6)
+
+        if t - start_time < 3:
+            continue
+        else:
             # generate two agents
-            init_position_gs = gs_info_multi[i][int(inter_o[i]), 0:2]
-            init_velocity_gs = gs_info_multi[i][int(inter_o[i]), 2:4]
-            init_heading_gs = gs_info_multi[i][int(inter_o[i]), 4]
+            init_position_gs = gs_info_multi[inter_id][start_time, 0:2]
+            init_velocity_gs = gs_info_multi[inter_id][start_time, 2:4]
+            init_heading_gs = gs_info_multi[inter_id][start_time, 4]
             agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs_nds')
-            agent_gs.observed_trajectory = gs_info_multi[i][int(inter_o[i]):int(inter_d[i]), 0:2]
+            gs_track = gs_info_multi[inter_id][start_time:t+1, 0:2]
 
-            init_position_lt = lt_info[int(inter_o[i]), 0:2]
-            init_velocity_lt = lt_info[int(inter_o[i]), 2:4]
-            init_heading_lt = lt_info[int(inter_o[i]), 4]
+            init_position_lt = lt_info[start_time, 0:2]
+            init_velocity_lt = lt_info[start_time, 2:4]
+            init_heading_lt = lt_info[start_time, 4]
             agent_lt = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt_nds')
-            agent_lt.observed_trajectory = lt_info[int(inter_o[i]):int(inter_d[i]), 0:2]
+            lt_track = lt_info[start_time:t+1, 0:2]
 
-            if inter_d[i] - inter_o[i] <= 10:  # TRACK_LEN = 10
-                continue
-            else:
-                for t in range(int(inter_o[i]), int(inter_d[i])-10):
-                    # publish self solution
-                    gs_track = agent_gs.observed_trajectory[t:t + 10, 0:2]
-                    lt_track = agent_lt.observed_trajectory[t:t + 10, 0:2]
-                    # generate solution for each other, given self solution is published
-                    agent_gs.estimate_self_ipv_in_NDS(gs_track, lt_track)
-                    agent_lt.estimate_self_ipv_in_NDS(lt_track, gs_track)
+            # generate solution for each other, given self solution is published
+            agent_gs.estimate_self_ipv_in_NDS(gs_track, lt_track)
+            # print(agent_gs.ipv, agent_gs.ipv_error)
+            agent_lt.estimate_self_ipv_in_NDS(lt_track, gs_track)
+            print(agent_lt.ipv, agent_lt.ipv_error)
+            # agent_gs = []
+            # agent_lt = []
 
 
 if __name__ == '__main__':
-    analyze_nds(1)
+    analyze_nds(4)
