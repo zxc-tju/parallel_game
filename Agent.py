@@ -81,8 +81,8 @@ class Agent:
         :return:
         """
         virtual_agent_track_collection = []
-
-        for ipv_temp in virtual_agent_IPV_range:
+        self.estimated_inter_agent.ipv_range = np.random.normal(self.estimated_inter_agent.ipv, math.pi / 6, 6)
+        for ipv_temp in self.estimated_inter_agent.ipv_range:
             # print('idx: ', ipv_temp)
             virtual_inter_agent = copy.deepcopy(agent_inter)
             virtual_inter_agent.ipv = ipv_temp
@@ -149,7 +149,7 @@ class Agent:
             ipv_weight = cal_reliability(actual_track, virtual_track_collection)
 
             # weighted sum of all candidates' IPVs
-            self.estimated_inter_agent.ipv = sum(virtual_agent_IPV_range * ipv_weight)
+            self.estimated_inter_agent.ipv = sum(self.estimated_inter_agent.ipv_range * ipv_weight)
 
             # save updated ipv and estimation error
             self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
@@ -174,9 +174,9 @@ class Agent:
         self.ipv = sum(ipv_range * ipv_weight)
 
         # save updated ipv and estimation error
-        self.ipv_collection.append(self.estimated_inter_agent.ipv)
+        self.ipv_collection.append(self.ipv)
         mean_ipv_range = np.mean(ipv_range)
-        error = np.sqrt(sum(ipv_weight * (ipv_range-mean_ipv_range) ** 2))
+        error = 1 - np.sqrt(sum(ipv_weight) ** 2)
         self.ipv_error_collection.append(error)
 
     def draw(self):
