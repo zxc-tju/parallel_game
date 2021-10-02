@@ -15,30 +15,30 @@ f.close()
 cv_init_it, _ = get_central_vertices('lt')
 cv_init_gs, _ = get_central_vertices('gs')
 
-"====final trajectory===="
+"====final observed_trajectory===="
 plt.figure(2, figsize=(6, 8))
-for t in range(len(agent_lt.trajectory)):
+for t in range(len(agent_lt.observed_trajectory)):
     plt.clf()
     # central vertices
     plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
     plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
     # left-turn
-    plt.scatter(agent_lt.trajectory[:t + 1, 0],
-                agent_lt.trajectory[:t + 1, 1],
+    plt.scatter(agent_lt.observed_trajectory[:t + 1, 0],
+                agent_lt.observed_trajectory[:t + 1, 1],
                 s=100,
                 alpha=0.6,
                 color='red',
                 label='left-turn')
 
     # go-straight
-    plt.scatter(agent_gs.trajectory[:t + 1, 0],
-                agent_gs.trajectory[:t + 1, 1],
+    plt.scatter(agent_gs.observed_trajectory[:t + 1, 0],
+                agent_gs.observed_trajectory[:t + 1, 1],
                 s=100,
                 alpha=0.6,
                 color='blue',
                 label='go-straight')
 
-    if t < len(agent_lt.trajectory) - 1:
+    if t < len(agent_lt.observed_trajectory) - 1:
         # real-time virtual plans of ## ego ## at time step t
         lt_track = agent_lt.trj_solution_collection[t]
         plt.plot(lt_track[:, 0], lt_track[:, 1], '--', linewidth=3)
@@ -54,8 +54,8 @@ for t in range(len(agent_lt.trajectory)):
             plt.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
 
     # position link
-    plt.plot([agent_lt.trajectory[t, 0], agent_gs.trajectory[t, 0]],
-             [agent_lt.trajectory[t, 1], agent_gs.trajectory[t, 1]], color='gray', alpha=0.1)
+    plt.plot([agent_lt.observed_trajectory[t, 0], agent_gs.observed_trajectory[t, 0]],
+             [agent_lt.observed_trajectory[t, 1], agent_gs.observed_trajectory[t, 1]], color='gray', alpha=0.1)
     plt.xlim(8, 20)
     plt.ylim(-8, 8)
     plt.pause(0.7)
