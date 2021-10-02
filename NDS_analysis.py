@@ -7,10 +7,7 @@ mat = scipy.io.loadmat('./data/NDS_data.mat')
 inter_num = mat['interactagentnumpost']
 inter_info = mat['interactinfo']
 
-
-# class Scenario:
-#     def __init__(self):
-#         self.lt_agent = Agent()
+virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
 
 def analyze_nds(case_id):
@@ -55,30 +52,18 @@ def analyze_nds(case_id):
             init_velocity_lt = lt_info[int(inter_o[i]), 2:4]
             init_heading_lt = lt_info[int(inter_o[i]), 4]
             agent_lt = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt_nds')
-            agent_gs.observed_trajectory = lt_info[int(inter_o[i]):int(inter_d[i]), 0:2]
+            agent_lt.observed_trajectory = lt_info[int(inter_o[i]):int(inter_d[i]), 0:2]
 
-            if inter_d[i] - inter_o[i] <= 6:
+            if inter_d[i] - inter_o[i] <= 10:  # TRACK_LEN = 10
                 continue
             else:
-                for t in range(int(inter_o[i]), int(inter_d[i])-6):
+                for t in range(int(inter_o[i]), int(inter_d[i])-10):
+                    # publish self solution
+                    gs_track = agent_gs.observed_trajectory[t:t + 10, 0:2]
+                    lt_track = agent_lt.observed_trajectory[t:t + 10, 0:2]
                     # generate solution for each other, given self solution is published
-                    virtual_lt_track_collection = []
-                    for ipv_temp in virtual_agent_IPV_range:
-                        # print('idx: ', ipv_temp)
-                        virtual_inter_lt = copy.deepcopy(agent_lt)
-                        agent_gs_temp = copy.deepcopy(agent_gs)
-                        virtual_inter_lt.ipv = ipv_temp
-
-                        while np.linalg.norm(agent_gs_temp.trj_solution[:, 0:2] - track_last_gs[:, 0:2]) > 1e-3:
-                            count_gs += 1
-                            track_last_gs = agent_gs_temp.trj_solution
-                            agent_gs_temp.solve_game_IBR(virtual_inter_lt.trj_solution)
-                            virtual_inter_lt.solve_game_IBR(agent_gs_temp.trj_solution)
-                            if count_gs > 10:
-                                count_gs = 0
-                                break
-                        virtual_lt_track_collection.append(virtual_inter_lt.trj_solution)
-                    agent_gs.estimated_inter_agent.virtual_track_collection.append(virtual_lt_track_collection)
+                    agent_gs.estimate_self_ipv_in_NDS(gs_track, lt_track)
+                    agent_lt.estimate_self_ipv_in_NDS(lt_track, gs_track)
 
 
 if __name__ == '__main__':

@@ -169,8 +169,8 @@ if __name__ == '__main__':
     # [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
-    for gs_ipv in [1]:
-        for lt_ipv in [1]:
+    for gs_ipv in [3]:
+        for lt_ipv in [0]:
             simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()
