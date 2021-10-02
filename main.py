@@ -31,7 +31,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([0, 0])
+    init_velocity_gs = np.array([-2, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents

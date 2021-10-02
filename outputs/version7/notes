@@ -2,4 +2,4 @@ change:
 
 init_velocity_gs = np.array([0, 0]) → np.array([-2, 0])
 
-use new ipv generation policy: sampling from normal distribution centralized by ipv of last time step
+fix some bugs
