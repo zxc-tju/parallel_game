@@ -12,7 +12,7 @@ TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 2
-WEIGHT_DEVIATION = 0.4
+WEIGHT_DEVIATION = 0.1
 WEIGHT_CHANGE = 0.2
 
 # parameters of action bounds
@@ -28,7 +28,7 @@ WEIGHT_INT = 5
 WEIGHT_GRP = 1.5
 
 # likelihood function
-sigma = math.pi / 40
+sigma = 0.2
 
 
 class Agent:
@@ -168,10 +168,10 @@ class Agent:
             # generate track with varied ipv
             virtual_track_temp = agent_self_temp.solve_game_IBR(inter_track)
             # save track into a collection
-            self_virtual_track_collection.append(virtual_track_temp[:, 0:2])
+            self.virtual_track_collection.append(virtual_track_temp[:, 0:2])
 
         # calculate reliability of each track
-        ipv_weight = cal_reliability(self_actual_track, self_virtual_track_collection)
+        ipv_weight = cal_reliability(self_actual_track, self.virtual_track_collection)
 
         # weighted sum of all candidates' IPVs
         self.ipv = sum(ipv_range * ipv_weight)
@@ -278,26 +278,37 @@ def cal_reliability(act_trck, vir_trck_coll):
     :param vir_trck_coll: virtual_track_collection
     :return:
     """
-    sigma_nds = 0.2
+
     candidates_num = len(vir_trck_coll)
     var = np.zeros(candidates_num)
     for i in range(candidates_num):
         virtual_track = vir_trck_coll[i]
         rel_dis = np.linalg.norm(virtual_track - act_trck, axis=1)
         # likelihood of each candidate
-        var[i] = np.log10(
-            np.prod(
-                (10 / sigma_nds / np.sqrt(2 * math.pi))
-                * np.exp(-rel_dis ** 2 / (2 * sigma_nds ** 2))
-            )
-        )
-        # print(1 / sigma_nds / np.sqrt(2 * math.pi))
-        # print(np.exp(-rel_dis ** 2 / (2 * sigma_nds ** 2)))
-        # print(np.prod((1 / sigma_nds / np.sqrt(2 * math.pi))* np.exp(-rel_dis ** 2 / (2 * sigma_nds ** 2))))
+        # print((1 / sigma / np.sqrt(2 * math.pi)))
+        # print(np.exp(-rel_dis ** 2 / (2 * sigma ** 2)))
+        # print(np.prod(
+        #             (1 / sigma / np.sqrt(2 * math.pi))
+        #             * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
+        #         ))
+        # print(np.power(
+        #         np.prod(
+        #             (1 / sigma / np.sqrt(2 * math.pi))
+        #             * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
+        #         )
+        #         , 1 / np.size(act_trck, 0)))
+
+        var[i] = np.power(
+                np.prod(
+                    (1 / sigma / np.sqrt(2 * math.pi))
+                    * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
+                )
+                , 1 / np.size(act_trck, 0))
+
         if var[i] < 0:
             var[i] = 0
 
-    weight = var / (sum(var) + 1e-6)
+    weight = var / (sum(var))
     # print(weight)
     return weight
 

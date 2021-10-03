@@ -44,13 +44,22 @@ def analyze_nds(case_id):
     start_time = 0
     ipv_collection = np.zeros_like(lt_info[:, 0:2])
     ipv_error_collection = np.ones_like(lt_info[:, 0:2])
+
+    # set figure
+    fig = plt.figure(1)
+    ax1 = fig.add_subplot(121)
+
+    ax2 = fig.add_subplot(122)
+    ax2.set(xlim=[-22, 53], ylim=[-31, 57])
+    img = plt.imread('Jianhexianxia.jpg')
+    ax2.imshow(img, extent=[-22, 53, -31, 57])
     for t in range(np.size(lt_info, 0)):
         inter_id = None
         for i in range(np.size(gs_info_multi, 0)):
             if inter_o[i] <= t < inter_d[i]:
                 inter_id = i
                 print('inter_id', inter_id)
-                start_time = max(int(inter_o[inter_id]), t - 6)
+                start_time = max(int(inter_o[inter_id]), t - 10)
         # print(start_time)
 
         if (inter_id is not None) and (t - start_time >= 3):
@@ -84,16 +93,15 @@ def analyze_nds(case_id):
             print('no results, more observation needed')
 
         if t > 3:
+            ax1.cla()
+            ax1.set(ylim=[-2, 2])
             x_range = range(max(0, t - 10), t)
-
-            plt.figure(1)
-            plt.clf()
             # print(ipv_collection[x_range, 0])
             smoothed_ipv_lt, _ = smooth_cv(np.array([x_range, ipv_collection[x_range, 0]]).T)
             smoothed_ipv_error_lt, _ = smooth_cv(np.array([x_range, ipv_error_collection[x_range, 0]]).T)
             smoothed_x = smoothed_ipv_lt[:, 0]
-            plt.plot(smoothed_x, smoothed_ipv_lt[:, 1], 'blue')
-            plt.fill_between(smoothed_x, smoothed_ipv_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
+            ax1.plot(smoothed_x, smoothed_ipv_lt[:, 1], 'blue')
+            ax1.fill_between(smoothed_x, smoothed_ipv_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
                              smoothed_ipv_lt[:, 1] + smoothed_ipv_error_lt[:, 1],
                              alpha=0.4,
                              color='blue',
@@ -101,27 +109,34 @@ def analyze_nds(case_id):
 
             smoothed_ipv_gs, _ = smooth_cv(np.array([x_range, ipv_collection[x_range, 1]]).T)
             smoothed_ipv_error_gs, _ = smooth_cv(np.array([x_range, ipv_error_collection[x_range, 1]]).T)
-            plt.plot(smoothed_x, smoothed_ipv_gs[:, 1], 'red')
-            plt.fill_between(smoothed_x, smoothed_ipv_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
+            ax1.plot(smoothed_x, smoothed_ipv_gs[:, 1], 'red')
+            ax1.fill_between(smoothed_x, smoothed_ipv_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
                              smoothed_ipv_gs[:, 1] + smoothed_ipv_error_gs[:, 1],
                              alpha=0.4,
                              color='red',
                              label='estimated gs IPV')
-            plt.figure(2)
+
             # print(init_position_lt[0])
             # print(init_position_lt[1])
-            plt.scatter(lt_info[t, 0], lt_info[t, 1],
-                        s=100,
+
+            ax2.scatter(lt_info[t, 0], lt_info[t, 1],
+                        s=50,
                         alpha=0.6,
                         color='blue',
                         label='go-straight')
-            plt.scatter(gs_info_multi[inter_id][t, 0], gs_info_multi[inter_id][t, 1],
-                        s=100,
-                        alpha=0.6,
+            candidates_lt = agent_lt.virtual_track_collection
+            for track_lt in candidates_lt:
+                ax2.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
+            ax2.scatter(gs_info_multi[inter_id][t, 0], gs_info_multi[inter_id][t, 1],
+                        s=50,
+                        alpha=0.3,
                         color='red',
                         label='go-straight')
+            candidates_gs = agent_gs.virtual_track_collection
+            for track_gs in candidates_gs:
+                ax2.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
             plt.pause(0.3)
 
 
 if __name__ == '__main__':
-    analyze_nds(4)
+    analyze_nds(11)
