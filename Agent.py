@@ -12,8 +12,8 @@ TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 2
-WEIGHT_DEVIATION = 0.1
-WEIGHT_CHANGE = 0.2
+WEIGHT_DEVIATION = 0.3
+WEIGHT_STEERING = 0.6
 
 # parameters of action bounds
 MAX_STEERING_ANGLE = math.pi / 6
@@ -25,7 +25,7 @@ virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 
 
 # weight of interior and group cost
 WEIGHT_INT = 5
-WEIGHT_GRP = 1.5
+WEIGHT_GRP = 1
 
 # likelihood function
 sigma = 0.2
@@ -213,14 +213,14 @@ def utility_IBR(self_info, track_inter):
         track_self = track_info_self[:, 0:2]
         track_all = [track_self, track_inter[:, 0:2]]
         # print(np.sin(self_info[3]))
-        ut = np.cos(self_info[3]) * cal_interior_cost(track_self, self_info[4]) + \
+        ut = np.cos(self_info[3]) * cal_interior_cost(u, track_self, self_info[4]) + \
              np.sin(self_info[3]) * cal_group_cost(track_all)
         return ut
 
     return fun
 
 
-def cal_interior_cost(track, target):
+def cal_interior_cost(action, track, target):
     cv, s = get_central_vertices(target)
 
     # find the on-reference point of the track starting
@@ -246,16 +246,20 @@ def cal_interior_cost(track, target):
     # print('cost of travel delay:', cost_travel_distance)
 
     "2. cost of lane deviation"
-    cost_mean_deviation = dis2cv.mean()
+    cost_mean_deviation = max(0, dis2cv.mean()-0.3)
     # print('cost of lane deviation:', cost_mean_deviation)
 
-    "3. cost of change plan (currently not considered)"
-    cost_plan_change = 0
+    "3. cost of steering"
+    cost_steering = 0
+    if target == 'gs_nds' and action is not []:
+        delta_slice = slice(int(np.size(action, 0)/2), np.size(action, 0))
+        delta = action[delta_slice]
+        cost_steering = np.sum(np.abs(delta))
 
     "overall cost"
     cost_interior = WEIGHT_DELAY * cost_travel_distance + \
                     WEIGHT_DEVIATION * cost_mean_deviation + \
-                    WEIGHT_CHANGE * cost_plan_change
+                    WEIGHT_STEERING * cost_steering
     # print('interior cost:', cost_interior)
     return cost_interior * WEIGHT_INT
 
@@ -283,21 +287,7 @@ def cal_reliability(act_trck, vir_trck_coll):
     var = np.zeros(candidates_num)
     for i in range(candidates_num):
         virtual_track = vir_trck_coll[i]
-        rel_dis = np.linalg.norm(virtual_track - act_trck, axis=1)
-        # likelihood of each candidate
-        # print((1 / sigma / np.sqrt(2 * math.pi)))
-        # print(np.exp(-rel_dis ** 2 / (2 * sigma ** 2)))
-        # print(np.prod(
-        #             (1 / sigma / np.sqrt(2 * math.pi))
-        #             * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
-        #         ))
-        # print(np.power(
-        #         np.prod(
-        #             (1 / sigma / np.sqrt(2 * math.pi))
-        #             * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
-        #         )
-        #         , 1 / np.size(act_trck, 0)))
-
+        rel_dis = np.linalg.norm(virtual_track - act_trck, axis=1)  # distance vector
         var[i] = np.power(
                 np.prod(
                     (1 / sigma / np.sqrt(2 * math.pi))
