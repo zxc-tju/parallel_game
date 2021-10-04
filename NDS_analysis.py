@@ -2,8 +2,10 @@ import scipy.io
 import math
 import numpy as np
 from matplotlib import pyplot as plt
-from agent import Agent
+from agent import Agent,cal_interior_cost, cal_group_cost
 from tools.utility import get_central_vertices, smooth_cv
+
+illustration_needed = True
 
 mat = scipy.io.loadmat('./data/NDS_data.mat')
 inter_num = mat['interactagentnumpost']
@@ -48,21 +50,20 @@ def analyze_nds(case_id):
     # set figure
     fig = plt.figure(1)
     ax1 = fig.add_subplot(121)
-
     ax2 = fig.add_subplot(122)
-    ax2.set(xlim=[-22, 53], ylim=[-31, 57])
-    img = plt.imread('Jianhexianxia.jpg')
-    ax2.imshow(img, extent=[-22, 53, -31, 57])
-    for t in range(np.size(lt_info, 0)):
+
+    for t in range(70, np.size(lt_info, 0)):
         inter_id = None
         for i in range(np.size(gs_info_multi, 0)):
             if inter_o[i] <= t < inter_d[i]:
                 inter_id = i
                 print('inter_id', inter_id)
                 start_time = max(int(inter_o[inter_id]), t - 10)
-        # print(start_time)
 
-        if (inter_id is not None) and (t - start_time >= 3):
+        "IPV estimation process"
+        if (inter_id is not None) and (t - start_time > 3):
+
+            "====simulation-based method===="
             # generate two agents
             init_position_lt = lt_info[start_time, 0:2]
             init_velocity_lt = lt_info[start_time, 2:4]
@@ -86,56 +87,81 @@ def analyze_nds(case_id):
             ipv_collection[t, 1] = agent_gs.ipv
             ipv_error_collection[t, 1] = agent_gs.ipv_error
             print('go straight', agent_gs.ipv, agent_gs.ipv_error)
+            "====end of simulation-based method===="
+
+            "====cost-based method===="
+            lt_track = lt_info[start_time:t + 1, 0:2]
+            gs_track = gs_info_multi[inter_id][start_time:t + 1, 0:2]
+
+            lt_interior_cost = cal_interior_cost([], lt_track, 'lt_nds')
+            gs_interior_cost = cal_interior_cost([], gs_track, 'gs_nds')
+            group_cost = cal_group_cost([lt_track, gs_track])
+            ipv_collection[t, 0] = math.atan(lt_interior_cost/group_cost)
+
+            "====end of cost-based method===="
+
+            "illustration"
+            if illustration_needed:
+                ax1.cla()
+                ax1.set(ylim=[-2, 2])
+
+                x_range = range(max(0, t - 10), t)
+                smoothed_ipv_lt, _ = smooth_cv(np.array([x_range, ipv_collection[x_range, 0]]).T)
+                smoothed_ipv_error_lt, _ = smooth_cv(np.array([x_range, ipv_error_collection[x_range, 0]]).T)
+                smoothed_x = smoothed_ipv_lt[:, 0]
+                # plot ipv
+                ax1.plot(smoothed_x, smoothed_ipv_lt[:, 1], 'blue')
+                # plot error bar
+                ax1.fill_between(smoothed_x, smoothed_ipv_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
+                                 smoothed_ipv_lt[:, 1] + smoothed_ipv_error_lt[:, 1],
+                                 alpha=0.4,
+                                 color='blue',
+                                 label='estimated lt IPV')
+
+                smoothed_ipv_gs, _ = smooth_cv(np.array([x_range, ipv_collection[x_range, 1]]).T)
+                smoothed_ipv_error_gs, _ = smooth_cv(np.array([x_range, ipv_error_collection[x_range, 1]]).T)
+                # plot ipv
+                ax1.plot(smoothed_x, smoothed_ipv_gs[:, 1], 'red')
+                # plot error bar
+                ax1.fill_between(smoothed_x, smoothed_ipv_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
+                                 smoothed_ipv_gs[:, 1] + smoothed_ipv_error_gs[:, 1],
+                                 alpha=0.4,
+                                 color='red',
+                                 label='estimated gs IPV')
+                ax1.legend()
+
+                # show trajectory and plans
+                ax2.cla()
+                ax2.set(xlim=[-22, 53], ylim=[-31, 57])
+                img = plt.imread('Jianhexianxia.jpg')
+                ax2.imshow(img, extent=[-22, 53, -31, 57])
+
+                # actual track
+                ax2.scatter(lt_info[start_time:t, 0], lt_info[start_time:t, 1],
+                            s=50,
+                            alpha=0.5,
+                            color='blue',
+                            label='left-turn')
+                candidates_lt = agent_lt.virtual_track_collection
+                for track_lt in candidates_lt:
+                    ax2.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
+                ax2.scatter(gs_info_multi[inter_id][start_time:t, 0], gs_info_multi[inter_id][start_time:t, 1],
+                            s=50,
+                            alpha=0.5,
+                            color='red',
+                            label='go-straight')
+                candidates_gs = agent_gs.virtual_track_collection
+                for track_gs in candidates_gs:
+                    ax2.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
+                ax2.legend()
+
+                plt.pause(0.3)
 
         elif inter_id is None:
             print('no interaction')
+
         elif t - start_time < 3:
             print('no results, more observation needed')
-
-        if t > 3:
-            ax1.cla()
-            ax1.set(ylim=[-2, 2])
-            x_range = range(max(0, t - 10), t)
-            # print(ipv_collection[x_range, 0])
-            smoothed_ipv_lt, _ = smooth_cv(np.array([x_range, ipv_collection[x_range, 0]]).T)
-            smoothed_ipv_error_lt, _ = smooth_cv(np.array([x_range, ipv_error_collection[x_range, 0]]).T)
-            smoothed_x = smoothed_ipv_lt[:, 0]
-            ax1.plot(smoothed_x, smoothed_ipv_lt[:, 1], 'blue')
-            ax1.fill_between(smoothed_x, smoothed_ipv_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
-                             smoothed_ipv_lt[:, 1] + smoothed_ipv_error_lt[:, 1],
-                             alpha=0.4,
-                             color='blue',
-                             label='estimated lt IPV')
-
-            smoothed_ipv_gs, _ = smooth_cv(np.array([x_range, ipv_collection[x_range, 1]]).T)
-            smoothed_ipv_error_gs, _ = smooth_cv(np.array([x_range, ipv_error_collection[x_range, 1]]).T)
-            ax1.plot(smoothed_x, smoothed_ipv_gs[:, 1], 'red')
-            ax1.fill_between(smoothed_x, smoothed_ipv_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
-                             smoothed_ipv_gs[:, 1] + smoothed_ipv_error_gs[:, 1],
-                             alpha=0.4,
-                             color='red',
-                             label='estimated gs IPV')
-
-            # print(init_position_lt[0])
-            # print(init_position_lt[1])
-
-            ax2.scatter(lt_info[t, 0], lt_info[t, 1],
-                        s=50,
-                        alpha=0.6,
-                        color='blue',
-                        label='go-straight')
-            candidates_lt = agent_lt.virtual_track_collection
-            for track_lt in candidates_lt:
-                ax2.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
-            ax2.scatter(gs_info_multi[inter_id][t, 0], gs_info_multi[inter_id][t, 1],
-                        s=50,
-                        alpha=0.3,
-                        color='red',
-                        label='go-straight')
-            candidates_gs = agent_gs.virtual_track_collection
-            for track_gs in candidates_gs:
-                ax2.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
-            plt.pause(0.3)
 
 
 if __name__ == '__main__':
