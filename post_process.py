@@ -63,7 +63,9 @@ for t in range(len(agent_lt_observed_trajectory)):
 
     # position link
     plt.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
-             [agent_lt_observed_trajectory[t, 1], agent_gs_observed_trajectory[t, 1]], color='gray', alpha=0.1)
+             [agent_lt_observed_trajectory[t, 1], agent_gs_observed_trajectory[t, 1]],
+             color='gray',
+             alpha=0.1)
     plt.xlim(8, 20)
     plt.ylim(-8, 8)
     plt.pause(0.3)

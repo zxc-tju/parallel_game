@@ -12,8 +12,10 @@ TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 2
-WEIGHT_DEVIATION = 0.3
+WEIGHT_DEVIATION = 0.4
 WEIGHT_STEERING = 0.6
+weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_STEERING])
+weight_metric = weight_metric / weight_metric.sum()
 
 # parameters of action bounds
 MAX_STEERING_ANGLE = math.pi / 6
@@ -43,10 +45,10 @@ class Agent:
                                               self.velocity[0],
                                               self.velocity[1],
                                               self.heading], ])
-        # trajectory plan at each time step
         self.trj_solution = np.repeat([position], TRACK_LEN, axis=0)
-        # collection of trajectory plans at every time step
         self.trj_solution_collection = []
+        self.action = []
+        self.action_collection = []
         self.estimated_inter_agent = None
         self.ipv = 0
         self.ipv_error = None
@@ -61,17 +63,17 @@ class Agent:
                      self.heading,
                      self.ipv,
                      self.target]
+
         p, v, h = self_info[0:3]
-        init_state_4_kine = [p[0], p[1], v[0], v[1], h]
-        fun = utility_IBR(self_info, inter_track)
-        u0 = np.zeros([(track_len - 1) * 2, 1])
+        init_state_4_kine = [p[0], p[1], v[0], v[1], h]  # initial state
+        fun = utility_IBR(self_info, inter_track)  # objective function
+        u0 = np.zeros([(track_len - 1) * 2, 1])  # initialize solution
         bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(track_len - 1)] + \
-              [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(track_len - 1)]
+              [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(track_len - 1)]  # boundaries
 
         res = minimize(fun, u0, bounds=bds, method='SLSQP')
-
-        # print(res.success)
         x = np.reshape(res.x, [2, track_len - 1]).T
+        self.action = x
         self.trj_solution = kinematic_model(x, init_state_4_kine, track_len, dt)
         return self.trj_solution
 
@@ -82,10 +84,8 @@ class Agent:
         :return:
         """
         virtual_agent_track_collection = []
-        # self.estimated_inter_agent.ipv_range = np.random.normal(self.estimated_inter_agent.ipv, math.pi / 6, 9)
-        # for ipv_temp in self.estimated_inter_agent.ipv_range:
+
         for ipv_temp in virtual_agent_IPV_range:
-            # print('idx: ', ipv_temp)
             virtual_inter_agent = copy.deepcopy(agent_inter)
             virtual_inter_agent.ipv = ipv_temp
             agent_self_temp = copy.deepcopy(self)
@@ -118,7 +118,7 @@ class Agent:
             if count_iter > 10:  # limited to less than 10 iterations
                 break
 
-    def update_state(self, inter_agent):
+    def update_state(self, inter_agent, method):
         self.position = self.trj_solution[1, 0:2]
         self.velocity = self.trj_solution[1, 2:4]
         self.heading = self.trj_solution[1, -1]
@@ -134,29 +134,40 @@ class Agent:
         self.observed_trajectory = np.concatenate((self.observed_trajectory, new_track_point), axis=0)
 
         self.trj_solution_collection.append(self.trj_solution)
+        self.action_collection.append(self.action)
 
         # update IPV
-        current_time = np.size(self.observed_trajectory, 0) - 1
+        current_time = np.size(inter_agent.observed_trajectory, 0) - 1
         if current_time > 1:
             start_time = max(0, current_time - 6)
             time_duration = current_time - start_time
 
-            candidates = self.estimated_inter_agent.virtual_track_collection[start_time]
+            if method == 1:
+                "====parallel game method===="
+                candidates = self.estimated_inter_agent.virtual_track_collection[start_time]
+                virtual_track_collection = []
+                for i in range(len(candidates)):
+                    virtual_track_collection.append(candidates[i][0:time_duration, 0:2])
+                actual_track = inter_agent.observed_trajectory[start_time:current_time, 0:2]
 
-            virtual_track_collection = []
-            for i in range(len(candidates)):
-                virtual_track_collection.append(candidates[i][0:time_duration, 0:2])
-            actual_track = inter_agent.observed_trajectory[start_time:current_time, 0:2]
+                ipv_weight = cal_reliability(actual_track, virtual_track_collection)
 
-            ipv_weight = cal_reliability(actual_track, virtual_track_collection)
+                # weighted sum of all candidates' IPVs
+                self.estimated_inter_agent.ipv = sum(virtual_agent_IPV_range * ipv_weight)
 
-            # weighted sum of all candidates' IPVs
-            self.estimated_inter_agent.ipv = sum(virtual_agent_IPV_range * ipv_weight)
+                # save updated ipv and estimation error
+                self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
+                error = 1 - np.sqrt(sum(ipv_weight ** 2))
+                self.estimated_inter_agent.ipv_error_collection.append(error)
+                "====end of parallel game method===="
 
-            # save updated ipv and estimation error
-            self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
-            error = 1 - np.sqrt(sum(ipv_weight ** 2))
-            self.estimated_inter_agent.ipv_error_collection.append(error)
+            elif method == 2:
+                "====rational perspective method===="
+                u_list = []
+                for i in range(start_time, current_time):
+                    u_list.append([inter_agent.action_collection[i][0, 0], inter_agent.action_collection[i][0, 1]])
+                u_conducted = np.array(u_list)
+                "====end of rational perspective method===="
 
     def estimate_self_ipv_in_NDS(self, self_actual_track, inter_track):
         self_virtual_track_collection = []
@@ -213,9 +224,9 @@ def utility_IBR(self_info, track_inter):
         track_self = track_info_self[:, 0:2]
         track_all = [track_self, track_inter[:, 0:2]]
         # print(np.sin(self_info[3]))
-        ut = np.cos(self_info[3]) * cal_interior_cost(u, track_self, self_info[4]) + \
-             np.sin(self_info[3]) * cal_group_cost(track_all)
-        return ut
+        util = np.cos(self_info[3]) * cal_interior_cost(u, track_self, self_info[4]) + \
+               np.sin(self_info[3]) * cal_group_cost(track_all)
+        return util
 
     return fun
 
@@ -246,21 +257,24 @@ def cal_interior_cost(action, track, target):
     # print('cost of travel delay:', cost_travel_distance)
 
     "2. cost of lane deviation"
-    cost_mean_deviation = max(0, dis2cv.mean()-0.3)
+    cost_mean_deviation = max(0, dis2cv.mean() - 0.3)
     # print('cost of lane deviation:', cost_mean_deviation)
 
     "3. cost of steering"
     cost_steering = 0
     if target == 'gs_nds' and action is not []:
-        delta_slice = slice(int(np.size(action, 0)/2), np.size(action, 0))
+        delta_slice = slice(int(np.size(action, 0) / 2), np.size(action, 0))
         delta = action[delta_slice]
         cost_steering = np.sum(np.abs(delta))
 
+    cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_steering])
+
     "overall cost"
-    cost_interior = WEIGHT_DELAY * cost_travel_distance + \
-                    WEIGHT_DEVIATION * cost_mean_deviation + \
-                    WEIGHT_STEERING * cost_steering
-    # print('interior cost:', cost_interior)
+    cost_interior = weight_metric.dot(cost_metric.T)
+    # cost_interior = WEIGHT_DELAY * cost_travel_distance + \
+    #                 WEIGHT_DEVIATION * cost_mean_deviation + \
+    #                 WEIGHT_STEERING * cost_steering
+
     return cost_interior * WEIGHT_INT
 
 
@@ -289,11 +303,11 @@ def cal_reliability(act_trck, vir_trck_coll):
         virtual_track = vir_trck_coll[i]
         rel_dis = np.linalg.norm(virtual_track - act_trck, axis=1)  # distance vector
         var[i] = np.power(
-                np.prod(
-                    (1 / sigma / np.sqrt(2 * math.pi))
-                    * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
-                )
-                , 1 / np.size(act_trck, 0))
+            np.prod(
+                (1 / sigma / np.sqrt(2 * math.pi))
+                * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
+            )
+            , 1 / np.size(act_trck, 0))
 
         if var[i] < 0:
             var[i] = 0

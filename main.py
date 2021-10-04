@@ -7,11 +7,15 @@ from tools.utility import get_central_vertices
 import time
 import pickle
 
+ipv_update_method = 1
+"""
+notes for ipv_update_method:
+1: parallel game method
+2: rational perspective method
+"""
 final_illustration_needed = 1
 in_loop_illustration_needed = 0
-num_step = 20
-
-# virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
+num_step = 5
 
 
 def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
@@ -50,7 +54,8 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
         "==plan for left-turn=="
         # ==interaction with parallel virtual agents
-        agent_lt.interact_with_parallel_virtual_agents(agent_gs)
+        if ipv_update_method == 1:
+            agent_lt.interact_with_parallel_virtual_agents(agent_gs)
 
         # ==interaction with estimated agent
         agent_lt.interact_with_estimated_virtual_agents()
@@ -60,7 +65,8 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
         "==plan for go straight=="
         # ==interaction with parallel virtual agents
-        agent_gs.interact_with_parallel_virtual_agents(agent_lt)
+        if ipv_update_method == 1:
+            agent_gs.interact_with_parallel_virtual_agents(agent_lt)
 
         # ==interaction with estimated agent
         agent_gs.interact_with_estimated_virtual_agents()
@@ -68,14 +74,14 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         if in_loop_illustration_needed:
             agent_gs.draw()
 
-        # update state
-        agent_lt.update_state(agent_gs)
-        agent_gs.update_state(agent_lt)
+        "==update state=="
+        agent_lt.update_state(agent_gs, ipv_update_method)
+        agent_gs.update_state(agent_lt, ipv_update_method)
         print("estimated gs ipv:", agent_lt.estimated_inter_agent.ipv)
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====save data===="
-    filename = './outputs/version7/agents_info' \
+    filename = './outputs/version8/agents_info' \
                + '_gs_' + str(gs_ipv_sim) \
                + '_lt_' + str(lt_ipv_sim) + '.pckl'
     f = open(filename, 'wb')
@@ -85,68 +91,83 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
     "====visualization===="
     if final_illustration_needed:
-        plt.figure()
-        cv_init_it, _ = get_central_vertices('lt')
-        cv_init_gs, _ = get_central_vertices('gs')
-        for t in range(num_step):
-            # central vertices
-            plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
-            plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
+        # get central vertices
+        cv_it, _ = get_central_vertices('lt')
+        cv_gs, _ = get_central_vertices('gs')
 
-            # full tracks at each time step
-            lt_track = agent_lt.trj_solution_collection[t]
-            plt.plot(lt_track[:, 0], lt_track[:, 1], '--')
-            gs_track = agent_gs.trj_solution_collection[t]
-            plt.plot(gs_track[:, 0], gs_track[:, 1], '--')
+        # set figures
+        fig = plt.figure(1)
+        ax1 = fig.add_subplot(121)
+        ax1.set(axis='equal', xlim=[5, 25], ylim=[-15, 15])
+        ax2 = fig.add_subplot(122)
+        ax2.set(axis='equal', xlim=[5, 25], ylim=[-15, 15])
 
-        plt.axis('equal')
-        plt.xlim(5, 25)
-        plt.ylim(-15, 15)
-        # plt.show()
-
-        plt.figure()
+        "====show plans at each time step===="
         # central vertices
-        plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
-        plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
+        ax1.plot(cv_it[:, 0], cv_it[:, 1], 'r-')
+        ax1.plot(cv_gs[:, 0], cv_gs[:, 1], 'b-')
+
         # position at each time step
-        plt.scatter(agent_lt.observed_trajectory[:, 0],
+        ax1.scatter(agent_lt.observed_trajectory[:, 0],
                     agent_lt.observed_trajectory[:, 1],
                     s=100,
                     alpha=0.6,
                     color='red',
                     label='left-turn')
-        plt.scatter(agent_gs.observed_trajectory[:, 0],
+        ax1.scatter(agent_gs.observed_trajectory[:, 0],
                     agent_gs.observed_trajectory[:, 1],
                     s=100,
                     alpha=0.6,
                     color='blue',
                     label='go-straight')
 
+        # full tracks at each time step
+        for t in range(num_step):
+            lt_track = agent_lt.trj_solution_collection[t]
+            ax1.plot(lt_track[:, 0], lt_track[:, 1], '--')
+            gs_track = agent_gs.trj_solution_collection[t]
+            ax1.plot(gs_track[:, 0], gs_track[:, 1], '--')
+
+        # connect two agents
         for t in range(len(agent_lt.observed_trajectory)):
-            plt.plot([agent_lt.observed_trajectory[t, 0], agent_gs.observed_trajectory[t, 0]],
-                     [agent_lt.observed_trajectory[t, 1], agent_gs.observed_trajectory[t, 1]], color='black')
-        plt.axis('equal')
-        plt.xlim(5, 25)
-        plt.ylim(-15, 15)
+            ax1.plot([agent_lt.observed_trajectory[t, 0], agent_gs.observed_trajectory[t, 0]],
+                     [agent_lt.observed_trajectory[t, 1], agent_gs.observed_trajectory[t, 1]],
+                     color='black',
+                     alpha=0.2)
 
-        plt.figure()
-
+        "====show IPV and uncertainty===="
         x_range = np.array(range(len(agent_lt.estimated_inter_agent.ipv_collection)))
         y_lt = np.array(agent_lt.estimated_inter_agent.ipv_collection)
-        y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
-        plt.fill_between(x_range, y_lt - y_error_lt, y_lt + y_error_lt,
-                         alpha=0.4,
-                         color='blue',
-                         label='estimated gs IPV')
-        plt.plot(x_range, gs_ipv_sim * math.pi / 9 * np.ones_like(x_range), label='actual gs IPV')
-
         y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
-        y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
-        plt.fill_between(x_range, y_gs - y_error_gs, y_gs + y_error_gs,
-                         alpha=0.4,
-                         color='red',
-                         label='estimated lt IPV')
-        plt.plot(x_range, lt_ipv_sim * math.pi / 9 * np.ones_like(x_range), label='actual lt IPV')
+
+        # actual ipv
+        ax2.plot(x_range, gs_ipv_sim * math.pi / 9 * np.ones_like(x_range),
+                 color='blue',
+                 label='actual gs IPV')
+        ax2.plot(x_range, lt_ipv_sim * math.pi / 9 * np.ones_like(x_range),
+                 color='red',
+                 label='actual lt IPV')
+
+        # estimated ipv
+        ax2.plot(x_range, y_gs, color='blue', label='estimated gs IPV')
+        ax2.plot(x_range, y_lt, color='red', label='estimated lt IPV')
+
+        # error bar
+        if ipv_update_method == 1:
+            y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
+            ax2.fill_between(x_range, y_lt - y_error_lt, y_lt + y_error_lt,
+                             alpha=0.4,
+                             color='blue',
+                             label='estimated gs IPV error')
+            y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
+            ax2.fill_between(x_range, y_gs - y_error_gs, y_gs + y_error_gs,
+                             alpha=0.4,
+                             color='red',
+                             label='estimated lt IPV error')
+
+        ax1.legend()
+        ax2.legend()
+        plt.show()
 
 
 if __name__ == '__main__':
