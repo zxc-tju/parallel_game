@@ -98,9 +98,9 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         # set figures
         fig = plt.figure(1)
         ax1 = fig.add_subplot(121)
-        ax1.set(axis='equal', xlim=[5, 25], ylim=[-15, 15])
+        ax1.set(xlim=[5, 25], ylim=[-15, 15])
         ax2 = fig.add_subplot(122)
-        ax2.set(axis='equal', xlim=[5, 25], ylim=[-15, 15])
+        # ax2.set(xlim=[5, 25], ylim=[-15, 15])
 
         "====show plans at each time step===="
         # central vertices
@@ -124,9 +124,9 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         # full tracks at each time step
         for t in range(num_step):
             lt_track = agent_lt.trj_solution_collection[t]
-            ax1.plot(lt_track[:, 0], lt_track[:, 1], '--')
+            ax1.plot(lt_track[:, 0], lt_track[:, 1], '--', color='red')
             gs_track = agent_gs.trj_solution_collection[t]
-            ax1.plot(gs_track[:, 0], gs_track[:, 1], '--')
+            ax1.plot(gs_track[:, 0], gs_track[:, 1], '--', color='blue')
 
         # connect two agents
         for t in range(len(agent_lt.observed_trajectory)):
@@ -141,29 +141,31 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
 
         # actual ipv
-        ax2.plot(x_range, gs_ipv_sim * math.pi / 9 * np.ones_like(x_range),
-                 color='blue',
-                 label='actual gs IPV')
         ax2.plot(x_range, lt_ipv_sim * math.pi / 9 * np.ones_like(x_range),
                  color='red',
+                 linewidth=5,
                  label='actual lt IPV')
+        ax2.plot(x_range, gs_ipv_sim * math.pi / 9 * np.ones_like(x_range),
+                 color='blue',
+                 linewidth=5,
+                 label='actual gs IPV')
 
         # estimated ipv
-        ax2.plot(x_range, y_gs, color='blue', label='estimated gs IPV')
         ax2.plot(x_range, y_lt, color='red', label='estimated lt IPV')
+        ax2.plot(x_range, y_gs, color='blue', label='estimated gs IPV')
 
         # error bar
         if ipv_update_method == 1:
             y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
             ax2.fill_between(x_range, y_lt - y_error_lt, y_lt + y_error_lt,
-                             alpha=0.4,
-                             color='blue',
-                             label='estimated gs IPV error')
+                             alpha=0.3,
+                             color='red',
+                             label='gs IPV error')
             y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
             ax2.fill_between(x_range, y_gs - y_error_gs, y_gs + y_error_gs,
-                             alpha=0.4,
-                             color='red',
-                             label='estimated lt IPV error')
+                             alpha=0.3,
+                             color='blue',
+                             label='lt IPV error')
 
         ax1.legend()
         ax2.legend()
