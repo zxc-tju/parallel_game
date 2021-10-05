@@ -53,6 +53,8 @@ def analyze_nds(case_id):
     ax2 = fig.add_subplot(122)
 
     for t in range(70, np.size(lt_info, 0)):
+
+        "find current interacting agent"
         inter_id = None
         for i in range(np.size(gs_info_multi, 0)):
             if inter_o[i] <= t < inter_d[i]:
@@ -90,13 +92,13 @@ def analyze_nds(case_id):
             "====end of simulation-based method===="
 
             "====cost-based method===="
-            lt_track = lt_info[start_time:t + 1, 0:2]
-            gs_track = gs_info_multi[inter_id][start_time:t + 1, 0:2]
-
-            lt_interior_cost = cal_interior_cost([], lt_track, 'lt_nds')
-            gs_interior_cost = cal_interior_cost([], gs_track, 'gs_nds')
-            group_cost = cal_group_cost([lt_track, gs_track])
-            ipv_collection[t, 0] = math.atan(lt_interior_cost/group_cost)
+            # lt_track = lt_info[start_time:t + 1, 0:2]
+            # gs_track = gs_info_multi[inter_id][start_time:t + 1, 0:2]
+            #
+            # lt_interior_cost = cal_interior_cost([], lt_track, 'lt_nds')
+            # gs_interior_cost = cal_interior_cost([], gs_track, 'gs_nds')
+            # group_cost = cal_group_cost([lt_track, gs_track])
+            # ipv_collection[t, 0] = math.atan(lt_interior_cost/group_cost)
 
             "====end of cost-based method===="
 

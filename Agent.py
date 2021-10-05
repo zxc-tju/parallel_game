@@ -137,7 +137,7 @@ class Agent:
         self.action_collection.append(self.action)
 
         # update IPV
-        current_time = np.size(inter_agent.observed_trajectory, 0) - 1
+        current_time = np.size(self.observed_trajectory, 0) - 2
         if current_time > 1:
             start_time = max(0, current_time - 6)
             time_duration = current_time - start_time
@@ -163,10 +163,54 @@ class Agent:
 
             elif method == 2:
                 "====rational perspective method===="
-                u_list = []
+
+                # rearrange conducted actions at each time step
+                u_list_self = []
+                u_list_inter = []
                 for i in range(start_time, current_time):
-                    u_list.append([inter_agent.action_collection[i][0, 0], inter_agent.action_collection[i][0, 1]])
-                u_conducted = np.array(u_list)
+                    u_list_self.append([self.action_collection[i][0, 0], self.action_collection[i][0, 1]])
+                    u_list_inter.append(
+                        [inter_agent.action_collection[i][0, 0], inter_agent.action_collection[i][0, 1]])
+
+                # initial state
+                init_state_4_kine_self = self.observed_trajectory[start_time, :]
+                init_state_4_kine_inter = inter_agent.observed_trajectory[start_time, :]
+
+                u_conducted_self = np.array(u_list_self)
+                u_conducted_inter = np.array(u_list_inter)
+                # info at actual solution
+                # track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
+                # track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
+                # cost_inerior = cal_interior_cost(u_conducted_inter,
+                #                                  track_actual_inter,
+                #                                  inter_agent.target)
+                # cost_group = cal_group_cost([track_actual_inter, track_actual_self])
+
+                # info at margin1
+                u_margin_self1 = u_conducted_self * 1.001
+                u_margin_inter1 = u_conducted_inter * 1.001
+                track_margin_inter1 = kinematic_model(u_margin_inter1, init_state_4_kine_inter, time_duration + 1, dt)
+                track_margin_self1 = kinematic_model(u_margin_self1, init_state_4_kine_self, time_duration + 1, dt)
+                cost_inerior_margin1 = cal_interior_cost(u_margin_inter1,
+                                                        track_margin_inter1[:, 0:2],
+                                                        inter_agent.target)
+                cost_group_margin1 = cal_group_cost([track_margin_inter1[:, 0:2], track_margin_self1[:, 0:2]])
+
+                # info at margin2
+                u_margin_self2 = u_conducted_self * 0.999
+                u_margin_inter2 = u_conducted_inter * 0.999
+                track_margin_inter2 = kinematic_model(u_margin_inter2, init_state_4_kine_inter, time_duration + 1, dt)
+                track_margin_self2 = kinematic_model(u_margin_self2, init_state_4_kine_self, time_duration + 1, dt)
+                cost_inerior_margin2 = cal_interior_cost(u_margin_inter2,
+                                                         track_margin_inter2[:, 0:2],
+                                                         inter_agent.target)
+                cost_group_margin2 = cal_group_cost([track_margin_inter2[:, 0:2], track_margin_self2[:, 0:2]])
+
+                # atan
+                self.estimated_inter_agent.ipv = - math.atan((cost_inerior_margin1 - cost_inerior_margin2)
+                                                             / (cost_group_margin1 - cost_group_margin2))
+                # save updated ipv and estimation error
+                self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
                 "====end of rational perspective method===="
 
     def estimate_self_ipv_in_NDS(self, self_actual_track, inter_track):

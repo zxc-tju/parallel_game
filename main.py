@@ -15,7 +15,7 @@ notes for ipv_update_method:
 """
 final_illustration_needed = 1
 in_loop_illustration_needed = 0
-num_step = 5
+num_step = 20
 
 
 def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
@@ -137,8 +137,8 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
         "====show IPV and uncertainty===="
         x_range = np.array(range(len(agent_lt.estimated_inter_agent.ipv_collection)))
-        y_lt = np.array(agent_lt.estimated_inter_agent.ipv_collection)
-        y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
+        y_lt = np.array(agent_gs.estimated_inter_agent.ipv_collection)
+        y_gs = np.array(agent_lt.estimated_inter_agent.ipv_collection)
 
         # actual ipv
         ax2.plot(x_range, lt_ipv_sim * math.pi / 9 * np.ones_like(x_range),
@@ -169,7 +169,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
         ax1.legend()
         ax2.legend()
-        plt.show()
+        # plt.show()
 
 
 if __name__ == '__main__':
@@ -193,8 +193,8 @@ if __name__ == '__main__':
     # [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
-    for gs_ipv in [3]:
-        for lt_ipv in [0]:
+    for gs_ipv in [2]:
+        for lt_ipv in [1]:
             simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()
