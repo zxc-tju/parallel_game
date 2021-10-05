@@ -7,13 +7,13 @@ from tools.utility import get_central_vertices
 import time
 import pickle
 
-ipv_update_method = 1
+ipv_update_method = 2
 """
 notes for ipv_update_method:
 1: parallel game method
 2: rational perspective method
 """
-final_illustration_needed = 1
+final_illustration_needed = 0
 in_loop_illustration_needed = 0
 num_step = 20
 
@@ -81,9 +81,9 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====save data===="
-    filename = './outputs/version8/agents_info' \
+    filename = './outputs/version9/agents_info' \
                + '_gs_' + str(gs_ipv_sim) \
-               + '_lt_' + str(lt_ipv_sim) + '.pckl'
+               + '_lt_' + str(lt_ipv_sim) + '_ipv_method_' + str(ipv_update_method) + '.pckl'
     f = open(filename, 'wb')
     pickle.dump([agent_lt, agent_gs], f)
     f.close()
@@ -193,10 +193,9 @@ if __name__ == '__main__':
     # [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
-    for gs_ipv in [2]:
-        for lt_ipv in [1]:
+    for gs_ipv in [1]:
+        for lt_ipv in [3]:
             simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()
-
     print(f"whole process takes {toc - tic:0.4f} seconds")

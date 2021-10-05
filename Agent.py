@@ -178,17 +178,10 @@ class Agent:
 
                 u_conducted_self = np.array(u_list_self)
                 u_conducted_inter = np.array(u_list_inter)
-                # info at actual solution
-                # track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
-                # track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
-                # cost_inerior = cal_interior_cost(u_conducted_inter,
-                #                                  track_actual_inter,
-                #                                  inter_agent.target)
-                # cost_group = cal_group_cost([track_actual_inter, track_actual_self])
 
                 # info at margin1
-                u_margin_self1 = u_conducted_self * 1.001
-                u_margin_inter1 = u_conducted_inter * 1.001
+                u_margin_self1 = u_conducted_self * 1.01
+                u_margin_inter1 = u_conducted_inter * 1.01
                 track_margin_inter1 = kinematic_model(u_margin_inter1, init_state_4_kine_inter, time_duration + 1, dt)
                 track_margin_self1 = kinematic_model(u_margin_self1, init_state_4_kine_self, time_duration + 1, dt)
                 cost_inerior_margin1 = cal_interior_cost(u_margin_inter1,
@@ -196,19 +189,29 @@ class Agent:
                                                         inter_agent.target)
                 cost_group_margin1 = cal_group_cost([track_margin_inter1[:, 0:2], track_margin_self1[:, 0:2]])
 
-                # info at margin2
-                u_margin_self2 = u_conducted_self * 0.999
-                u_margin_inter2 = u_conducted_inter * 0.999
-                track_margin_inter2 = kinematic_model(u_margin_inter2, init_state_4_kine_inter, time_duration + 1, dt)
-                track_margin_self2 = kinematic_model(u_margin_self2, init_state_4_kine_self, time_duration + 1, dt)
-                cost_inerior_margin2 = cal_interior_cost(u_margin_inter2,
-                                                         track_margin_inter2[:, 0:2],
-                                                         inter_agent.target)
-                cost_group_margin2 = cal_group_cost([track_margin_inter2[:, 0:2], track_margin_self2[:, 0:2]])
+                # # info at margin2
+                # u_margin_self2 = u_conducted_self * 0.999
+                # u_margin_inter2 = u_conducted_inter * 0.999
+                # track_margin_inter2 = kinematic_model(u_margin_inter2, init_state_4_kine_inter, time_duration + 1, dt)
+                # track_margin_self2 = kinematic_model(u_margin_self2, init_state_4_kine_self, time_duration + 1, dt)
+                # cost_inerior_margin2 = cal_interior_cost(u_margin_inter2,
+                #                                          track_margin_inter2[:, 0:2],
+                #                                          inter_agent.target)
+                # cost_group_margin2 = cal_group_cost([track_margin_inter2[:, 0:2], track_margin_self2[:, 0:2]])
+                # # atan
+                # self.estimated_inter_agent.ipv = - math.atan((cost_inerior_margin1 - cost_inerior_margin2)
+                #                                              / (cost_group_margin1 - cost_group_margin2))
 
+                # info at actual solution
+                track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
+                track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
+                cost_inerior = cal_interior_cost(u_conducted_inter,
+                                                 track_actual_inter,
+                                                 inter_agent.target)
+                cost_group = cal_group_cost([track_actual_inter, track_actual_self])
                 # atan
-                self.estimated_inter_agent.ipv = - math.atan((cost_inerior_margin1 - cost_inerior_margin2)
-                                                             / (cost_group_margin1 - cost_group_margin2))
+                self.estimated_inter_agent.ipv = - math.atan((cost_inerior - cost_inerior_margin1)
+                                                             / (cost_group - cost_group_margin1))
                 # save updated ipv and estimation error
                 self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
                 "====end of rational perspective method===="
@@ -325,12 +328,18 @@ def cal_interior_cost(action, track, target):
 def cal_group_cost(track_packed):
     track_self, track_inter = track_packed
     rel_distance = np.linalg.norm(track_self - track_inter, axis=1)
+    "version 1"
     min_rel_distance = np.amin(rel_distance)  # minimal distance
     min_index = np.where(min_rel_distance == rel_distance)[0]  # the time step when reach the minimal distance
-    cost_group = -min_rel_distance * min_index[0] / (np.size(track_self, 0))
+    cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0))
+
+    "version 2"
+    # rel_speed = (rel_distance[1:] - rel_distance[0:-1]) / dt
+    # rel_speed[np.where(rel_speed > 0)] = 0
+    # cost_group2 = -np.sum(rel_speed) / (np.size(track_self, 0))
 
     # print('group cost:', cost_group)
-    return cost_group * WEIGHT_GRP
+    return cost_group1 * WEIGHT_GRP
 
 
 def cal_reliability(act_trck, vir_trck_coll):
