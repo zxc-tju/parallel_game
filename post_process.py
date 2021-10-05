@@ -5,10 +5,17 @@ from tools.utility import get_central_vertices, smooth_cv
 import numpy as np
 
 "====import data===="
-gs_ipv = 3
-lt_ipv = 0
-filename = './outputs/version8/' + 'agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '.pckl'
-# filename = './outputs/version6/' + 'agents_info' + '_gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv) + '_math.pi_9' + '.pckl'
+gs_ipv = 4
+lt_ipv = -2
+ipv_update_method = 1
+filename = './outputs/version7/' + 'agents_info' \
+           + '_gs_' + str(gs_ipv) \
+           + '_lt_' + str(lt_ipv) \
+           + '.pckl'
+# filename = './outputs/version6/' + 'agents_info' \
+#            + '_gs_' + str(gs_ipv) \
+#            + '_lt_' + str(lt_ipv) \
+#            + '_math.pi_9' + '.pckl'
 f = open(filename, 'rb')
 agent_lt, agent_gs = pickle.load(f)
 f.close()
@@ -24,7 +31,7 @@ else:
     agent_gs_observed_trajectory = agent_gs.observed_trajectory
 
 "====final observed_trajectory===="
-plt.figure(2, figsize=(6, 8))
+plt.figure(1, figsize=(6, 8))
 for t in range(len(agent_lt_observed_trajectory)):
     plt.clf()
     # central vertices
@@ -53,13 +60,14 @@ for t in range(len(agent_lt_observed_trajectory)):
         gs_track = agent_gs.trj_solution_collection[t]
         plt.plot(gs_track[:, 0], gs_track[:, 1], '--', linewidth=3)
 
-        # real-time virtual plans of ## interacting agent ## at time step t
-        candidates_lt = agent_lt.estimated_inter_agent.virtual_track_collection[t]
-        candidates_gs = agent_gs.estimated_inter_agent.virtual_track_collection[t]
-        for track_lt in candidates_lt:
-            plt.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
-        for track_gs in candidates_gs:
-            plt.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
+        if ipv_update_method == 1:
+            # real-time virtual plans of ## interacting agent ## at time step t
+            candidates_lt = agent_lt.estimated_inter_agent.virtual_track_collection[t]
+            candidates_gs = agent_gs.estimated_inter_agent.virtual_track_collection[t]
+            for track_lt in candidates_lt:
+                plt.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
+            for track_gs in candidates_gs:
+                plt.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
 
     # position link
     plt.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
@@ -68,31 +76,31 @@ for t in range(len(agent_lt_observed_trajectory)):
              alpha=0.1)
     plt.xlim(8, 20)
     plt.ylim(-8, 8)
-    plt.pause(0.3)
+    plt.pause(0.1)
 
 "====ipv estimation===="
-plt.figure(3)
+plt.figure(2)
 x_range = np.array(range(len(agent_lt.estimated_inter_agent.ipv_collection)))
 
 # ====draw left turn
 y_lt = np.array(agent_lt.estimated_inter_agent.ipv_collection)
-y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
-# smoothen data
 point_smoothed_lt, _ = smooth_cv(np.array([x_range, y_lt]).T)
-error_smoothed_lt, _ = smooth_cv(np.array([x_range, y_error_lt]).T)
 x_smoothed_lt = point_smoothed_lt[:, 0]
 y_lt_smoothed = point_smoothed_lt[:, 1]
-y_error_lt_smoothed = error_smoothed_lt[:, 1]
-# mean value
 plt.plot(x_smoothed_lt, y_lt_smoothed,
          alpha=1,
          color='blue',
          label='estimated gs IPV')
-# error region
-plt.fill_between(x_smoothed_lt, y_lt_smoothed - y_error_lt_smoothed, y_lt_smoothed + y_error_lt_smoothed,
-                 alpha=0.3,
-                 color='blue',
-                 label='estimated gs IPV')
+
+if ipv_update_method == 1:
+    # error bar
+    y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
+    error_smoothed_lt, _ = smooth_cv(np.array([x_range, y_error_lt]).T)
+    y_error_lt_smoothed = error_smoothed_lt[:, 1]
+    plt.fill_between(x_smoothed_lt, y_lt_smoothed - y_error_lt_smoothed, y_lt_smoothed + y_error_lt_smoothed,
+                     alpha=0.3,
+                     color='blue',
+                     label='estimated gs IPV')
 # ground truth
 plt.plot(x_range, gs_ipv * math.pi / 8 * np.ones_like(x_range),
          linewidth=5,
@@ -100,23 +108,24 @@ plt.plot(x_range, gs_ipv * math.pi / 8 * np.ones_like(x_range),
 
 # ====draw go straight
 y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
-y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
 # smoothen data
 point_smoothed_gs, _ = smooth_cv(np.array([x_range, y_gs]).T)
-error_smoothed_gs, _ = smooth_cv(np.array([x_range, y_error_gs]).T)
 x_smoothed_gs = point_smoothed_gs[:, 0]
 y_gs_smoothed = point_smoothed_gs[:, 1]
-y_error_gs_smoothed = error_smoothed_gs[:, 1]
-# mean value
 plt.plot(x_smoothed_gs, y_gs_smoothed,
          alpha=1,
          color='red',
          label='estimated gs IPV')
-# error region
-plt.fill_between(x_smoothed_gs, y_gs_smoothed - y_error_gs_smoothed, y_gs_smoothed + y_error_gs_smoothed,
-                 alpha=0.3,
-                 color='red',
-                 label='estimated lt IPV')
+
+if ipv_update_method == 1:
+    # error bar
+    y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
+    error_smoothed_gs, _ = smooth_cv(np.array([x_range, y_error_gs]).T)
+    y_error_gs_smoothed = error_smoothed_gs[:, 1]
+    plt.fill_between(x_smoothed_gs, y_gs_smoothed - y_error_gs_smoothed, y_gs_smoothed + y_error_gs_smoothed,
+                     alpha=0.3,
+                     color='red',
+                     label='estimated lt IPV')
 # ground truth
 plt.plot(x_range, lt_ipv * math.pi / 8 * np.ones_like(x_range),
          linewidth=5,
