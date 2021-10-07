@@ -1,4 +1,0 @@
-change:
-WEIGHT_DEVIATION = 0.5 → 0.4
-
-init_velocity_gs = np.array([-2, 0]) → np.array([-1, 0])

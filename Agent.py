@@ -26,11 +26,11 @@ INITIAL_IPV_GUESS = 0
 virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
 # weight of interior and group cost
-WEIGHT_INT = 5
+WEIGHT_INT = 3
 WEIGHT_GRP = 1
 
 # likelihood function
-sigma = 0.2
+sigma = 0.1
 
 
 class Agent:
@@ -304,12 +304,12 @@ def cal_interior_cost(action, track, target):
     # print('cost of travel delay:', cost_travel_distance)
 
     "2. cost of lane deviation"
-    cost_mean_deviation = max(0, dis2cv.mean() - 0.3)
+    cost_mean_deviation = max(0, dis2cv.mean() - 0.1)
     # print('cost of lane deviation:', cost_mean_deviation)
 
     "3. cost of steering"
     cost_steering = 0
-    if target == 'gs_nds' and action is not []:
+    if target in {'gs_nds', 'gs'} and action is not []:
         delta_slice = slice(int(np.size(action, 0) / 2), np.size(action, 0))
         delta = action[delta_slice]
         cost_steering = np.sum(np.abs(delta))
@@ -331,7 +331,7 @@ def cal_group_cost(track_packed):
     "version 1"
     min_rel_distance = np.amin(rel_distance)  # minimal distance
     min_index = np.where(min_rel_distance == rel_distance)[0]  # the time step when reach the minimal distance
-    cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0))
+    cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0)) / rel_distance[0]
 
     "version 2"
     # rel_speed = (rel_distance[1:] - rel_distance[0:-1]) / dt

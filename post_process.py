@@ -5,14 +5,14 @@ from tools.utility import get_central_vertices, smooth_cv
 import numpy as np
 
 "====import data===="
-gs_ipv = 4
-lt_ipv = -2
+gs_ipv = 2
+lt_ipv = 0
 ipv_update_method = 1
-filename = './outputs/version7/' + 'agents_info' \
+filename = './outputs/version10/' + 'agents_info' \
            + '_gs_' + str(gs_ipv) \
            + '_lt_' + str(lt_ipv) \
            + '.pckl'
-# filename = './outputs/version6/' + 'agents_info' \
+# filename = './outputs/old/version7/' + 'agents_info' \
 #            + '_gs_' + str(gs_ipv) \
 #            + '_lt_' + str(lt_ipv) \
 #            + '_math.pi_9' + '.pckl'
@@ -76,7 +76,14 @@ for t in range(len(agent_lt_observed_trajectory)):
              alpha=0.1)
     plt.xlim(8, 20)
     plt.ylim(-8, 8)
-    plt.pause(0.1)
+    plt.pause(0.3)
+
+for t in range(len(agent_lt_observed_trajectory)):
+    plt.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
+             [agent_lt_observed_trajectory[t, 1], agent_gs_observed_trajectory[t, 1]],
+             color='gray',
+             alpha=0.1)
+
 
 "====ipv estimation===="
 plt.figure(2)

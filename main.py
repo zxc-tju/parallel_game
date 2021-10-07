@@ -7,7 +7,7 @@ from tools.utility import get_central_vertices
 import time
 import pickle
 
-ipv_update_method = 2
+ipv_update_method = 1
 """
 notes for ipv_update_method:
 1: parallel game method
@@ -35,7 +35,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-2, 0])
+    init_velocity_gs = np.array([-1, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -81,9 +81,9 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====save data===="
-    filename = './outputs/version9/agents_info' \
+    filename = './outputs/version10/agents_info' \
                + '_gs_' + str(gs_ipv_sim) \
-               + '_lt_' + str(lt_ipv_sim) + '_ipv_method_' + str(ipv_update_method) + '.pckl'
+               + '_lt_' + str(lt_ipv_sim) + '.pckl'
     f = open(filename, 'wb')
     pickle.dump([agent_lt, agent_gs], f)
     f.close()
@@ -178,24 +178,24 @@ if __name__ == '__main__':
     tic = time.perf_counter()
 
     "multi process"
-    # lt_ipv_set_full = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
-    # processes = [Process(target=multi_simulate, args=(1, [-4], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(2, [-3], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(3, [-2], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(4, [-1], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(5, [0], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(6, [1], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(7, [2], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(8, [3], lt_ipv_set_full)),
-    #              Process(target=multi_simulate, args=(9, [4], lt_ipv_set_full)),
-    #              ]
-    # [p.start() for p in processes]  # 开启进程
-    # [p.join() for p in processes]  # 等待进程依次结束
+    lt_ipv_set_full = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
+    processes = [Process(target=multi_simulate, args=(1, [-4], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(2, [-3], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(3, [-2], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(4, [-1], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(5, [0], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(6, [1], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(7, [2], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(8, [3], lt_ipv_set_full)),
+                 Process(target=multi_simulate, args=(9, [4], lt_ipv_set_full)),
+                 ]
+    [p.start() for p in processes]  # 开启进程
+    [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
-    for gs_ipv in [1]:
-        for lt_ipv in [3]:
-            simulate(gs_ipv, lt_ipv)
+    # for gs_ipv in [-3]:
+    #     for lt_ipv in [1]:
+    #         simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()
     print(f"whole process takes {toc - tic:0.4f} seconds")
