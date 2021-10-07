@@ -13,19 +13,14 @@ notes for ipv_update_method:
 1: parallel game method
 2: rational perspective method
 """
-final_illustration_needed = 0
+
 in_loop_illustration_needed = 0
 num_step = 20
 
-
-def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
-    count = 0
-    num_all = len(gs_ipv_set) * len(lt_ipv_set)
-    for gs_ipv_temp in gs_ipv_set:
-        for lt_ipv_temp in lt_ipv_set:
-            simulate(gs_ipv_temp, lt_ipv_temp)
-            count += 1
-            print('#======process ', process_id, ':', count/num_all*100, '%')
+"*****Check below before run!!!*****"
+output_directory = './outputs/version11/'
+final_illustration_needed = 0
+save_data_needed = 1
 
 
 def simulate(gs_ipv_sim, lt_ipv_sim):
@@ -35,7 +30,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-1, 0])
+    init_velocity_gs = np.array([-2, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -58,7 +53,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
             agent_lt.interact_with_parallel_virtual_agents(agent_gs)
 
         # ==interaction with estimated agent
-        agent_lt.interact_with_estimated_virtual_agents()
+        agent_lt.interact_with_estimated_agents()
 
         if in_loop_illustration_needed:
             agent_lt.draw()
@@ -69,7 +64,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
             agent_gs.interact_with_parallel_virtual_agents(agent_lt)
 
         # ==interaction with estimated agent
-        agent_gs.interact_with_estimated_virtual_agents()
+        agent_gs.interact_with_estimated_agents()
 
         if in_loop_illustration_needed:
             agent_gs.draw()
@@ -77,17 +72,18 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         "==update state=="
         agent_lt.update_state(agent_gs, ipv_update_method)
         agent_gs.update_state(agent_lt, ipv_update_method)
-        print("estimated gs ipv:", agent_lt.estimated_inter_agent.ipv)
-        print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
+        # print("estimated gs ipv:", agent_lt.estimated_inter_agent.ipv)
+        # print("estimated lt ipv:", agent_gs.estimated_inter_agent.ipv)
 
     "====save data===="
-    filename = './outputs/version10/agents_info' \
-               + '_gs_' + str(gs_ipv_sim) \
-               + '_lt_' + str(lt_ipv_sim) + '.pckl'
-    f = open(filename, 'wb')
-    pickle.dump([agent_lt, agent_gs], f)
-    f.close()
-    print('gs_' + str(gs_ipv_sim) + '_lt_' + str(lt_ipv_sim), 'saved')
+    if save_data_needed:
+        filename = output_directory + 'agents_info' \
+                   + '_gs_' + str(gs_ipv_sim) \
+                   + '_lt_' + str(lt_ipv_sim) + '.pckl'
+        f = open(filename, 'wb')
+        pickle.dump([agent_lt, agent_gs], f)
+        f.close()
+        print('gs_' + str(gs_ipv_sim) + '_lt_' + str(lt_ipv_sim), 'saved')
 
     "====visualization===="
     if final_illustration_needed:
@@ -172,6 +168,16 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         # plt.show()
 
 
+def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
+    count = 0
+    num_all = len(gs_ipv_set) * len(lt_ipv_set)
+    for gs_ipv_temp in gs_ipv_set:
+        for lt_ipv_temp in lt_ipv_set:
+            simulate(gs_ipv_temp, lt_ipv_temp)
+            count += 1
+            print('#======process ', process_id, ':', count / num_all * 100, '%')
+
+
 if __name__ == '__main__':
     from multiprocessing import Process
 
@@ -189,11 +195,22 @@ if __name__ == '__main__':
                  Process(target=multi_simulate, args=(8, [3], lt_ipv_set_full)),
                  Process(target=multi_simulate, args=(9, [4], lt_ipv_set_full)),
                  ]
+
+    # processes = [Process(target=multi_simulate, args=(1, [-4], [1])),
+    #              Process(target=multi_simulate, args=(2, [-3], [1])),
+    #              Process(target=multi_simulate, args=(3, [-2], [1])),
+    #              Process(target=multi_simulate, args=(4, [-1], [1])),
+    #              Process(target=multi_simulate, args=(5, [0], [1])),
+    #              Process(target=multi_simulate, args=(6, [1], [1])),
+    #              Process(target=multi_simulate, args=(7, [2], [1])),
+    #              Process(target=multi_simulate, args=(8, [3], [1])),
+    #              Process(target=multi_simulate, args=(9, [4], [1])),
+    #              ]
     [p.start() for p in processes]  # 开启进程
     [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
-    # for gs_ipv in [-3]:
+    # for gs_ipv in [3]:
     #     for lt_ipv in [1]:
     #         simulate(gs_ipv, lt_ipv)
 

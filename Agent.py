@@ -13,7 +13,7 @@ MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 2
 WEIGHT_DEVIATION = 0.4
-WEIGHT_STEERING = 0.6
+WEIGHT_STEERING = 0.1
 weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_STEERING])
 weight_metric = weight_metric / weight_metric.sum()
 
@@ -103,7 +103,7 @@ class Agent:
             virtual_agent_track_collection.append(virtual_inter_agent.trj_solution)
         self.estimated_inter_agent.virtual_track_collection.append(virtual_agent_track_collection)
 
-    def interact_with_estimated_virtual_agents(self):
+    def interact_with_estimated_agents(self):
         """
         interact with the estimated interacting agent. this agent's IPV is continuously updated.
         :return:
@@ -304,7 +304,7 @@ def cal_interior_cost(action, track, target):
     # print('cost of travel delay:', cost_travel_distance)
 
     "2. cost of lane deviation"
-    cost_mean_deviation = max(0, dis2cv.mean() - 0.1)
+    cost_mean_deviation = max(0, dis2cv.mean() - 0.3)
     # print('cost of lane deviation:', cost_mean_deviation)
 
     "3. cost of steering"
@@ -312,7 +312,7 @@ def cal_interior_cost(action, track, target):
     if target in {'gs_nds', 'gs'} and action is not []:
         delta_slice = slice(int(np.size(action, 0) / 2), np.size(action, 0))
         delta = action[delta_slice]
-        cost_steering = np.sum(np.abs(delta))
+        cost_steering = np.sum(np.abs(delta)) / np.size(track, 0)
 
     cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_steering])
 

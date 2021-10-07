@@ -5,17 +5,15 @@ from tools.utility import get_central_vertices, smooth_cv
 import numpy as np
 
 "====import data===="
-gs_ipv = 2
-lt_ipv = 0
+gs_ipv = 0
+lt_ipv = 1
+
 ipv_update_method = 1
-filename = './outputs/version10/' + 'agents_info' \
+filename = './outputs/version_test_v=2/' + 'agents_info' \
            + '_gs_' + str(gs_ipv) \
            + '_lt_' + str(lt_ipv) \
            + '.pckl'
-# filename = './outputs/old/version7/' + 'agents_info' \
-#            + '_gs_' + str(gs_ipv) \
-#            + '_lt_' + str(lt_ipv) \
-#            + '_math.pi_9' + '.pckl'
+
 f = open(filename, 'rb')
 agent_lt, agent_gs = pickle.load(f)
 f.close()
