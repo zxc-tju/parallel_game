@@ -5,11 +5,11 @@ from tools.utility import get_central_vertices, smooth_cv
 import numpy as np
 
 "====import data===="
-gs_ipv = 0
-lt_ipv = 1
+gs_ipv = 1
+lt_ipv = 3
 
 ipv_update_method = 1
-filename = './outputs/version_test_v=2/' + 'agents_info' \
+filename = './outputs/version11/' + 'agents_info' \
            + '_gs_' + str(gs_ipv) \
            + '_lt_' + str(lt_ipv) \
            + '.pckl'

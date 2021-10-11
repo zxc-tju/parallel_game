@@ -2,16 +2,81 @@ import scipy.io
 import math
 import numpy as np
 from matplotlib import pyplot as plt
-from agent import Agent,cal_interior_cost, cal_group_cost
+from agent import Agent, cal_interior_cost, cal_group_cost
 from tools.utility import get_central_vertices, smooth_cv
 
 illustration_needed = True
 
+# load data
 mat = scipy.io.loadmat('./data/NDS_data.mat')
-inter_num = mat['interactagentnumpost']
-inter_info = mat['interactinfo']
+# full interaction information
+inter_info = mat['interaction_info']
+# the number of go-straight vehicles that interact with the left-turn vehicle
+inter_num = mat['interact_agent_num']
 
 virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
+
+
+def visualize_nds(case_id):
+    # abstract interaction info. of a given case
+    case_info = inter_info[case_id]
+    # left-turn vehicle
+    lt_info = case_info[0]
+    # go-straight vehicles
+    gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
+
+    fig = plt.figure(1)
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
+    ax2.set(xlim=[-22, 53], ylim=[-31, 57])
+    img = plt.imread('Jianhexianxia.jpg')
+    ax2.imshow(img, extent=[-22, 53, -31, 57])
+
+    for t in range(np.size(lt_info, 0)):
+        t_end = t + 6
+        ax1.cla()
+        ax1.set(xlim=[-22, 53], ylim=[-31, 57])
+        img = plt.imread('Jianhexianxia.jpg')
+        ax1.imshow(img, extent=[-22, 53, -31, 57])
+
+        # position of gp-straight vehicles
+        for gs_id in range(np.size(gs_info_multi, 0)):
+            if np.size(gs_info_multi[gs_id], 0) > t and not gs_info_multi[gs_id][t, 0] == 0:
+                # position
+                ax1.scatter(gs_info_multi[gs_id][t, 0], gs_info_multi[gs_id][t, 1],
+                            s=50,
+                            alpha=0.3,
+                            color='red',
+                            label='go-straight')
+                # future track
+                t_end = min(t + 6, np.size(gs_info_multi[gs_id], 0))
+                ax1.plot(gs_info_multi[gs_id][t:t_end, 0], gs_info_multi[gs_id][t:t_end, 1],
+                         alpha=0.8,
+                         color='red')
+
+        # position of left-turn vehicle
+        ax1.scatter(lt_info[t, 0], lt_info[t, 1],
+                    s=50,
+                    alpha=0.3,
+                    color='blue',
+                    label='left-turn')
+        # future track
+        ax1.plot(lt_info[t:t_end, 0], lt_info[t:t_end, 1],
+                 alpha=0.8,
+                 color='blue')
+        # ax1.legend()
+        plt.pause(0.1)
+
+    # show full track of all agents
+
+    ax2.plot(lt_info[:, 0], lt_info[:, 1],
+             alpha=0.8,
+             color='blue')
+    for gs_id in range(np.size(gs_info_multi, 0)):
+        ax2.plot(gs_info_multi[gs_id][:, 0], gs_info_multi[gs_id][:, 1],
+                 alpha=0.8,
+                 color='red')
+    plt.show()
 
 
 def analyze_nds(case_id):
@@ -52,7 +117,7 @@ def analyze_nds(case_id):
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
 
-    for t in range(70, np.size(lt_info, 0)):
+    for t in range(np.size(lt_info, 0)):
 
         "find current interacting agent"
         inter_id = None
@@ -167,4 +232,10 @@ def analyze_nds(case_id):
 
 
 if __name__ == '__main__':
-    analyze_nds(11)
+    nds_case_id = 1
+
+    "analyze IPV in NDS"
+    # analyze_nds(nds_case_id)
+
+    "show trajectories in NDS"
+    visualize_nds(nds_case_id)
