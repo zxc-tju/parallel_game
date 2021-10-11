@@ -65,15 +65,19 @@ def visualize_nds(case_id):
                  alpha=0.8,
                  color='blue')
         # ax1.legend()
-        plt.pause(0.1)
+        # plt.pause(0.1)
 
     # show full track of all agents
-
     ax2.plot(lt_info[:, 0], lt_info[:, 1],
              alpha=0.8,
              color='blue')
     for gs_id in range(np.size(gs_info_multi, 0)):
-        ax2.plot(gs_info_multi[gs_id][:, 0], gs_info_multi[gs_id][:, 1],
+        # find solid frames
+        frames = np.where(gs_info_multi[gs_id][:, 0] < 1e-3)
+        # the first solid frame id
+        frame_start = len(frames[0])
+        # tracks
+        ax2.plot(gs_info_multi[gs_id][frame_start:, 0], gs_info_multi[gs_id][frame_start:, 1],
                  alpha=0.8,
                  color='red')
     plt.show()
@@ -232,7 +236,7 @@ def analyze_nds(case_id):
 
 
 if __name__ == '__main__':
-    nds_case_id = 1
+    nds_case_id = 11
 
     "analyze IPV in NDS"
     # analyze_nds(nds_case_id)
