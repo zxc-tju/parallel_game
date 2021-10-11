@@ -39,12 +39,12 @@ def visualize_nds(case_id):
         img = plt.imread('Jianhexianxia.jpg')
         ax1.imshow(img, extent=[-22, 53, -31, 57])
 
-        # position of gp-straight vehicles
+        # position of go-straight vehicles
         for gs_id in range(np.size(gs_info_multi, 0)):
             if np.size(gs_info_multi[gs_id], 0) > t and not gs_info_multi[gs_id][t, 0] == 0:
                 # position
                 ax1.scatter(gs_info_multi[gs_id][t, 0], gs_info_multi[gs_id][t, 1],
-                            s=50,
+                            s=80,
                             alpha=0.3,
                             color='red',
                             label='go-straight')
@@ -56,7 +56,7 @@ def visualize_nds(case_id):
 
         # position of left-turn vehicle
         ax1.scatter(lt_info[t, 0], lt_info[t, 1],
-                    s=50,
+                    s=80,
                     alpha=0.3,
                     color='blue',
                     label='left-turn')
@@ -65,7 +65,7 @@ def visualize_nds(case_id):
                  alpha=0.8,
                  color='blue')
         # ax1.legend()
-        # plt.pause(0.1)
+        plt.pause(0.1)
 
     # show full track of all agents
     ax2.plot(lt_info[:, 0], lt_info[:, 1],
@@ -236,7 +236,7 @@ def analyze_nds(case_id):
 
 
 if __name__ == '__main__':
-    nds_case_id = 11
+    nds_case_id = 15
 
     "analyze IPV in NDS"
     # analyze_nds(nds_case_id)
