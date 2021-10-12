@@ -5,8 +5,8 @@ from tools.utility import get_central_vertices, smooth_cv
 import numpy as np
 
 "====import data===="
-gs_ipv = 1
-lt_ipv = 3
+gs_ipv = 3
+lt_ipv = 1
 
 ipv_update_method = 1
 filename = './outputs/version11/' + 'agents_info' \
@@ -29,59 +29,61 @@ else:
     agent_gs_observed_trajectory = agent_gs.observed_trajectory
 
 "====final observed_trajectory===="
-plt.figure(1, figsize=(6, 8))
+fig = plt.figure(1)
+ax = fig.add_subplot(111)
+img = plt.imread('background_pic/T_intersection.jpg')
+
 for t in range(len(agent_lt_observed_trajectory)):
-    plt.clf()
+    ax.cla()
+    ax.imshow(img, extent=[-9.1, 24.9, -13, 8])
     # central vertices
-    plt.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
-    plt.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
+    ax.plot(cv_init_it[:, 0], cv_init_it[:, 1], 'r-')
+    ax.plot(cv_init_gs[:, 0], cv_init_gs[:, 1], 'b-')
     # left-turn
-    plt.scatter(agent_lt_observed_trajectory[:t + 1, 0],
-                agent_lt_observed_trajectory[:t + 1, 1],
-                s=100,
-                alpha=0.6,
-                color='red',
-                label='left-turn')
+    ax.scatter(agent_lt_observed_trajectory[:t + 1, 0],
+               agent_lt_observed_trajectory[:t + 1, 1],
+               s=100,
+               alpha=0.6,
+               color='red',
+               label='left-turn')
 
     # go-straight
-    plt.scatter(agent_gs_observed_trajectory[:t + 1, 0],
-                agent_gs_observed_trajectory[:t + 1, 1],
-                s=100,
-                alpha=0.6,
-                color='blue',
-                label='go-straight')
+    ax.scatter(agent_gs_observed_trajectory[:t + 1, 0],
+               agent_gs_observed_trajectory[:t + 1, 1],
+               s=100,
+               alpha=0.6,
+               color='blue',
+               label='go-straight')
 
     if t < len(agent_lt_observed_trajectory) - 1:
         # real-time virtual plans of ## ego ## at time step t
         lt_track = agent_lt.trj_solution_collection[t]
-        plt.plot(lt_track[:, 0], lt_track[:, 1], '--', linewidth=3)
+        ax.plot(lt_track[:, 0], lt_track[:, 1], '--', linewidth=3)
         gs_track = agent_gs.trj_solution_collection[t]
-        plt.plot(gs_track[:, 0], gs_track[:, 1], '--', linewidth=3)
+        ax.plot(gs_track[:, 0], gs_track[:, 1], '--', linewidth=3)
 
         if ipv_update_method == 1:
             # real-time virtual plans of ## interacting agent ## at time step t
             candidates_lt = agent_lt.estimated_inter_agent.virtual_track_collection[t]
             candidates_gs = agent_gs.estimated_inter_agent.virtual_track_collection[t]
             for track_lt in candidates_lt:
-                plt.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
+                ax.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
             for track_gs in candidates_gs:
-                plt.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
+                ax.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
 
     # position link
-    plt.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
-             [agent_lt_observed_trajectory[t, 1], agent_gs_observed_trajectory[t, 1]],
-             color='gray',
-             alpha=0.1)
-    plt.xlim(8, 20)
-    plt.ylim(-8, 8)
+    ax.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
+            [agent_lt_observed_trajectory[t, 1], agent_gs_observed_trajectory[t, 1]],
+            color='gray',
+            alpha=0.1)
+    ax.set(xlim=[-9.1, 24.9], ylim=[-13, 8])
     plt.pause(0.3)
 
 for t in range(len(agent_lt_observed_trajectory)):
-    plt.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
-             [agent_lt_observed_trajectory[t, 1], agent_gs_observed_trajectory[t, 1]],
-             color='gray',
-             alpha=0.1)
-
+    ax.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
+            [agent_lt_observed_trajectory[t, 1], agent_gs_observed_trajectory[t, 1]],
+            color='gray',
+            alpha=0.1)
 
 "====ipv estimation===="
 plt.figure(2)

@@ -29,14 +29,14 @@ def visualize_nds(case_id):
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
     ax2.set(xlim=[-22, 53], ylim=[-31, 57])
-    img = plt.imread('Jianhexianxia.jpg')
+    img = plt.imread('background_pic/Jianhexianxia.jpg')
     ax2.imshow(img, extent=[-22, 53, -31, 57])
 
     for t in range(np.size(lt_info, 0)):
         t_end = t + 6
         ax1.cla()
         ax1.set(xlim=[-22, 53], ylim=[-31, 57])
-        img = plt.imread('Jianhexianxia.jpg')
+        img = plt.imread('background_pic/Jianhexianxia.jpg')
         ax1.imshow(img, extent=[-22, 53, -31, 57])
 
         # position of go-straight vehicles
