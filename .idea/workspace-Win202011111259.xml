@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="b6d67249-dfb2-4c55-9ac1-0c5777aa3a57" name="Default Changelist" comment="update NDS analysis">
+      <change beforePath="$PROJECT_DIR$/Agent.py" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="ProjectId" id="1xizMgK0xOtniit6ZDG0Ki1zvOC" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/outputs/version6" />
+    <property name="restartRequiresConfirmation" value="false" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs\version6" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs\version5" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs\version1" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.NDS_analysis">
+    <configuration name="NDS_analysis (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="4_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/NDS_analysis.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="NDS_analysis" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="4_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/NDS_analysis.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="agent" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="4_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/agent.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="4_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="post_process" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="4_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/post_process.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.NDS_analysis (1)" />
+      <item itemvalue="Python.NDS_analysis" />
+      <item itemvalue="Python.agent" />
+      <item itemvalue="Python.main" />
+      <item itemvalue="Python.post_process" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.NDS_analysis" />
+        <item itemvalue="Python.main" />
+        <item itemvalue="Python.post_process" />
+        <item itemvalue="Python.agent" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b6d67249-dfb2-4c55-9ac1-0c5777aa3a57" name="Default Changelist" comment="" />
+      <created>1630852654065</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1630852654065</updated>
+    </task>
+    <task id="LOCAL-00001" summary="finish interior cost calculation">
+      <created>1630852810452</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1630852810453</updated>
+    </task>
+    <task id="LOCAL-00002" summary="update todo list">
+      <created>1630853110801</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1630853110801</updated>
+    </task>
+    <task id="LOCAL-00003" summary="fix interior cost calculation">
+      <created>1631002351910</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1631002351910</updated>
+    </task>
+    <task id="LOCAL-00004" summary="add cal_group_cost">
+      <created>1631003443414</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1631003443414</updated>
+    </task>
+    <task id="LOCAL-00005" summary="add optimization process">
+      <created>1631025874147</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1631025874147</updated>
+    </task>
+    <task id="LOCAL-00006" summary="fix optimization process">
+      <created>1631091115916</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1631091115916</updated>
+    </task>
+    <task id="LOCAL-00007" summary="modify settings">
+      <created>1631097330423</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1631097330423</updated>
+    </task>
+    <task id="LOCAL-00008" summary="save KKT method (does not work)">
+      <created>1631253379124</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1631253379124</updated>
+    </task>
+    <task id="LOCAL-00009" summary="fix bug in track_all">
+      <created>1631257262585</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1631257262585</updated>
+    </task>
+    <task id="LOCAL-00010" summary="fix travel distance cost">
+      <created>1631257779474</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1631257779474</updated>
+    </task>
+    <task id="LOCAL-00011" summary="add IBR method">
+      <created>1631264250382</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1631264250382</updated>
+    </task>
+    <task id="LOCAL-00012" summary="move imports">
+      <created>1631329118550</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1631329118550</updated>
+    </task>
+    <task id="LOCAL-00013" summary="update cost func.">
+      <created>1632385333621</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1632385333622</updated>
+    </task>
+    <task id="LOCAL-00014" summary="delete gt_planner">
+      <created>1632385663776</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1632385663776</updated>
+    </task>
+    <task id="LOCAL-00015" summary="IPV update">
+      <created>1632486098379</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1632486098380</updated>
+    </task>
+    <task id="LOCAL-00016" summary="add ipv error analysis">
+      <created>1632499476532</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1632499476532</updated>
+    </task>
+    <task id="LOCAL-00017" summary="multi case calculation">
+      <created>1632574644325</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1632574644325</updated>
+    </task>
+    <task id="LOCAL-00018" summary="add post process">
+      <created>1632643909734</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1632643909734</updated>
+    </task>
+    <task id="LOCAL-00019" summary="modify parameters before run version2">
+      <created>1632644378859</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1632644378859</updated>
+    </task>
+    <task id="LOCAL-00020" summary="add multiprocess">
+      <created>1632664208862</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1632664208862</updated>
+    </task>
+    <task id="LOCAL-00021" summary="git test">
+      <created>1632665119932</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1632665119932</updated>
+    </task>
+    <task id="LOCAL-00022" summary="fix bugs">
+      <created>1632670740063</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1632670740063</updated>
+    </task>
+    <task id="LOCAL-00023" summary="add outputted data">
+      <created>1632731094873</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1632731094873</updated>
+    </task>
+    <task id="LOCAL-00024" summary="before run version 4">
+      <created>1632731802663</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1632731802663</updated>
+    </task>
+    <task id="LOCAL-00025" summary="before run version">
+      <created>1632731929865</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1632731929866</updated>
+    </task>
+    <task id="LOCAL-00026" summary="before run version 5">
+      <created>1632790252489</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1632790252489</updated>
+    </task>
+    <task id="LOCAL-00027" summary="before run version 6">
+      <created>1632813498123</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1632813498123</updated>
+    </task>
+    <task id="LOCAL-00028" summary="reconstruct main">
+      <created>1633150586103</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1633150586103</updated>
+    </task>
+    <task id="LOCAL-00029" summary="reconstruct main">
+      <created>1633150646297</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1633150646297</updated>
+    </task>
+    <task id="LOCAL-00030" summary="update NDS analysis">
+      <created>1633168299964</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1633168299964</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="fix optimization process" />
+    <MESSAGE value="modify settings" />
+    <MESSAGE value="save KKT method (does not work)" />
+    <MESSAGE value="fix bug in track_all" />
+    <MESSAGE value="fix travel distance cost" />
+    <MESSAGE value="add IBR method" />
+    <MESSAGE value="move imports" />
+    <MESSAGE value="update cost func." />
+    <MESSAGE value="delete gt_planner" />
+    <MESSAGE value="IPV update" />
+    <MESSAGE value="add ipv error analysis" />
+    <MESSAGE value="multi case calculation" />
+    <MESSAGE value="add post process" />
+    <MESSAGE value="modify parameters before run version2" />
+    <MESSAGE value="fix bug in likelihood calculation" />
+    <MESSAGE value="add multiprocess" />
+    <MESSAGE value="git test" />
+    <MESSAGE value="fix bugs" />
+    <MESSAGE value="add outputted data" />
+    <MESSAGE value="before run version 4" />
+    <MESSAGE value="before run version" />
+    <MESSAGE value="before run version 5" />
+    <MESSAGE value="before run version 6" />
+    <MESSAGE value="reconstruct main" />
+    <MESSAGE value="update NDS analysis" />
+    <option name="LAST_COMMIT_MESSAGE" value="update NDS analysis" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="inter_d" />
+        <watch expression="inter_o" />
+      </configuration>
+    </watches-manager>
+  </component>
+</project>
