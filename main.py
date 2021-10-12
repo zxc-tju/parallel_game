@@ -18,14 +18,14 @@ in_loop_illustration_needed = 0
 num_step = 20
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/version11/'
+output_directory = './outputs/version12/'
 final_illustration_needed = 0
 save_data_needed = 1
 
 
 def simulate(gs_ipv_sim, lt_ipv_sim):
     # initial state of the left-turn vehicle
-    init_position_lt = np.array([13, -7])
+    init_position_lt = np.array([11, -5.8])
     init_velocity_lt = np.array([2, 0.3])
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle

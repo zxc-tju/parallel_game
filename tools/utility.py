@@ -34,7 +34,7 @@ def smooth_cv(cv_init, point_num=100):
 def get_central_vertices(cv_type):
     cv_init = None
     if cv_type == 'lt':  # left turn
-        cv_init = np.array([[0, -15], [5, -14.14], [10.6, -10.6], [15, 0], [15, 100]])
+        cv_init = np.array([[0, -10], [9, -7.5], [12, -5.2], [13.5, 0], [14, 10], [14, 20], [14, 30]])
     elif cv_type == 'gs':  # go straight
         cv_init = np.array([[20, -2], [10, -2], [0, -2], [-150, -2]])
     elif cv_type == 'lt_nds':  # left turn in NDS
