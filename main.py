@@ -18,7 +18,7 @@ in_loop_illustration_needed = 0
 num_step = 20
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/version12/'
+output_directory = './outputs/version14/'
 final_illustration_needed = 0
 save_data_needed = 1
 
@@ -30,7 +30,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-2, 0])
+    init_velocity_gs = np.array([-4, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents

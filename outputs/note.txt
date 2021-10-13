@@ -6,3 +6,9 @@ version 12:
 fix central vertices and change initial state:
 init_position_lt = np.array([13, -7]) → init_position_lt = np.array([11, -5.8])
 git pushed before running
+
+version 13:
+init_velocity_gs = np.array([-2, 0]) → init_velocity_gs = np.array([-3, 0])
+
+version 14:
+init_velocity_gs = np.array([-2, 0]) → init_velocity_gs = np.array([-4, 0])
