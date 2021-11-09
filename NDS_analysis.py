@@ -87,7 +87,7 @@ def analyze_nds(case_id):
     case_info = inter_info[case_id]
     lt_info = case_info[0]
 
-    # find co-present gs agents (not interacting)
+    # find co-present gs agents (not necessarily interacting)
     gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
 
     # find interacting gs agent

@@ -11,7 +11,7 @@ dt = 0.1
 TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
-WEIGHT_DELAY = 1.5
+WEIGHT_DELAY = 2
 WEIGHT_DEVIATION = 0.4
 WEIGHT_STEERING = 0.1
 weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_STEERING])
@@ -26,8 +26,8 @@ INITIAL_IPV_GUESS = 0
 virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
 # weight of interior and group cost
-WEIGHT_INT = 3
-WEIGHT_GRP = 1
+WEIGHT_INT = 1
+WEIGHT_GRP = 0.8
 
 # likelihood function
 sigma = 0.1
