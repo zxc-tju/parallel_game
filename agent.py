@@ -27,7 +27,7 @@ virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-WEIGHT_GRP = 0.8
+WEIGHT_GRP = 0.9
 
 # likelihood function
 sigma = 0.1

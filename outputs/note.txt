@@ -28,3 +28,8 @@ version 16:
 WEIGHT_INT = 1
 WEIGHT_GRP = 0.8
 v_gs = -4,0
+
+version 17:
+WEIGHT_INT = 1
+WEIGHT_GRP = 0.9
+v_gs = -4,0

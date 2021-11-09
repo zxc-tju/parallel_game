@@ -18,7 +18,7 @@ in_loop_illustration_needed = 0
 num_step = 20
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/version16/'
+output_directory = './outputs/version17/'
 final_illustration_needed = 0
 save_data_needed = 1
 
