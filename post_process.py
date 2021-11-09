@@ -5,12 +5,15 @@ from tools.utility import get_central_vertices, smooth_cv
 import numpy as np
 
 ipv_update_method = 1
-show_gif = 0
-"====import data===="
+show_gif = 1
+save_fig = 0
 
 
 def show_results(gs_ipv, lt_ipv):
-    filename = './outputs/version13/' + 'agents_info' \
+
+    # import data
+    version_num = 15
+    filename = './outputs/version' + str(version_num) + '/data/agents_info' \
                + '_gs_' + str(gs_ipv) \
                + '_lt_' + str(lt_ipv) \
                + '.pckl'
@@ -30,9 +33,9 @@ def show_results(gs_ipv, lt_ipv):
 
     "====final observed_trajectory===="
     if show_gif:
-        fig = plt.figure(figsize=(7, 10))  # for showing gif
+        fig = plt.figure(figsize=(12, 28))  # for showing gif
     else:
-        fig = plt.figure(dpi=600, figsize=(12, 18))  # for printing figure
+        fig = plt.figure(dpi=300, figsize=(12, 18))  # for printing figure
     ax1 = plt.subplot(211)
     ax2 = fig.add_subplot(212)
     img = plt.imread('background_pic/T_intersection.jpg')
@@ -52,7 +55,6 @@ def show_results(gs_ipv, lt_ipv):
                     alpha=0.4,
                     color='red',
                     label='left-turn')
-
         # go-straight
         ax1.scatter(agent_gs_observed_trajectory[:t + 1, 0],
                     agent_gs_observed_trajectory[:t + 1, 1],
@@ -60,14 +62,12 @@ def show_results(gs_ipv, lt_ipv):
                     alpha=0.4,
                     color='blue',
                     label='go-straight')
-
         if t < len(agent_lt_observed_trajectory) - 1:
             # real-time virtual plans of ## ego ## at time step t
             lt_track = agent_lt.trj_solution_collection[t]
             ax1.plot(lt_track[:, 0], lt_track[:, 1], '--', linewidth=3)
             gs_track = agent_gs.trj_solution_collection[t]
             ax1.plot(gs_track[:, 0], gs_track[:, 1], '--', linewidth=3)
-
             if ipv_update_method == 1:
                 # real-time virtual plans of ## interacting agent ## at time step t
                 candidates_lt = agent_lt.estimated_inter_agent.virtual_track_collection[t]
@@ -76,15 +76,13 @@ def show_results(gs_ipv, lt_ipv):
                     ax1.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
                 for track_gs in candidates_gs:
                     ax1.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
-
         # position link
         ax1.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
                  [agent_lt_observed_trajectory[t, 1], agent_gs_observed_trajectory[t, 1]],
                  color='gray',
                  alpha=0.2)
         if show_gif:
-            plt.pause(0.3)
-
+            plt.pause(0.9)
     # full position link
     for t in range(len(agent_lt_observed_trajectory)):
         ax1.plot([agent_lt_observed_trajectory[t, 0], agent_gs_observed_trajectory[t, 0]],
@@ -92,6 +90,7 @@ def show_results(gs_ipv, lt_ipv):
                  color='gray',
                  alpha=0.1)
     ax1.set_title('gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv), fontsize=12)
+
     "====ipv estimation===="
     x_range = np.array(range(len(agent_lt.estimated_inter_agent.ipv_collection)))
 
@@ -104,7 +103,6 @@ def show_results(gs_ipv, lt_ipv):
              alpha=1,
              color='blue',
              label='estimated gs IPV')
-
     if ipv_update_method == 1:
         # error bar
         y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
@@ -129,7 +127,6 @@ def show_results(gs_ipv, lt_ipv):
              alpha=1,
              color='red',
              label='estimated gs IPV')
-
     if ipv_update_method == 1:
         # error bar
         y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
@@ -145,15 +142,16 @@ def show_results(gs_ipv, lt_ipv):
              label='actual lt IPV')
 
     # save figure
-    plt.savefig('outputs/version13/figures/'
-                + 'gs=' + str(gs_ipv)
-                + '_lt=' + str(lt_ipv) + '.png')
-    plt.close()
+    if save_fig:
+        plt.savefig('./outputs/version' + str(version_num) + '/figures/'
+                    + 'gs=' + str(gs_ipv)
+                    + '_lt=' + str(lt_ipv) + '.png')
+        plt.close()
 
 
 if __name__ == '__main__':
     ipv_list = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
     # ipv_list = [1]
-    for gs in [1, 2, 3, 4]:
-        for lt in ipv_list:
+    for gs in [-3]:
+        for lt in [3]:
             show_results(gs, lt)

@@ -12,3 +12,8 @@ init_velocity_gs = np.array([-2, 0]) → init_velocity_gs = np.array([-3, 0])
 
 version 14:
 init_velocity_gs = np.array([-2, 0]) → init_velocity_gs = np.array([-4, 0])
+
+
+version 15:
+init_velocity_gs = np.array([-4, 0]) → init_velocity_gs = np.array([-2, 0])
+WEIGHT_DELAY = 2 → WEIGHT_DELAY = 1.5
