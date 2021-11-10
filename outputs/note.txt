@@ -1,20 +1,20 @@
-version 11:
+version 11 (dropped):
 v_gs = [-2, 0]
 git pushed before running
 
-version 12:
+version 12 (dropped):
 fix central vertices and change initial state:
 init_position_lt = np.array([13, -7]) → init_position_lt = np.array([11, -5.8])
 git pushed before running
 
-version 13:
+version 13 (dropped):
 init_velocity_gs = np.array([-2, 0]) → init_velocity_gs = np.array([-3, 0])
 
-version 14:
+version 14 (dropped):
 init_velocity_gs = np.array([-2, 0]) → init_velocity_gs = np.array([-4, 0])
 
 
-version 15:
+version 15 (dropped):
 init_velocity_gs = np.array([-4, 0]) → init_velocity_gs = np.array([-2, 0])
 WEIGHT_DELAY = 2 → WEIGHT_DELAY = 1.5
 
@@ -24,12 +24,20 @@ WEIGHT_DELAY = 1.5 → WEIGHT_DELAY = 2
 test change
 WEIGHT_GRP = 1 →  WEIGHT_GRP = 1.5
 
-version 16:
+version 16 (dropped):
 WEIGHT_INT = 1
 WEIGHT_GRP = 0.8
 v_gs = -4,0
+
+# ============#
 
 version 17:
 WEIGHT_INT = 1
 WEIGHT_GRP = 0.9
 v_gs = -4,0
+
+#results of verision17 are great, keep WEIGHT_GRP = 0.9#
+version 18:
+WEIGHT_INT = 1
+WEIGHT_GRP = 0.9
+v_gs = -2,0

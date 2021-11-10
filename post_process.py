@@ -1,18 +1,19 @@
 import pickle
 import math
+import gc
 from matplotlib import pyplot as plt
 from tools.utility import get_central_vertices, smooth_cv
 import numpy as np
 
 ipv_update_method = 1
-show_gif = 1
+show_gif = 0
 save_fig = 1
 
 
 def show_results(gs_ipv, lt_ipv):
 
     # import data
-    version_num = '_test'
+    version_num = 17
     filename = './outputs/version' + str(version_num) + '/data/agents_info' \
                + '_gs_' + str(gs_ipv) \
                + '_lt_' + str(lt_ipv) \
@@ -146,13 +147,15 @@ def show_results(gs_ipv, lt_ipv):
         plt.savefig('./outputs/version' + str(version_num) + '/figures/'
                     + 'gs=' + str(gs_ipv)
                     + '_lt=' + str(lt_ipv) + '.png')
+        plt.clf()
         plt.close()
+        gc.collect()
 
 
 if __name__ == '__main__':
-    # ipv_list = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
-    ipv_list = [-3, 0, 3]
+    ipv_list = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
+    # ipv_list = [-3, 0, 3]
     # ipv_list = [1]
-    for gs in [2]:
-        for lt in [0]:
+    for gs in ipv_list:
+        for lt in ipv_list:
             show_results(gs, lt)
