@@ -18,7 +18,7 @@ in_loop_illustration_needed = 0
 num_step = 20
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/version18/'
+output_directory = './outputs/version17/'
 final_illustration_needed = 0
 save_data_needed = 1
 
@@ -30,7 +30,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-2, 0])
+    init_velocity_gs = np.array([-4, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -165,7 +165,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
         ax1.legend()
         ax2.legend()
-        # plt.show()
+        plt.show()
 
 
 def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
@@ -213,8 +213,8 @@ if __name__ == '__main__':
     # [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
-    # for gs_ipv in [2]:
-    #     for lt_ipv in [0]:
+    # for gs_ipv in [0]:
+    #     for lt_ipv in [2]:
     #         simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()

@@ -35,9 +35,11 @@ version 17:
 WEIGHT_INT = 1
 WEIGHT_GRP = 0.9
 v_gs = -4,0
-
 #results of verision17 are great, keep WEIGHT_GRP = 0.9#
+
 version 18:
 WEIGHT_INT = 1
 WEIGHT_GRP = 0.9
 v_gs = -2,0
+
+fix a bug in cal utility and rerun verison 17 & 18

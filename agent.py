@@ -67,7 +67,8 @@ class Agent:
         p, v, h = self_info[0:3]
         init_state_4_kine = [p[0], p[1], v[0], v[1], h]  # initial state
         fun = utility_IBR(self_info, inter_track)  # objective function
-        u0 = np.zeros([(track_len - 1) * 2, 1])  # initialize solution
+        u0 = np.concatenate([1*np.ones([(track_len - 1), 1]),
+                             np.zeros([(track_len - 1), 1])])  # initialize solution
         bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(track_len - 1)] + \
               [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(track_len - 1)]  # boundaries
 
@@ -288,9 +289,9 @@ def cal_interior_cost(action, track, target):
     init_index = np.where(init_min_dis2cv == init_dis2cv)
 
     # find the on-reference point of the track end
-    end_dis2cv = np.linalg.norm(cv - track[-1, 0:2], axis=1)
-    end_init_dis2cv = np.amin(end_dis2cv)
-    end_index = np.where(end_init_dis2cv == end_dis2cv)
+    # end_dis2cv = np.linalg.norm(cv - track[-1, 0:2], axis=1)
+    # end_init_dis2cv = np.amin(end_dis2cv)
+    # end_index = np.where(end_init_dis2cv == end_dis2cv)
 
     # initialize an array to store distance from each point in the track to cv
     dis2cv = np.zeros([np.size(track, 0), 1])
@@ -309,10 +310,10 @@ def cal_interior_cost(action, track, target):
 
     "3. cost of steering"
     cost_steering = 0
-    if target in {'gs_nds', 'gs'} and action is not []:
-        delta_slice = slice(int(np.size(action, 0) / 2), np.size(action, 0))
-        delta = action[delta_slice]
-        cost_steering = np.sum(np.abs(delta)) / np.size(track, 0)
+    # if target in {'gs_nds', 'gs'} and action is not []:
+    #     delta_slice = slice(int(np.size(action, 0) / 2), np.size(action, 0))
+    #     delta = action[delta_slice]
+    #     cost_steering = np.sum(np.abs(delta)) / np.size(track, 0)
 
     cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_steering])
 
