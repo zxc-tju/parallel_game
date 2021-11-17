@@ -161,13 +161,41 @@ def analyze_nds(case_id):
             "====end of simulation-based method===="
 
             "====cost-based method===="
-            # lt_track = lt_info[start_time:t + 1, 0:2]
-            # gs_track = gs_info_multi[inter_id][start_time:t + 1, 0:2]
+            # # load observed trajectories
+            # lt_track_observed = lt_info[start_time:t + 1, 0:2]
+            # gs_track_observed = gs_info_multi[inter_id][start_time:t + 1, 0:2]
             #
-            # lt_interior_cost = cal_interior_cost([], lt_track, 'lt_nds')
-            # gs_interior_cost = cal_interior_cost([], gs_track, 'gs_nds')
-            # group_cost = cal_group_cost([lt_track, gs_track])
-            # ipv_collection[t, 0] = math.atan(lt_interior_cost/group_cost)
+            # # generate two agents
+            # init_position_lt = lt_info[start_time, 0:2]
+            # init_velocity_lt = lt_info[start_time, 2:4]
+            # init_heading_lt = lt_info[start_time, 4]
+            # agent_lt = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt_nds')
+            # agent_lt.ipv = 0
+            # init_position_gs = gs_info_multi[inter_id][start_time, 0:2]
+            # init_velocity_gs = gs_info_multi[inter_id][start_time, 2:4]
+            # init_heading_gs = gs_info_multi[inter_id][start_time, 4]
+            # agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs_nds')
+            # agent_gs.ipv = 0
+            #
+            # # plan under selfish assumption
+            # lt_track_selfish = agent_lt.solve_game_IBR(gs_track_observed)
+            # lt_track_selfish = lt_track_selfish[:, 0:2]
+            # gs_track_selfish = agent_lt.solve_game_IBR(lt_track_observed)
+            # gs_track_selfish = gs_track_selfish[:, 0:2]
+            #
+            # # cost results in observation
+            # lt_interior_cost_observed = cal_interior_cost([], lt_track_observed, 'lt_nds')
+            # gs_interior_cost_observed = cal_interior_cost([], gs_track_observed, 'gs_nds')
+            # group_cost_observed = cal_group_cost([lt_track_observed, gs_track_observed])
+            #
+            # # cost result in assumption
+            # lt_interior_cost_assumed = cal_interior_cost([], lt_track_selfish, 'lt_nds')
+            # gs_interior_cost_assumed = cal_interior_cost([], gs_track_selfish, 'gs_nds')
+            # group_cost_lt_assumed = cal_group_cost([lt_track_selfish, gs_track_observed])
+            # group_cost_gs_assumed = cal_group_cost([lt_track_observed, gs_track_selfish])
+
+            # ipv_collection[t, 0] =
+            # ipv_collection[t, 1] =
 
             "====end of cost-based method===="
 
@@ -204,8 +232,13 @@ def analyze_nds(case_id):
                 # show trajectory and plans
                 ax2.cla()
                 ax2.set(xlim=[-22, 53], ylim=[-31, 57])
-                img = plt.imread('Jianhexianxia.jpg')
+                img = plt.imread('background_pic/Jianhexianxia.jpg')
                 ax2.imshow(img, extent=[-22, 53, -31, 57])
+                cv1, _ = get_central_vertices('lt_nds', [lt_info[start_time, 0], lt_info[start_time, 1]])
+                cv2, _ = get_central_vertices('gs_nds', [gs_info_multi[inter_id][start_time, 0],
+                                                         gs_info_multi[inter_id][start_time, 1]])
+                ax2.plot(cv1[:, 0], cv1[:, 1])
+                ax2.plot(cv2[:, 0], cv2[:, 1])
 
                 # actual track
                 ax2.scatter(lt_info[start_time:t, 0], lt_info[start_time:t, 1],
@@ -239,7 +272,7 @@ if __name__ == '__main__':
     nds_case_id = 15
 
     "analyze IPV in NDS"
-    # analyze_nds(nds_case_id)
+    analyze_nds(nds_case_id)
 
     "show trajectories in NDS"
-    visualize_nds(nds_case_id)
+    # visualize_nds(nds_case_id)

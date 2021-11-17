@@ -280,7 +280,10 @@ def utility_IBR(self_info, track_inter):
 
 
 def cal_interior_cost(action, track, target):
-    cv, s = get_central_vertices(target)
+    if target in {'gs_nds', 'lt_nds'}:
+        cv, s = get_central_vertices(target, track[0, :])
+    else:
+        cv, s = get_central_vertices(target, None)
 
     # find the on-reference point of the track starting
     test = cv - track[0, 0:2]
@@ -365,8 +368,10 @@ def cal_reliability(act_trck, vir_trck_coll):
 
         if var[i] < 0:
             var[i] = 0
-
-    weight = var / (sum(var))
+    if sum(var):
+        weight = var / (sum(var))
+    else:
+        weight = np.ones(candidates_num)/candidates_num
     # print(weight)
     return weight
 

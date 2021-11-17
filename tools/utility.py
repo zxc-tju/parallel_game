@@ -31,16 +31,16 @@ def smooth_cv(cv_init, point_num=100):
     return new_cv, s_accumulated
 
 
-def get_central_vertices(cv_type):
+def get_central_vertices(cv_type, origin_point):
     cv_init = None
     if cv_type == 'lt':  # left turn
         cv_init = np.array([[0, -10], [9, -7.5], [12, -5.2], [13.5, 0], [14, 10], [14, 20], [14, 30]])
     elif cv_type == 'gs':  # go straight
         cv_init = np.array([[20, -2], [10, -2], [0, -2], [-150, -2]])
     elif cv_type == 'lt_nds':  # left turn in NDS
-        cv_init = np.array([[17, 42], [20, 27], [27, 17], [40, 17]])
+        cv_init = np.array([origin_point, [34.9, 16.6], [45.2, 18.8], [51.6, 20.3]])
     elif cv_type == 'gs_nds':  # go straight in NDS
-        cv_init = np.array([[18, -28], [21, 7.4], [22.6, 38.7], [24.5, 56.3]])
+        cv_init = np.array([origin_point, [23, 45.77], [23.55, 49.654], [24.58, 56.65]])
     assert cv_init is not None
     cv_smoothed, s_accumulated = smooth_cv(cv_init)
     return cv_smoothed, s_accumulated

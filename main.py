@@ -184,33 +184,33 @@ if __name__ == '__main__':
     tic = time.perf_counter()
 
     "multi process"
-    lt_ipv_set_full = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
-    processes = [Process(target=multi_simulate, args=(1, [-4], lt_ipv_set_full)),
-                 Process(target=multi_simulate, args=(2, [-3], lt_ipv_set_full)),
-                 Process(target=multi_simulate, args=(3, [-2], lt_ipv_set_full)),
-                 Process(target=multi_simulate, args=(4, [-1], lt_ipv_set_full)),
-                 Process(target=multi_simulate, args=(5, [0], lt_ipv_set_full)),
-                 Process(target=multi_simulate, args=(6, [1], lt_ipv_set_full)),
-                 Process(target=multi_simulate, args=(7, [2], lt_ipv_set_full)),
-                 Process(target=multi_simulate, args=(8, [3], lt_ipv_set_full)),
-                 Process(target=multi_simulate, args=(9, [4], lt_ipv_set_full)),
-                 ]
-    [p.start() for p in processes]  # 开启进程
-    [p.join() for p in processes]  # 等待进程依次结束
-
-    "multi process for used set"
-    # processes = [Process(target=multi_simulate, args=(1, [-3], [-3])),
-    #              Process(target=multi_simulate, args=(2, [-3], [0])),
-    #              Process(target=multi_simulate, args=(3, [-3], [3])),
-    #              Process(target=multi_simulate, args=(4, [0], [-3])),
-    #              Process(target=multi_simulate, args=(5, [0], [0])),
-    #              Process(target=multi_simulate, args=(6, [0], [3])),
-    #              Process(target=multi_simulate, args=(7, [3], [-3])),
-    #              Process(target=multi_simulate, args=(8, [3], [0])),
-    #              Process(target=multi_simulate, args=(9, [3], [3])),
+    # lt_ipv_set_full = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
+    # processes = [Process(target=multi_simulate, args=(1, [-4], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(2, [-3], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(3, [-2], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(4, [-1], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(5, [0], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(6, [1], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(7, [2], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(8, [3], lt_ipv_set_full)),
+    #              Process(target=multi_simulate, args=(9, [4], lt_ipv_set_full)),
     #              ]
     # [p.start() for p in processes]  # 开启进程
     # [p.join() for p in processes]  # 等待进程依次结束
+
+    "multi process for used set"
+    processes = [Process(target=multi_simulate, args=(1, [-2], [-2])),
+                 Process(target=multi_simulate, args=(2, [-2], [0])),
+                 Process(target=multi_simulate, args=(3, [-2], [2])),
+                 Process(target=multi_simulate, args=(4, [0], [-2])),
+                 Process(target=multi_simulate, args=(5, [0], [0])),
+                 Process(target=multi_simulate, args=(6, [0], [2])),
+                 Process(target=multi_simulate, args=(7, [2], [-2])),
+                 Process(target=multi_simulate, args=(8, [2], [0])),
+                 Process(target=multi_simulate, args=(9, [2], [2])),
+                 ]
+    [p.start() for p in processes]  # 开启进程
+    [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
     # for gs_ipv in [0]:

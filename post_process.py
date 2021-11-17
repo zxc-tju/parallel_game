@@ -13,7 +13,7 @@ save_fig = 1
 def show_results(gs_ipv, lt_ipv):
 
     # import data
-    version_num = '_test'
+    version_num = '17'
     filename = './outputs/version' + str(version_num) + '/data/agents_info' \
                + '_gs_' + str(gs_ipv) \
                + '_lt_' + str(lt_ipv) \
@@ -154,8 +154,8 @@ def show_results(gs_ipv, lt_ipv):
 
 if __name__ == '__main__':
     # ipv_list = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
-    # ipv_list = [-3, 0, 3]
+    ipv_list = [-2, 0, 2]
     # ipv_list = [1]
-    for gs in [0]:
-        for lt in [2]:
+    for gs in ipv_list:
+        for lt in ipv_list:
             show_results(gs, lt)
