@@ -1,6 +1,7 @@
 import pickle
 import math
 import gc
+import pandas as pd
 from matplotlib import pyplot as plt
 from tools.utility import get_central_vertices, smooth_cv
 import numpy as np
@@ -8,12 +9,13 @@ import numpy as np
 ipv_update_method = 1
 show_gif = 0
 save_fig = 1
+save_data = 0
 
 
 def show_results(gs_ipv, lt_ipv):
 
     # import data
-    version_num = '17'
+    version_num = '19'
     filename = './outputs/version' + str(version_num) + '/data/agents_info' \
                + '_gs_' + str(gs_ipv) \
                + '_lt_' + str(lt_ipv) \
@@ -22,8 +24,44 @@ def show_results(gs_ipv, lt_ipv):
     agent_lt, agent_gs = pickle.load(f)
     f.close()
 
-    cv_init_it, _ = get_central_vertices('lt')
-    cv_init_gs, _ = get_central_vertices('gs')
+    "save data to excel"
+    if save_data:
+        lt_ob_trj = agent_lt.observed_trajectory[:, 0:2]
+        df_lt_ob_trj = pd.DataFrame(lt_ob_trj)
+
+        lt_trj_coll = agent_lt.trj_solution_collection[0][:, 0:2]
+        for i in range(9):
+            coll_temp = agent_lt.trj_solution_collection[(i+1)*2][:, 0:2]
+            lt_trj_coll = np.concatenate([lt_trj_coll, coll_temp], axis=1)
+        df_lt_trj_coll = pd.DataFrame(lt_trj_coll)
+
+        gs_ob_trj = agent_gs.observed_trajectory[:, 0:2]
+        df_gs_ob_trj = pd.DataFrame(gs_ob_trj)
+
+        gs_trj_coll = agent_gs.trj_solution_collection[0][:, 0:2]
+        for i in range(9):
+            coll_temp = agent_gs.trj_solution_collection[(i+1)*2][:, 0:2]
+            gs_trj_coll = np.concatenate([gs_trj_coll, coll_temp], axis=1)
+        df_gs_trj_coll = pd.DataFrame(gs_trj_coll)
+
+        link = np.concatenate([[lt_ob_trj[0, :]], [gs_ob_trj[0, :]]])
+        for i in range(10):
+            link = np.concatenate([link,
+                                   np.concatenate([[lt_ob_trj[(i+1)*2, :]], [gs_ob_trj[(i+1)*2, :]]])], axis=1)
+        df_link = pd.DataFrame(link)
+
+        with pd.ExcelWriter('outputs/excel/' + str(version_num) + '/output'
+                            + '_gs_' + str(gs_ipv)
+                            + '_lt_' + str(lt_ipv) + '.xlsx') as writer:
+            df_lt_ob_trj.to_excel(writer, index=False, sheet_name='lt_ob_trj')
+            df_lt_trj_coll.to_excel(writer, index=False, sheet_name='lt_trj_coll')
+            df_gs_ob_trj.to_excel(writer, index=False, sheet_name='gs_ob_trj')
+            df_gs_trj_coll.to_excel(writer, index=False, sheet_name='gs_trj_coll')
+            df_link.to_excel(writer, index=False, sheet_name='link')
+
+    # process data for figures
+    cv_init_it, _ = get_central_vertices('lt', None)
+    cv_init_gs, _ = get_central_vertices('gs', None)
 
     if hasattr(agent_lt, 'trajectory'):
         agent_lt_observed_trajectory = agent_lt.trajectory

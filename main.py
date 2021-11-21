@@ -18,7 +18,7 @@ in_loop_illustration_needed = 0
 num_step = 20
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/version17/'
+output_directory = './outputs/version19/'
 final_illustration_needed = 0
 save_data_needed = 1
 
@@ -30,7 +30,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-4, 0])
+    init_velocity_gs = np.array([-2, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -40,8 +40,8 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     agent_lt.estimated_inter_agent = copy.deepcopy(agent_gs)
     agent_gs.estimated_inter_agent = copy.deepcopy(agent_lt)
     # initialize IPV
-    agent_lt.ipv = lt_ipv_sim * math.pi / 9
-    agent_gs.ipv = gs_ipv_sim * math.pi / 9
+    agent_lt.ipv = lt_ipv_sim * math.pi / 8
+    agent_gs.ipv = gs_ipv_sim * math.pi / 8
 
     "====IRB process===="
     for t in range(num_step):
@@ -137,11 +137,11 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
         y_gs = np.array(agent_lt.estimated_inter_agent.ipv_collection)
 
         # actual ipv
-        ax2.plot(x_range, lt_ipv_sim * math.pi / 9 * np.ones_like(x_range),
+        ax2.plot(x_range, lt_ipv_sim * math.pi / 8 * np.ones_like(x_range),
                  color='red',
                  linewidth=5,
                  label='actual lt IPV')
-        ax2.plot(x_range, gs_ipv_sim * math.pi / 9 * np.ones_like(x_range),
+        ax2.plot(x_range, gs_ipv_sim * math.pi / 8 * np.ones_like(x_range),
                  color='blue',
                  linewidth=5,
                  label='actual gs IPV')

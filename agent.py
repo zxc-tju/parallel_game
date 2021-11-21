@@ -11,9 +11,9 @@ dt = 0.1
 TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
-WEIGHT_DELAY = 2
-WEIGHT_DEVIATION = 0.4
-WEIGHT_STEERING = 0.1
+WEIGHT_DELAY = 1
+WEIGHT_DEVIATION = 0.3
+WEIGHT_STEERING = 0.5
 weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_STEERING])
 weight_metric = weight_metric / weight_metric.sum()
 
@@ -23,7 +23,7 @@ MAX_ACCELERATION = 3.0
 
 # initial guess on interacting agent's IPV
 INITIAL_IPV_GUESS = 0
-virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
+virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
