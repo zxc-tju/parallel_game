@@ -11,6 +11,14 @@ illustration_needed = True
 mat = scipy.io.loadmat('./data/NDS_data.mat')
 # full interaction information
 inter_info = mat['interaction_info']
+'''
+inter_info:
+0-1: [position x] [position y]
+2: [acceleration]
+3-5: [velocity x] [velocity y] [velocity overall = sqrt(vx^2+xy^2)]
+6: [curvature] (only for left-turn vehicles)
+dt = 0.12s 
+'''
 # the number of go-straight vehicles that interact with the left-turn vehicle
 inter_num = mat['interact_agent_num']
 
@@ -272,7 +280,7 @@ if __name__ == '__main__':
     nds_case_id = 15
 
     "analyze IPV in NDS"
-    analyze_nds(nds_case_id)
+    # analyze_nds(nds_case_id)
 
     "show trajectories in NDS"
-    # visualize_nds(nds_case_id)
+    visualize_nds(nds_case_id)
