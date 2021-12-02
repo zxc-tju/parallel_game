@@ -15,10 +15,10 @@ notes for ipv_update_method:
 """
 
 in_loop_illustration_needed = 0
-num_step = 20
+num_step = 30
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/version19/'
+output_directory = './outputs/version22/'
 final_illustration_needed = 0
 save_data_needed = 1
 
@@ -30,7 +30,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-2, 0])
+    init_velocity_gs = np.array([-0.5, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -199,15 +199,35 @@ if __name__ == '__main__':
     # [p.join() for p in processes]  # 等待进程依次结束
 
     "multi process for used set"
-    processes = [Process(target=multi_simulate, args=(1, [-2], [-2])),
-                 Process(target=multi_simulate, args=(2, [-2], [0])),
-                 Process(target=multi_simulate, args=(3, [-2], [2])),
-                 Process(target=multi_simulate, args=(4, [0], [-2])),
-                 Process(target=multi_simulate, args=(5, [0], [0])),
-                 Process(target=multi_simulate, args=(6, [0], [2])),
-                 Process(target=multi_simulate, args=(7, [2], [-2])),
-                 Process(target=multi_simulate, args=(8, [2], [0])),
-                 Process(target=multi_simulate, args=(9, [2], [2])),
+    # processes = [Process(target=multi_simulate, args=(1, [-2], [-2])),
+    #              Process(target=multi_simulate, args=(2, [-2], [0])),
+    #              Process(target=multi_simulate, args=(3, [-2], [2])),
+    #              Process(target=multi_simulate, args=(4, [0], [-2])),
+    #              Process(target=multi_simulate, args=(5, [0], [0])),
+    #              Process(target=multi_simulate, args=(6, [0], [2])),
+    #              Process(target=multi_simulate, args=(7, [2], [-2])),
+    #              Process(target=multi_simulate, args=(8, [2], [0])),
+    #              Process(target=multi_simulate, args=(9, [2], [2])),
+    #              ]
+    # [p.start() for p in processes]  # 开启进程
+    # [p.join() for p in processes]  # 等待进程依次结束
+
+    "multi process for used set for cooperativeness analysis"
+    # processes = [Process(target=multi_simulate, args=(1, [2], [-3])),
+    #              Process(target=multi_simulate, args=(2, [2], [-2])),
+    #              Process(target=multi_simulate, args=(3, [2], [-1])),
+    #              Process(target=multi_simulate, args=(4, [2], [0])),
+    #              Process(target=multi_simulate, args=(5, [2], [1])),
+    #              Process(target=multi_simulate, args=(6, [2], [2])),
+    #              Process(target=multi_simulate, args=(7, [2], [3]))
+    #              ]
+    processes = [Process(target=multi_simulate, args=(1, [-3], [2])),
+                 Process(target=multi_simulate, args=(2, [-2], [2])),
+                 Process(target=multi_simulate, args=(3, [-1], [2])),
+                 Process(target=multi_simulate, args=(4, [0], [2])),
+                 Process(target=multi_simulate, args=(5, [1], [2])),
+                 Process(target=multi_simulate, args=(6, [2], [2])),
+                 Process(target=multi_simulate, args=(7, [3], [2]))
                  ]
     [p.start() for p in processes]  # 开启进程
     [p.join() for p in processes]  # 等待进程依次结束

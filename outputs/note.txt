@@ -54,3 +54,21 @@ v_gs = -2,0
 results: still by detour rather than deacc
 
 next step: enlarge EIGHT_DEVIATION rerun version19
+
+version 19 
+WEIGHT_DEVIATION = 0.5
+
+version 20
+v_gs = -1,0
+
+version 21
+v_gs = -4,0
+
+version 22
+v_gs = -0.5
+
+version 23
+v_gs = -1,0
+num_step = 30
+
+

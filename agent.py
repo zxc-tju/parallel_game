@@ -12,7 +12,7 @@ TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
-WEIGHT_DEVIATION = 0.3
+WEIGHT_DEVIATION = 0.5
 WEIGHT_STEERING = 0.5
 weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_STEERING])
 weight_metric = weight_metric / weight_metric.sum()
