@@ -7,16 +7,16 @@ from tools.utility import get_central_vertices, smooth_cv, savitzky_golay
 import numpy as np
 
 ipv_update_method = 1
-show_gif = 1
+show_gif = 0
 save_fig = 0
-save_data = 0
+save_data = 1
 
 
 def get_results(gs_ipv, lt_ipv):
 
     # import data
     version_num = '23'
-    filename = './outputs/version' + str(version_num) + '/data/agents_info' \
+    filename = './simulation/outputs/version' + str(version_num) + '/data/agents_info' \
                + '_gs_' + str(gs_ipv) \
                + '_lt_' + str(lt_ipv) \
                + '.pckl'
@@ -28,7 +28,7 @@ def get_results(gs_ipv, lt_ipv):
     # lt track (observed and planned)
     lt_ob_trj = agent_lt.observed_trajectory[:, 0:2]
     lt_trj_coll = agent_lt.trj_solution_collection[0][:, 0:2]
-    for i in range(9):
+    for i in range(int(len(lt_ob_trj)/2-1)):
         coll_temp = agent_lt.trj_solution_collection[(i + 1) * 2][:, 0:2]
         lt_trj_coll = np.concatenate([lt_trj_coll, coll_temp], axis=1)
     v_lt = np.linalg.norm(agent_lt.observed_trajectory[:, 2:4], axis=1)
@@ -37,14 +37,15 @@ def get_results(gs_ipv, lt_ipv):
     # gs track (observed and planned)
     gs_ob_trj = agent_gs.observed_trajectory[:, 0:2]
     gs_trj_coll = agent_gs.trj_solution_collection[0][:, 0:2]
-    for i in range(9):
+    for i in range(int(len(lt_ob_trj)/2-1)):
         coll_temp = agent_gs.trj_solution_collection[(i + 1) * 2][:, 0:2]
         gs_trj_coll = np.concatenate([gs_trj_coll, coll_temp], axis=1)
     v_gs = np.linalg.norm(agent_gs.observed_trajectory[:, 2:4], axis=1)
     v_gs_smoothed = savitzky_golay(v_gs, 5, 3)
+
     # link from gs to lt
     link = np.concatenate([[lt_ob_trj[0, :]], [gs_ob_trj[0, :]]])
-    for i in range(10):
+    for i in range(int(len(lt_ob_trj)/2)):
         link = np.concatenate([link, np.concatenate([[lt_ob_trj[(i + 1) * 2, :]],
                                                      [gs_ob_trj[(i + 1) * 2, :]]])], axis=1)
     # process data for figures
@@ -100,7 +101,7 @@ def get_results(gs_ipv, lt_ipv):
         df_link = pd.DataFrame(link)
         df_pet = pd.DataFrame(pet)
 
-        with pd.ExcelWriter('outputs/excel/' + str(version_num) + '/output'
+        with pd.ExcelWriter('/simulation/outputs/excel/' + str(version_num) + '/output'
                             + '_gs_' + str(gs_ipv)
                             + '_lt_' + str(lt_ipv) + '.xlsx') as writer:
             df_lt_ob_trj.to_excel(writer, index=False, sheet_name='lt_ob_trj')
@@ -231,7 +232,7 @@ def get_results(gs_ipv, lt_ipv):
 
     # save figure
     if save_fig:
-        plt.savefig('./outputs/version' + str(version_num) + '/figures/'
+        plt.savefig('./simulation/outputs/version' + str(version_num) + '/figures/'
                     + 'gs=' + str(gs_ipv)
                     + '_lt=' + str(lt_ipv) + '.png')
         plt.clf()

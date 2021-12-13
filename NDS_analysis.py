@@ -4,8 +4,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 from agent import Agent, cal_interior_cost, cal_group_cost
 from tools.utility import get_central_vertices, smooth_cv
+import pandas as pd
+from openpyxl import load_workbook
 
-illustration_needed = True
+illustration_needed = False
+print_needed = False
 
 # load data
 mat = scipy.io.loadmat('./data/NDS_data.mat')
@@ -110,7 +113,7 @@ def analyze_nds(case_id):
             np.where(gs_agent_temp[solid_range, 1] - lt_info[solid_range, 1] < 0)[0])
 
         # find start and end frame with each gs agent
-        if inter_frame.size > 0:
+        if inter_frame.size > 1:
             if i == init_id:
                 inter_o[i] = inter_frame[0]
             else:
@@ -129,18 +132,53 @@ def analyze_nds(case_id):
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
 
+    inter_id = 0
+    inter_id_save = inter_id
+    file_name = './outputs/NDS_analysis/' + str(case_id) + '.xlsx'
+    df = pd.DataFrame()
+    df.to_excel(file_name)
+
     for t in range(np.size(lt_info, 0)):
 
         "find current interacting agent"
-        inter_id = None
+        flag = 0
         for i in range(np.size(gs_info_multi, 0)):
-            if inter_o[i] <= t < inter_d[i]:
+            if inter_o[i] <= t < inter_d[i]:  # switch to next interacting agent
+                # update interaction info
+                flag = 1
                 inter_id = i
-                print('inter_id', inter_id)
+                if print_needed:
+                    print('inter_id', inter_id)
                 start_time = max(int(inter_o[inter_id]), t - 10)
 
+        # save data of last one
+        if inter_id_save < inter_id or t == inter_d[-1]:
+            if inter_d[inter_id_save] - inter_o[inter_id_save] > 3:
+                '''
+                inter_id_save < inter_id：  interacting agent changed
+                t == inter_d[-1]:  end frame of the last agent
+                inter_d[inter_id_save]-inter_o[inter_id_save] > 3：  interacting period is long enough
+                '''
+
+                print('t:', t)
+                print('inter_id:', inter_id)
+                print('inter_id_save:', inter_id_save)
+                book = load_workbook(file_name)
+                df_ipv = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]) + 3: int(inter_d[inter_id_save]), :])
+                df_ipv_error = pd.DataFrame(
+                    ipv_error_collection[int(inter_o[inter_id_save]) + 3: int(inter_d[inter_id_save]), :])
+
+                with pd.ExcelWriter(file_name) as writer:
+                    print(len(writer.sheets))
+                    if 'Sheet1' not in book.sheetnames:
+                        writer.book = book
+                    df_ipv.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
+                    df_ipv_error.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
+                    writer.save()
+            inter_id_save = inter_id
+
         "IPV estimation process"
-        if (inter_id is not None) and (t - start_time > 3):
+        if flag and (t - start_time > 3):
 
             "====simulation-based method===="
             # generate two agents
@@ -160,12 +198,14 @@ def analyze_nds(case_id):
             agent_lt.estimate_self_ipv_in_NDS(lt_track, gs_track)
             ipv_collection[t, 0] = agent_lt.ipv
             ipv_error_collection[t, 0] = agent_lt.ipv_error
-            print('left turn', agent_lt.ipv, agent_lt.ipv_error)
 
             agent_gs.estimate_self_ipv_in_NDS(gs_track, lt_track)
             ipv_collection[t, 1] = agent_gs.ipv
             ipv_error_collection[t, 1] = agent_gs.ipv_error
-            print('go straight', agent_gs.ipv, agent_gs.ipv_error)
+
+            if print_needed:
+                print('left turn', agent_lt.ipv, agent_lt.ipv_error)
+                print('go straight', agent_gs.ipv, agent_gs.ipv_error)
             "====end of simulation-based method===="
 
             "====cost-based method===="
@@ -204,7 +244,6 @@ def analyze_nds(case_id):
 
             # ipv_collection[t, 0] =
             # ipv_collection[t, 1] =
-
             "====end of cost-based method===="
 
             "illustration"
@@ -270,17 +309,19 @@ def analyze_nds(case_id):
                 plt.pause(0.3)
 
         elif inter_id is None:
-            print('no interaction')
+            if print_needed:
+                print('no interaction')
 
         elif t - start_time < 3:
-            print('no results, more observation needed')
+            if print_needed:
+                print('no results, more observation needed')
 
 
 if __name__ == '__main__':
-    nds_case_id = 15
 
-    "analyze IPV in NDS"
-    # analyze_nds(nds_case_id)
+    for nds_case_id in range(130):
+        "analyze IPV in NDS"
+        analyze_nds(nds_case_id)
 
-    "show trajectories in NDS"
-    visualize_nds(nds_case_id)
+        "show trajectories in NDS"
+        # visualize_nds(nds_case_id)
