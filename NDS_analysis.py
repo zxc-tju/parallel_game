@@ -17,8 +17,9 @@ inter_info = mat['interaction_info']
 '''
 inter_info:
 0-1: [position x] [position y]
-2: [acceleration]
-3-5: [velocity x] [velocity y] [velocity overall = sqrt(vx^2+xy^2)]
+2-3: [velocity x] [velocity y]
+4: [heading]
+5: [velocity overall = sqrt(vx^2+xy^2)]
 6: [curvature] (only for left-turn vehicles)
 dt = 0.12s 
 '''
@@ -60,8 +61,8 @@ def visualize_nds(case_id):
                             color='red',
                             label='go-straight')
                 # future track
-                t_end = min(t + 6, np.size(gs_info_multi[gs_id], 0))
-                ax1.plot(gs_info_multi[gs_id][t:t_end, 0], gs_info_multi[gs_id][t:t_end, 1],
+                t_end_gs = min(t + 6, np.size(gs_info_multi[gs_id], 0))
+                ax1.plot(gs_info_multi[gs_id][t:t_end_gs, 0], gs_info_multi[gs_id][t:t_end_gs, 1],
                          alpha=0.8,
                          color='red')
 
@@ -94,7 +95,7 @@ def visualize_nds(case_id):
     plt.show()
 
 
-def analyze_nds(case_id):
+def find_inter_od(case_id):
     case_info = inter_info[case_id]
     lt_info = case_info[0]
 
@@ -121,6 +122,17 @@ def analyze_nds(case_id):
             inter_d[i] = max(inter_frame[-1], inter_d[i - 1])
         else:
             init_id += 1
+    return inter_o, inter_d
+
+
+def analyze_nds(case_id):
+
+    inter_o, inter_d = find_inter_od(case_id)
+    case_info = inter_info[case_id]
+    lt_info = case_info[0]
+
+    # find co-present gs agents (not necessarily interacting)
+    gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
 
     # identify IPV
     start_time = 0
@@ -160,16 +172,15 @@ def analyze_nds(case_id):
                 inter_d[inter_id_save]-inter_o[inter_id_save] > 3：  interacting period is long enough
                 '''
 
-                print('t:', t)
-                print('inter_id:', inter_id)
-                print('inter_id_save:', inter_id_save)
+                # print('t:', t)
+                # print('inter_id:', inter_id)
+                # print('inter_id_save:', inter_id_save)
                 book = load_workbook(file_name)
                 df_ipv = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]) + 3: int(inter_d[inter_id_save]), :])
                 df_ipv_error = pd.DataFrame(
                     ipv_error_collection[int(inter_o[inter_id_save]) + 3: int(inter_d[inter_id_save]), :])
 
                 with pd.ExcelWriter(file_name) as writer:
-                    print(len(writer.sheets))
                     if 'Sheet1' not in book.sheetnames:
                         writer.book = book
                     df_ipv.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
@@ -317,11 +328,82 @@ def analyze_nds(case_id):
                 print('no results, more observation needed')
 
 
+def analyze_ipv_in_nds(case_id):
+    file_name = './outputs/NDS_analysis/v2/' + str(case_id) + '.xlsx'
+    file = pd.ExcelFile(file_name)
+    num_sheet = len(file.sheet_names)
+    # print(num_sheet)
+
+    "draw ipv value and error bar"
+    start_x = 0
+    for i in range(num_sheet):
+        df_ipv_data = pd.read_excel(file_name, sheet_name=i)
+        ipv_data_temp = df_ipv_data.values[1:, :]
+        ipv_value = ipv_data_temp[:, 0:2]
+        ipv_error = ipv_data_temp[:, 2:]
+        # print(ipv_data)
+        x = start_x + np.arange(len(ipv_value[:, 0]))
+        start_x = start_x + len(ipv_value[:, 0]) - 1
+
+        if len(x) > 3:
+            # left turn
+            smoothed_ipv_value_lt, _ = smooth_cv(np.array([x, ipv_value[:, 0]]).T)
+            smoothed_ipv_error_lt, _ = smooth_cv(np.array([x, ipv_error[:, 0]]).T)
+            plt.plot(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1],
+                     color='red')
+            plt.fill_between(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
+                             smoothed_ipv_value_lt[:, 1] + smoothed_ipv_error_lt[:, 1],
+                             alpha=0.4,
+                             color='red')
+
+            # go straight
+            smoothed_ipv_value_gs, _ = smooth_cv(np.array([x, ipv_value[:, 1]]).T)
+            smoothed_ipv_error_gs, _ = smooth_cv(np.array([x, ipv_error[:, 1]]).T)
+            plt.plot(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1],
+                     color='blue')
+            plt.fill_between(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
+                             smoothed_ipv_value_gs[:, 1] + smoothed_ipv_error_gs[:, 1],
+                             alpha=0.4,
+                             color='blue')
+
+        else:  # too short to be fitted
+            # left turn
+            plt.plot(x, ipv_value[:, 0],
+                     color='red')
+            plt.fill_between(x, ipv_value[:, 0] - ipv_error[:, 0],
+                             ipv_value[:, 0] + ipv_error[:, 0],
+                             alpha=0.4,
+                             color='red',
+                             label='estimated lt IPV')
+
+            # go straight
+            plt.plot(x, ipv_value[:, 1],
+                     color='blue')
+            plt.fill_between(x, ipv_value[:, 1] - ipv_error[:, 1],
+                             ipv_value[:, 1] + ipv_error[:, 1],
+                             alpha=0.4,
+                             color='blue',
+                             label='estimated gs IPV')
+        # plt.pause(1)
+    plt.show()
+
+    "select crossing event"
+    inter_o, inter_d = find_inter_od(case_id)
+
+    case_info = inter_info[case_id]
+    lt_info = case_info[0]
+    heading_lt = lt_info[:, 4]
+
+    # find co-present gs agents (not necessarily interacting)
+    gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
+    print()
+
+
 if __name__ == '__main__':
+    "analyze IPV in NDS"
+    # analyze_nds(1)
 
-    for nds_case_id in range(130):
-        "analyze IPV in NDS"
-        analyze_nds(nds_case_id)
+    "show trajectories in NDS"
+    # visualize_nds(20)
 
-        "show trajectories in NDS"
-        # visualize_nds(nds_case_id)
+    analyze_ipv_in_nds(20)
