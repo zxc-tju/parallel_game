@@ -126,7 +126,6 @@ def find_inter_od(case_id):
 
 
 def analyze_nds(case_id):
-
     inter_o, inter_d = find_inter_od(case_id)
     case_info = inter_info[case_id]
     lt_info = case_info[0]
@@ -328,82 +327,161 @@ def analyze_nds(case_id):
                 print('no results, more observation needed')
 
 
-def analyze_ipv_in_nds(case_id):
+def analyze_ipv_in_nds(case_id, fig=False):
     file_name = './outputs/NDS_analysis/v2/' + str(case_id) + '.xlsx'
     file = pd.ExcelFile(file_name)
     num_sheet = len(file.sheet_names)
     # print(num_sheet)
 
-    "draw ipv value and error bar"
-    start_x = 0
     for i in range(num_sheet):
+        "get ipv data from excel"
         df_ipv_data = pd.read_excel(file_name, sheet_name=i)
         ipv_data_temp = df_ipv_data.values[1:, :]
         ipv_value = ipv_data_temp[:, 0:2]
         ipv_error = ipv_data_temp[:, 2:]
-        # print(ipv_data)
-        x = start_x + np.arange(len(ipv_value[:, 0]))
-        start_x = start_x + len(ipv_value[:, 0]) - 1
 
-        if len(x) > 3:
-            # left turn
-            smoothed_ipv_value_lt, _ = smooth_cv(np.array([x, ipv_value[:, 0]]).T)
-            smoothed_ipv_error_lt, _ = smooth_cv(np.array([x, ipv_error[:, 0]]).T)
-            plt.plot(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1],
-                     color='red')
-            plt.fill_between(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
-                             smoothed_ipv_value_lt[:, 1] + smoothed_ipv_error_lt[:, 1],
-                             alpha=0.4,
-                             color='red')
+        "draw ipv value and error bar"
+        start_x = 0
+        if fig:
+            x = start_x + np.arange(len(ipv_value[:, 0]))
+            start_x = start_x + len(ipv_value[:, 0]) + 3
 
-            # go straight
-            smoothed_ipv_value_gs, _ = smooth_cv(np.array([x, ipv_value[:, 1]]).T)
-            smoothed_ipv_error_gs, _ = smooth_cv(np.array([x, ipv_error[:, 1]]).T)
-            plt.plot(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1],
-                     color='blue')
-            plt.fill_between(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
-                             smoothed_ipv_value_gs[:, 1] + smoothed_ipv_error_gs[:, 1],
-                             alpha=0.4,
-                             color='blue')
+            if len(x) > 3:
+                # left turn
+                smoothed_ipv_value_lt, _ = smooth_cv(np.array([x, ipv_value[:, 0]]).T)
+                smoothed_ipv_error_lt, _ = smooth_cv(np.array([x, ipv_error[:, 0]]).T)
+                plt.plot(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1],
+                         color='red')
+                plt.fill_between(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
+                                 smoothed_ipv_value_lt[:, 1] + smoothed_ipv_error_lt[:, 1],
+                                 alpha=0.4,
+                                 color='red')
 
-        else:  # too short to be fitted
-            # left turn
-            plt.plot(x, ipv_value[:, 0],
-                     color='red')
-            plt.fill_between(x, ipv_value[:, 0] - ipv_error[:, 0],
-                             ipv_value[:, 0] + ipv_error[:, 0],
-                             alpha=0.4,
-                             color='red',
-                             label='estimated lt IPV')
+                # go straight
+                smoothed_ipv_value_gs, _ = smooth_cv(np.array([x, ipv_value[:, 1]]).T)
+                smoothed_ipv_error_gs, _ = smooth_cv(np.array([x, ipv_error[:, 1]]).T)
+                plt.plot(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1],
+                         color='blue')
+                plt.fill_between(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
+                                 smoothed_ipv_value_gs[:, 1] + smoothed_ipv_error_gs[:, 1],
+                                 alpha=0.4,
+                                 color='blue')
 
-            # go straight
-            plt.plot(x, ipv_value[:, 1],
-                     color='blue')
-            plt.fill_between(x, ipv_value[:, 1] - ipv_error[:, 1],
-                             ipv_value[:, 1] + ipv_error[:, 1],
-                             alpha=0.4,
-                             color='blue',
-                             label='estimated gs IPV')
-        # plt.pause(1)
+            else:  # too short to be fitted
+                # left turn
+                plt.plot(x, ipv_value[:, 0],
+                         color='red')
+                plt.fill_between(x, ipv_value[:, 0] - ipv_error[:, 0],
+                                 ipv_value[:, 0] + ipv_error[:, 0],
+                                 alpha=0.4,
+                                 color='red',
+                                 label='estimated lt IPV')
+
+                # go straight
+                plt.plot(x, ipv_value[:, 1],
+                         color='blue')
+                plt.fill_between(x, ipv_value[:, 1] - ipv_error[:, 1],
+                                 ipv_value[:, 1] + ipv_error[:, 1],
+                                 alpha=0.4,
+                                 color='blue',
+                                 label='estimated gs IPV')
+            # plt.pause(1)
     plt.show()
 
     "select crossing event"
     inter_o, inter_d = find_inter_od(case_id)
 
+    invalid_list = np.where(inter_d - inter_o < 4)
+    index = list(invalid_list[0])
+    inter_o = np.delete(inter_o, index)
+    inter_d = np.delete(inter_d, index)
+
     case_info = inter_info[case_id]
     lt_info = case_info[0]
-    heading_lt = lt_info[:, 4]
+    crossing_frame = -1
+    if max(lt_info[:, 0] > 20):
+        crossing_frame = np.min(np.where(lt_info[:, 0] > 20))  # use the x position of left turn agent
 
-    # find co-present gs agents (not necessarily interacting)
-    gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
-    print()
+    # find the interacting go-straight agent
+    crossing_id = -1
+    for i in range(len(inter_o)):
+        if inter_o[i] < crossing_frame < inter_d[i]:
+            crossing_id = i
+            break
+
+    # save ipv during the crossing event
+    ipv_data_crossing = []
+    ipv_data_non_crossing = []
+    if not crossing_id == -1:
+        df_ipv_data = pd.read_excel(file_name, sheet_name=crossing_id)
+        ipv_data_crossing = df_ipv_data.values[1:, :]
+
+    for sheet_id in range(num_sheet):
+        if not sheet_id == crossing_id:
+            df_ipv_data = pd.read_excel(file_name, sheet_name=sheet_id)
+            ipv_data_non_crossing.append(df_ipv_data.values[1:, :])
+
+    return ipv_data_crossing, ipv_data_non_crossing
 
 
 if __name__ == '__main__':
-    "analyze IPV in NDS"
-    # analyze_nds(1)
+    "analyze ipv in NDS"
+    # analyze_nds(61)
 
     "show trajectories in NDS"
-    # visualize_nds(20)
+    # visualize_nds(27)
 
-    analyze_ipv_in_nds(20)
+    "ipv distribution"
+    ipv_cross_lt = []
+    ipv_cross_gs = []
+    ipv_non_cross_lt = []
+    ipv_non_cross_gs = []
+    for i in range(np.size(inter_info, 0)):
+        # print(i)
+        ipv_cross_temp, ipv_non_cross_temp = analyze_ipv_in_nds(i, False)
+        if len(ipv_cross_temp) > 0:
+            ipv_cross_lt.append(ipv_cross_temp[:, 0])
+            ipv_cross_gs.append(ipv_cross_temp[:, 1])
+        if len(ipv_non_cross_temp) > 0:
+            for idx in range(len(ipv_non_cross_temp)):
+                # print(ipv_non_cross[idx][:, 0])
+                ipv_non_cross_lt.append(ipv_non_cross_temp[idx][:, 0])
+                ipv_non_cross_gs.append(ipv_non_cross_temp[idx][:, 1])
+
+    "calculate mean ipv value of each type"
+    mean_ipv_cross_lt = np.array([np.mean(ipv_cross_lt[0])])
+    mean_ipv_cross_gs = np.array([np.mean(ipv_cross_gs[0])])
+    mean_ipv_non_cross_lt = np.array([np.mean(ipv_non_cross_lt[0])])
+    mean_ipv_non_cross_gs = np.array([np.mean(ipv_non_cross_gs[0])])
+    for i in range(len(ipv_cross_lt) - 1):
+        if np.size(ipv_cross_lt[i + 1], 0) > 4:
+            mean_temp1 = np.array([np.mean(ipv_cross_lt[i + 1])])
+            mean_ipv_cross_lt = np.concatenate((mean_ipv_cross_lt, mean_temp1), axis=0)
+    for i in range(len(ipv_cross_gs) - 1):
+        if np.size(ipv_cross_gs[i + 1], 0) > 4:
+            mean_temp2 = np.array([np.mean(ipv_cross_gs[i + 1])])
+            mean_ipv_cross_gs = np.concatenate((mean_ipv_cross_gs, mean_temp2), axis=0)
+    for i in range(len(ipv_non_cross_lt) - 1):
+        if np.size(ipv_non_cross_lt[i + 1], 0) > 4:
+            mean_temp3 = np.array([np.mean(ipv_non_cross_lt[i + 1])])
+            mean_ipv_non_cross_lt = np.concatenate((mean_ipv_non_cross_lt, mean_temp3), axis=0)
+    for i in range(len(ipv_non_cross_gs) - 1):
+        if np.size(ipv_non_cross_gs[i + 1], 0) > 4:
+            mean_temp4 = np.array([np.mean(ipv_non_cross_gs[i + 1])])
+            mean_ipv_non_cross_gs = np.concatenate((mean_ipv_non_cross_gs, mean_temp4), axis=0)
+
+    plt.figure(1)
+    plt.hist(mean_ipv_cross_lt,
+             alpha=0.5,
+             color='blue')
+    plt.hist(mean_ipv_cross_gs,
+             alpha=0.5,
+             color='red')
+    plt.figure(2)
+    plt.hist(mean_ipv_non_cross_lt,
+             alpha=0.5,
+             color='blue')
+    plt.hist(mean_ipv_non_cross_gs,
+             alpha=0.5,
+             color='red')
+
