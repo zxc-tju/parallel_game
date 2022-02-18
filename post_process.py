@@ -1,3 +1,7 @@
+"""
+analysis of simulation results
+"""
+
 import pickle
 import math
 import gc

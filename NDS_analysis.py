@@ -2,9 +2,12 @@ import scipy.io
 import math
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.patches as patches
+import matplotlib.transforms as mt
 from agent import Agent, cal_interior_cost, cal_group_cost
 from tools.utility import get_central_vertices, smooth_cv
 import pandas as pd
+
 from openpyxl import load_workbook
 
 illustration_needed = False
@@ -29,6 +32,28 @@ inter_num = mat['interact_agent_num']
 virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
 
+def draw_rectangle(x, y, deg):
+
+    car_len = 5
+    car_wid = 2
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    r1 = patches.Rectangle((x-car_wid/2, y-car_len/2), car_wid, car_len, color="blue", alpha=0.50)
+    r2 = patches.Rectangle((x-car_wid/2, y-car_len/2), car_wid, car_len, color="red", alpha=0.50)
+
+    t2 = mt.Affine2D().rotate_deg_around(x, y, deg) + ax.transData
+    r2.set_transform(t2)
+
+    ax.add_patch(r1)
+    ax.add_patch(r2)
+
+    plt.grid(True)
+    plt.axis('equal')
+
+    plt.show()
+
+
 def visualize_nds(case_id):
     # abstract interaction info. of a given case
     case_info = inter_info[case_id]
@@ -38,6 +63,8 @@ def visualize_nds(case_id):
     gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
 
     fig = plt.figure(1)
+    manager = plt.get_current_fig_manager()
+    manager.full_screen_toggle()
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
     ax2.set(xlim=[-22, 53], ylim=[-31, 57])
@@ -56,8 +83,8 @@ def visualize_nds(case_id):
             if np.size(gs_info_multi[gs_id], 0) > t and not gs_info_multi[gs_id][t, 0] == 0:
                 # position
                 ax1.scatter(gs_info_multi[gs_id][t, 0], gs_info_multi[gs_id][t, 1],
-                            s=80,
-                            alpha=0.3,
+                            s=120,
+                            alpha=0.9,
                             color='red',
                             label='go-straight')
                 # future track
@@ -68,8 +95,8 @@ def visualize_nds(case_id):
 
         # position of left-turn vehicle
         ax1.scatter(lt_info[t, 0], lt_info[t, 1],
-                    s=80,
-                    alpha=0.3,
+                    s=120,
+                    alpha=0.9,
                     color='blue',
                     label='left-turn')
         # future track
@@ -96,6 +123,11 @@ def visualize_nds(case_id):
 
 
 def find_inter_od(case_id):
+    """
+    find the starting and end frame of each FC agent that interacts with LT agent
+    :param case_id:
+    :return:
+    """
     case_info = inter_info[case_id]
     lt_info = case_info[0]
 
@@ -126,6 +158,11 @@ def find_inter_od(case_id):
 
 
 def analyze_nds(case_id):
+    """
+    estimate IPV in natural driving data and write results into excels
+    :param case_id:
+    :return:
+    """
     inter_o, inter_d = find_inter_od(case_id)
     case_info = inter_info[case_id]
     lt_info = case_info[0]
@@ -332,40 +369,51 @@ def analyze_ipv_in_nds(case_id, fig=False):
     file = pd.ExcelFile(file_name)
     num_sheet = len(file.sheet_names)
     # print(num_sheet)
-
+    start_x = 0
+    value_lt_plotted = []
+    error_lt_plotted = []
+    value_gs_plotted = []
+    error_gs_plotted = []
     for i in range(num_sheet):
         "get ipv data from excel"
         df_ipv_data = pd.read_excel(file_name, sheet_name=i)
-        ipv_data_temp = df_ipv_data.values[1:, :]
+        ipv_data_temp = df_ipv_data.values
         ipv_value = ipv_data_temp[:, 0:2]
         ipv_error = ipv_data_temp[:, 2:]
 
         "draw ipv value and error bar"
-        start_x = 0
+
         if fig:
             x = start_x + np.arange(len(ipv_value[:, 0]))
             start_x = start_x + len(ipv_value[:, 0]) + 3
+            print(start_x)
 
             if len(x) > 3:
                 # left turn
                 smoothed_ipv_value_lt, _ = smooth_cv(np.array([x, ipv_value[:, 0]]).T)
                 smoothed_ipv_error_lt, _ = smooth_cv(np.array([x, ipv_error[:, 0]]).T)
                 plt.plot(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1],
-                         color='red')
+                         color='blue')
                 plt.fill_between(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
                                  smoothed_ipv_value_lt[:, 1] + smoothed_ipv_error_lt[:, 1],
                                  alpha=0.4,
-                                 color='red')
+                                 color='blue')
 
                 # go straight
                 smoothed_ipv_value_gs, _ = smooth_cv(np.array([x, ipv_value[:, 1]]).T)
                 smoothed_ipv_error_gs, _ = smooth_cv(np.array([x, ipv_error[:, 1]]).T)
                 plt.plot(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1],
-                         color='blue')
+                         color='red')
                 plt.fill_between(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
                                  smoothed_ipv_value_gs[:, 1] + smoothed_ipv_error_gs[:, 1],
                                  alpha=0.4,
-                                 color='blue')
+                                 color='red')
+
+                # # save plotted data
+                # value_lt_plotted.append(smoothed_ipv_value_lt)
+                # value_gs_plotted.append(smoothed_ipv_value_gs)
+                # error_lt_plotted.append(smoothed_ipv_error_lt)
+                # error_gs_plotted.append(smoothed_ipv_error_gs)
 
             else:  # too short to be fitted
                 # left turn
@@ -385,6 +433,11 @@ def analyze_ipv_in_nds(case_id, fig=False):
                                  alpha=0.4,
                                  color='blue',
                                  label='estimated gs IPV')
+                # # save plotted data
+                # value_lt_plotted.append(ipv_value[:, 0])
+                # value_gs_plotted.append(ipv_value[:, 1])
+                # error_lt_plotted.append(ipv_error[:, 0])
+                # error_gs_plotted.append(ipv_value[:, 1])
             # plt.pause(1)
     plt.show()
 
@@ -421,24 +474,17 @@ def analyze_ipv_in_nds(case_id, fig=False):
             df_ipv_data = pd.read_excel(file_name, sheet_name=sheet_id)
             ipv_data_non_crossing.append(df_ipv_data.values[1:, :])
 
-    return ipv_data_crossing, ipv_data_non_crossing
+    return crossing_id, ipv_data_crossing, ipv_data_non_crossing
 
 
-if __name__ == '__main__':
-    "analyze ipv in NDS"
-    # analyze_nds(61)
-
-    "show trajectories in NDS"
-    # visualize_nds(27)
-
-    "ipv distribution"
+def show_ipv_distribution():
     ipv_cross_lt = []
     ipv_cross_gs = []
     ipv_non_cross_lt = []
     ipv_non_cross_gs = []
     for i in range(np.size(inter_info, 0)):
         # print(i)
-        ipv_cross_temp, ipv_non_cross_temp = analyze_ipv_in_nds(i, False)
+        _, ipv_cross_temp, ipv_non_cross_temp = analyze_ipv_in_nds(i, False)
         if len(ipv_cross_temp) > 0:
             ipv_cross_lt.append(ipv_cross_temp[:, 0])
             ipv_cross_gs.append(ipv_cross_temp[:, 1])
@@ -470,18 +516,60 @@ if __name__ == '__main__':
             mean_temp4 = np.array([np.mean(ipv_non_cross_gs[i + 1])])
             mean_ipv_non_cross_gs = np.concatenate((mean_ipv_non_cross_gs, mean_temp4), axis=0)
 
+    filename = './outputs/ipv_distribution.xlsx'
+    with pd.ExcelWriter(filename) as writer:
+
+        data1 = np.vstack((mean_ipv_cross_gs, mean_ipv_cross_lt))
+        df_ipv_distribution = pd.DataFrame(data1.T)
+        df_ipv_distribution.to_excel(writer, startcol=0, index=False)
+
+        data2 = np.vstack((mean_ipv_non_cross_gs, mean_ipv_non_cross_lt))
+        df_ipv_distribution = pd.DataFrame(data2.T)
+        df_ipv_distribution.to_excel(writer, startcol=2, index=False)
+
     plt.figure(1)
+    plt.title('Left-turn vehicle rushed')
     plt.hist(mean_ipv_cross_lt,
              alpha=0.5,
-             color='blue')
+             color='blue',
+             label='left-turn vehicle')
     plt.hist(mean_ipv_cross_gs,
              alpha=0.5,
-             color='red')
+             color='red',
+             label='go-straight vehicle')
+    plt.legend()
+    plt.xlabel('IPV')
+    plt.ylabel('Counts')
+
     plt.figure(2)
+    plt.title('Left-turn vehicle yielded')
     plt.hist(mean_ipv_non_cross_lt,
              alpha=0.5,
-             color='blue')
+             color='blue',
+             label='left-turn vehicle')
     plt.hist(mean_ipv_non_cross_gs,
              alpha=0.5,
-             color='red')
+             color='red',
+             label='go-straight vehicle')
+    plt.legend()
+    plt.xlabel('IPV')
+    plt.ylabel('Counts')
+    plt.show()
+
+
+if __name__ == '__main__':
+    "analyze ipv in NDS"
+    # analyze_nds(61)
+
+    "show trajectories in NDS"
+    visualize_nds(30)
+    #
+    # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
+
+    # o, d = find_inter_od(29)
+
+    # draw_rectangle(5, 5, 45)
+
+    # show_ipv_distribution()
+
 
