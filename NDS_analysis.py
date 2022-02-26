@@ -33,14 +33,13 @@ virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 
 
 
 def draw_rectangle(x, y, deg):
-
     car_len = 5
     car_wid = 2
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
-    r1 = patches.Rectangle((x-car_wid/2, y-car_len/2), car_wid, car_len, color="blue", alpha=0.50)
-    r2 = patches.Rectangle((x-car_wid/2, y-car_len/2), car_wid, car_len, color="red", alpha=0.50)
+    r1 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="blue", alpha=0.50)
+    r2 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="red", alpha=0.50)
 
     t2 = mt.Affine2D().rotate_deg_around(x, y, deg) + ax.transData
     r2.set_transform(t2)
@@ -72,7 +71,9 @@ def visualize_nds(case_id):
     ax2.imshow(img, extent=[-22, 53, -31, 57])
 
     for t in range(np.size(lt_info, 0)):
-        t_end = t + 6
+        if t in {2, 14, 30, 40}:
+            print('pause!')
+        t_end = t + 10
         ax1.cla()
         ax1.set(xlim=[-22, 53], ylim=[-31, 57])
         img = plt.imread('background_pic/Jianhexianxia.jpg')
@@ -88,7 +89,7 @@ def visualize_nds(case_id):
                             color='red',
                             label='go-straight')
                 # future track
-                t_end_gs = min(t + 6, np.size(gs_info_multi[gs_id], 0))
+                t_end_gs = min(t + 10, np.size(gs_info_multi[gs_id], 0))
                 ax1.plot(gs_info_multi[gs_id][t:t_end_gs, 0], gs_info_multi[gs_id][t:t_end_gs, 1],
                          alpha=0.8,
                          color='red')
@@ -170,21 +171,20 @@ def analyze_nds(case_id):
     # find co-present gs agents (not necessarily interacting)
     gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
 
-    # identify IPV
+    # initialize IPV
     start_time = 0
     ipv_collection = np.zeros_like(lt_info[:, 0:2])
     ipv_error_collection = np.ones_like(lt_info[:, 0:2])
 
     # set figure
-    fig = plt.figure(1)
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
+    if illustration_needed:
+        fig = plt.figure(1)
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
 
     inter_id = 0
     inter_id_save = inter_id
-    file_name = './outputs/NDS_analysis/' + str(case_id) + '.xlsx'
-    df = pd.DataFrame()
-    df.to_excel(file_name)
+    file_name = './outputs/NDS_analysis/v3/' + str(case_id) + '.xlsx'
 
     for t in range(np.size(lt_info, 0)):
 
@@ -201,27 +201,42 @@ def analyze_nds(case_id):
 
         # save data of last one
         if inter_id_save < inter_id or t == inter_d[-1]:
-            if inter_d[inter_id_save] - inter_o[inter_id_save] > 3:
-                '''
-                inter_id_save < inter_id：  interacting agent changed
-                t == inter_d[-1]:  end frame of the last agent
-                inter_d[inter_id_save]-inter_o[inter_id_save] > 3：  interacting period is long enough
-                '''
+            # if inter_d[inter_id_save] - inter_o[inter_id_save] > 3:
+            '''
+            inter_id_save < inter_id：  interacting agent changed
+            t == inter_d[-1]:  end frame of the last agent
+            inter_d[inter_id_save]-inter_o[inter_id_save] > 3：  interacting period is long enough
+            '''
+            # save data into an excel with the format of:
+            # 0-ipv_lt | ipv_lt_error | lt_px | lt_py  | lt_vx  | lt_vy  | lt_heading  |...
+            # 8-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
 
-                # print('t:', t)
-                # print('inter_id:', inter_id)
-                # print('inter_id_save:', inter_id_save)
-                book = load_workbook(file_name)
-                df_ipv = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]) + 3: int(inter_d[inter_id_save]), :])
-                df_ipv_error = pd.DataFrame(
-                    ipv_error_collection[int(inter_o[inter_id_save]) + 3: int(inter_d[inter_id_save]), :])
+            df_ipv_lt = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0],
+                                     columns=["ipv_lt"])
+            df_ipv_lt_error = pd.DataFrame(
+                ipv_error_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0],
+                columns=["ipv_lt_error"])
+            df_motion_lt = pd.DataFrame(lt_info[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:5],
+                                        columns=["lt_px", "lt_py", "lt_vx", "lt_vy", "lt_heading"])
 
-                with pd.ExcelWriter(file_name) as writer:
-                    if 'Sheet1' not in book.sheetnames:
-                        writer.book = book
-                    df_ipv.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
-                    df_ipv_error.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
-                    writer.save()
+            df_ipv_gs = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 1],
+                                     columns=["ipv_gs"])
+            df_ipv_gs_error = pd.DataFrame(
+                ipv_error_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 1],
+                columns=["ipv_gs_error"])
+            df_motion_gs = pd.DataFrame(gs_info_multi[inter_id_save]
+                                        [int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:5],
+                                        columns=["gs_px", "gs_py", "gs_vx", "gs_vy", "gs_heading"])
+
+            with pd.ExcelWriter(file_name, mode="a", if_sheet_exists="overlay") as writer:
+                df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
+                df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
+                df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
+
+                df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
+                df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
+                df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
+
             inter_id_save = inter_id
 
         "IPV estimation process"
@@ -365,33 +380,30 @@ def analyze_nds(case_id):
 
 
 def analyze_ipv_in_nds(case_id, fig=False):
-    file_name = './outputs/NDS_analysis/v2/' + str(case_id) + '.xlsx'
+    file_name = './outputs/NDS_analysis/v3/' + str(case_id) + '.xlsx'
     file = pd.ExcelFile(file_name)
     num_sheet = len(file.sheet_names)
     # print(num_sheet)
     start_x = 0
-    value_lt_plotted = []
-    error_lt_plotted = []
-    value_gs_plotted = []
-    error_gs_plotted = []
+
     for i in range(num_sheet):
         "get ipv data from excel"
         df_ipv_data = pd.read_excel(file_name, sheet_name=i)
         ipv_data_temp = df_ipv_data.values
-        ipv_value = ipv_data_temp[:, 0:2]
-        ipv_error = ipv_data_temp[:, 2:]
+        ipv_value_lt, ipv_value_gs = ipv_data_temp[:, 0], ipv_data_temp[:, 7]
+        ipv_error_lt, ipv_error_gs = ipv_data_temp[:, 1], ipv_data_temp[:, 8]
 
         "draw ipv value and error bar"
 
         if fig:
-            x = start_x + np.arange(len(ipv_value[:, 0]))
-            start_x = start_x + len(ipv_value[:, 0]) + 3
+            x = start_x + np.arange(len(ipv_value_lt))
+            start_x = start_x + len(ipv_value_lt)
             print(start_x)
 
-            if len(x) > 3:
+            if len(x) > 6:
                 # left turn
-                smoothed_ipv_value_lt, _ = smooth_cv(np.array([x, ipv_value[:, 0]]).T)
-                smoothed_ipv_error_lt, _ = smooth_cv(np.array([x, ipv_error[:, 0]]).T)
+                smoothed_ipv_value_lt, _ = smooth_cv(np.array([x, ipv_value_lt]).T)
+                smoothed_ipv_error_lt, _ = smooth_cv(np.array([x, ipv_error_lt]).T)
                 plt.plot(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1],
                          color='blue')
                 plt.fill_between(smoothed_ipv_value_lt[:, 0], smoothed_ipv_value_lt[:, 1] - smoothed_ipv_error_lt[:, 1],
@@ -400,8 +412,8 @@ def analyze_ipv_in_nds(case_id, fig=False):
                                  color='blue')
 
                 # go straight
-                smoothed_ipv_value_gs, _ = smooth_cv(np.array([x, ipv_value[:, 1]]).T)
-                smoothed_ipv_error_gs, _ = smooth_cv(np.array([x, ipv_error[:, 1]]).T)
+                smoothed_ipv_value_gs, _ = smooth_cv(np.array([x, ipv_value_gs]).T)
+                smoothed_ipv_error_gs, _ = smooth_cv(np.array([x, ipv_error_gs]).T)
                 plt.plot(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1],
                          color='red')
                 plt.fill_between(smoothed_ipv_value_gs[:, 0], smoothed_ipv_value_gs[:, 1] - smoothed_ipv_error_gs[:, 1],
@@ -409,39 +421,28 @@ def analyze_ipv_in_nds(case_id, fig=False):
                                  alpha=0.4,
                                  color='red')
 
-                # # save plotted data
-                # value_lt_plotted.append(smoothed_ipv_value_lt)
-                # value_gs_plotted.append(smoothed_ipv_value_gs)
-                # error_lt_plotted.append(smoothed_ipv_error_lt)
-                # error_gs_plotted.append(smoothed_ipv_error_gs)
-
             else:  # too short to be fitted
                 # left turn
-                plt.plot(x, ipv_value[:, 0],
+                plt.plot(x, ipv_value_lt,
                          color='red')
-                plt.fill_between(x, ipv_value[:, 0] - ipv_error[:, 0],
-                                 ipv_value[:, 0] + ipv_error[:, 0],
+                plt.fill_between(x, ipv_value_lt - ipv_error_lt,
+                                 ipv_value_lt + ipv_error_lt,
                                  alpha=0.4,
                                  color='red',
                                  label='estimated lt IPV')
 
                 # go straight
-                plt.plot(x, ipv_value[:, 1],
+                plt.plot(x, ipv_value_gs,
                          color='blue')
-                plt.fill_between(x, ipv_value[:, 1] - ipv_error[:, 1],
-                                 ipv_value[:, 1] + ipv_error[:, 1],
+                plt.fill_between(x, ipv_value_gs - ipv_error_gs,
+                                 ipv_value_gs + ipv_error_gs,
                                  alpha=0.4,
                                  color='blue',
                                  label='estimated gs IPV')
-                # # save plotted data
-                # value_lt_plotted.append(ipv_value[:, 0])
-                # value_gs_plotted.append(ipv_value[:, 1])
-                # error_lt_plotted.append(ipv_error[:, 0])
-                # error_gs_plotted.append(ipv_value[:, 1])
             # plt.pause(1)
     plt.show()
 
-    "select crossing event"
+    # TODO: "select crossing event"
     inter_o, inter_d = find_inter_od(case_id)
 
     invalid_list = np.where(inter_d - inter_o < 4)
@@ -559,10 +560,12 @@ def show_ipv_distribution():
 
 if __name__ == '__main__':
     "analyze ipv in NDS"
-    # analyze_nds(61)
+    # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
+    for case_index in range(131):
+        analyze_nds(case_index)
 
     "show trajectories in NDS"
-    visualize_nds(30)
+    # visualize_nds(29)
     #
     # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
 
@@ -571,5 +574,3 @@ if __name__ == '__main__':
     # draw_rectangle(5, 5, 45)
 
     # show_ipv_distribution()
-
-

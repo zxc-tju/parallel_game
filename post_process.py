@@ -20,7 +20,7 @@ def get_results(gs_ipv, lt_ipv):
 
     # import data
     version_num = '23'
-    filename = './simulation/outputs/version' + str(version_num) + '/data/agents_info' \
+    filename = './outputs/simulation/version' + str(version_num) + '/data/agents_info' \
                + '_gs_' + str(gs_ipv) \
                + '_lt_' + str(lt_ipv) \
                + '.pckl'
@@ -236,7 +236,7 @@ def get_results(gs_ipv, lt_ipv):
 
     # save figure
     if save_fig:
-        plt.savefig('./simulation/outputs/version' + str(version_num) + '/figures/'
+        plt.savefig('./outputs/simulation/version' + str(version_num) + '/figures/'
                     + 'gs=' + str(gs_ipv)
                     + '_lt=' + str(lt_ipv) + '.png')
         plt.clf()
@@ -246,8 +246,8 @@ def get_results(gs_ipv, lt_ipv):
 
 if __name__ == '__main__':
     # ipv_list = [-3, -2, -1, 0, 1, 2, 3]
-    ipv_list = [-2, 0, 2]
-    # ipv_list = [1]
+    # ipv_list = [-2, 0, 2]
+    ipv_list = [-2]
     for gs in [2]:
         for lt in ipv_list:
             get_results(gs, lt)
