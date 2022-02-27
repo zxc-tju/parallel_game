@@ -209,7 +209,7 @@ def analyze_nds(case_id):
             '''
             # save data into an excel with the format of:
             # 0-ipv_lt | ipv_lt_error | lt_px | lt_py  | lt_vx  | lt_vy  | lt_heading  |...
-            # 8-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
+            # 7-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
 
             df_ipv_lt = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0],
                                      columns=["ipv_lt"])
@@ -228,14 +228,24 @@ def analyze_nds(case_id):
                                         [int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:5],
                                         columns=["gs_px", "gs_py", "gs_vx", "gs_vy", "gs_heading"])
 
-            with pd.ExcelWriter(file_name, mode="a", if_sheet_exists="overlay") as writer:
-                df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
-                df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
-                df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
+            if inter_id_save == 0:
+                with pd.ExcelWriter(file_name) as writer:
+                    df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
+                    df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
+                    df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
 
-                df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
-                df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
-                df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
+                    df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
+                    df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
+                    df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
+            else:
+                with pd.ExcelWriter(file_name, mode="a", if_sheet_exists="overlay") as writer:
+                    df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
+                    df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
+                    df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
+
+                    df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
+                    df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
+                    df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
 
             inter_id_save = inter_id
 
@@ -442,7 +452,6 @@ def analyze_ipv_in_nds(case_id, fig=False):
             # plt.pause(1)
     plt.show()
 
-    # TODO: "select crossing event"
     inter_o, inter_d = find_inter_od(case_id)
 
     invalid_list = np.where(inter_d - inter_o < 4)
@@ -468,12 +477,12 @@ def analyze_ipv_in_nds(case_id, fig=False):
     ipv_data_non_crossing = []
     if not crossing_id == -1:
         df_ipv_data = pd.read_excel(file_name, sheet_name=crossing_id)
-        ipv_data_crossing = df_ipv_data.values[1:, :]
+        ipv_data_crossing = df_ipv_data.values[4:, :]
 
     for sheet_id in range(num_sheet):
         if not sheet_id == crossing_id:
             df_ipv_data = pd.read_excel(file_name, sheet_name=sheet_id)
-            ipv_data_non_crossing.append(df_ipv_data.values[1:, :])
+            ipv_data_non_crossing.append(df_ipv_data.values[4:, :])
 
     return crossing_id, ipv_data_crossing, ipv_data_non_crossing
 
@@ -484,16 +493,16 @@ def show_ipv_distribution():
     ipv_non_cross_lt = []
     ipv_non_cross_gs = []
     for i in range(np.size(inter_info, 0)):
-        # print(i)
+
         _, ipv_cross_temp, ipv_non_cross_temp = analyze_ipv_in_nds(i, False)
         if len(ipv_cross_temp) > 0:
             ipv_cross_lt.append(ipv_cross_temp[:, 0])
-            ipv_cross_gs.append(ipv_cross_temp[:, 1])
+            ipv_cross_gs.append(ipv_cross_temp[:, 7])
         if len(ipv_non_cross_temp) > 0:
             for idx in range(len(ipv_non_cross_temp)):
                 # print(ipv_non_cross[idx][:, 0])
                 ipv_non_cross_lt.append(ipv_non_cross_temp[idx][:, 0])
-                ipv_non_cross_gs.append(ipv_non_cross_temp[idx][:, 1])
+                ipv_non_cross_gs.append(ipv_non_cross_temp[idx][:, 7])
 
     "calculate mean ipv value of each type"
     mean_ipv_cross_lt = np.array([np.mean(ipv_cross_lt[0])])
@@ -561,8 +570,10 @@ def show_ipv_distribution():
 if __name__ == '__main__':
     "analyze ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
-    for case_index in range(131):
-        analyze_nds(case_index)
+    # for case_index in range(131):
+    #     analyze_nds(case_index)
+
+    # analyze_nds(30)
 
     "show trajectories in NDS"
     # visualize_nds(29)
@@ -573,4 +584,4 @@ if __name__ == '__main__':
 
     # draw_rectangle(5, 5, 45)
 
-    # show_ipv_distribution()
+    show_ipv_distribution()
