@@ -395,6 +395,7 @@ def analyze_ipv_in_nds(case_id, fig=False):
     num_sheet = len(file.sheet_names)
     # print(num_sheet)
     start_x = 0
+    crossing_id = -1
 
     for i in range(num_sheet):
         "get ipv data from excel"
@@ -402,6 +403,13 @@ def analyze_ipv_in_nds(case_id, fig=False):
         ipv_data_temp = df_ipv_data.values
         ipv_value_lt, ipv_value_gs = ipv_data_temp[:, 0], ipv_data_temp[:, 7]
         ipv_error_lt, ipv_error_gs = ipv_data_temp[:, 1], ipv_data_temp[:, 8]
+
+        # find cross event
+        x_lt = ipv_data_temp[:, 2]
+        x_gs = ipv_data_temp[:, 9]
+        delta_x = x_lt - x_gs  # x position of LT is larger than that of interacting FC
+        if np.max(delta_x) > 0 and crossing_id == -1:
+            crossing_id = i
 
         "draw ipv value and error bar"
 
@@ -451,26 +459,6 @@ def analyze_ipv_in_nds(case_id, fig=False):
                                  label='estimated gs IPV')
             # plt.pause(1)
     plt.show()
-
-    inter_o, inter_d = find_inter_od(case_id)
-
-    invalid_list = np.where(inter_d - inter_o < 4)
-    index = list(invalid_list[0])
-    inter_o = np.delete(inter_o, index)
-    inter_d = np.delete(inter_d, index)
-
-    case_info = inter_info[case_id]
-    lt_info = case_info[0]
-    crossing_frame = -1
-    if max(lt_info[:, 0] > 20):
-        crossing_frame = np.min(np.where(lt_info[:, 0] > 20))  # use the x position of left turn agent
-
-    # find the interacting go-straight agent
-    crossing_id = -1
-    for i in range(len(inter_o)):
-        if inter_o[i] < crossing_frame < inter_d[i]:
-            crossing_id = i
-            break
 
     # save ipv during the crossing event
     ipv_data_crossing = []
@@ -568,20 +556,22 @@ def show_ipv_distribution():
 
 
 if __name__ == '__main__':
-    "analyze ipv in NDS"
+    "calculate ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
     # for case_index in range(131):
     #     analyze_nds(case_index)
-
     # analyze_nds(30)
 
     "show trajectories in NDS"
-    # visualize_nds(29)
-    #
-    # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
+    # visualize_nds(30)
 
-    # o, d = find_inter_od(29)
+    "find crossing event and the ipv of yield front-coming vehicle (if there is)"
+    cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
+
+    "show ipv distribution in whole dataset"
+    # show_ipv_distribution()
+
+    "find the origin and ending of the each interaction event in a single case"
+    # o, d = find_inter_od(30)
 
     # draw_rectangle(5, 5, 45)
-
-    show_ipv_distribution()
