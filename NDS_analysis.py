@@ -408,8 +408,9 @@ def analyze_ipv_in_nds(case_id, fig=False):
         x_lt = ipv_data_temp[:, 2]
         x_gs = ipv_data_temp[:, 9]
         delta_x = x_lt - x_gs  # x position of LT is larger than that of interacting FC
-        if np.max(delta_x) > 0 and crossing_id == -1:
-            crossing_id = i
+        if len(delta_x) > 0:
+            if np.max(delta_x) > 0 and crossing_id == -1:
+                crossing_id = i
 
         "draw ipv value and error bar"
 
@@ -566,7 +567,11 @@ if __name__ == '__main__':
     # visualize_nds(30)
 
     "find crossing event and the ipv of yield front-coming vehicle (if there is)"
-    cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
+    # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
+
+    for case_index in range(131):
+        cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(case_index)
+        print(cross_id)
 
     "show ipv distribution in whole dataset"
     # show_ipv_distribution()
