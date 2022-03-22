@@ -557,38 +557,64 @@ def show_ipv_distribution():
     plt.show()
 
 
-def cal_pet(trj_a, trj_b):
+def cal_pet(trj_a, trj_b, type_cal):
     min_dis = 99
     min_dis2cv_index = None
+
+    # find the conflict point
     for i in range(np.size(trj_b, 0)):
-        dis2cv_lt_temp = np.linalg.norm(trj_a - trj_b, axis=1)
-        min_dis2cv_index_temp = np.where(np.amin(dis2cv_lt_temp) == dis2cv_lt_temp)
-        min_dis2cv_temp = dis2cv_lt_temp[min_dis2cv_index_temp[0]]
-        if min_dis2cv_temp[0] < min_dis:
-            min_dis = min_dis2cv_temp[0]
+        point_b = trj_b[i, :]
+        dis2cv_lt_temp = np.linalg.norm(trj_a - point_b, axis=1)
+        min_dis2cv_temp = np.amin(dis2cv_lt_temp)
+        min_dis2cv_index_temp = np.where(min_dis2cv_temp == dis2cv_lt_temp)
+        if min_dis2cv_temp < min_dis:
+            min_dis = min_dis2cv_temp
             min_dis2cv_index = min_dis2cv_index_temp[0]
     conflict_point = trj_a[min_dis2cv_index[0], :]
 
-    # find the time step when being near the conflict point
-    dis2cv_lt = trj_a - conflict_point
-    dis2cv_lt_norm = np.linalg.norm(dis2cv_lt, axis=1)
-    dis2cv_lt_min = np.amin(dis2cv_lt_norm)
-    t_step_lt = np.where(dis2cv_lt_min == dis2cv_lt_norm)
-    t_step_lt = t_step_lt[0][0]
-    if trj_a[t_step_lt, 0] > conflict_point[0]:
-        t_step_lt = t_step_lt - 1
+    if type_cal == "pet":
+        # find the time step when being near the conflict point
+        dis2cv_lt = trj_a - conflict_point
+        dis2cv_lt_norm = np.linalg.norm(dis2cv_lt, axis=1)
+        dis2cv_lt_min = np.amin(dis2cv_lt_norm)
+        t_step_lt = np.where(dis2cv_lt_min == dis2cv_lt_norm)
+        t_step_lt = t_step_lt[0][0]
+        if trj_a[t_step_lt, 0] > conflict_point[0]:
+            t_step_lt = t_step_lt - 1
 
-    dis2cv_gs = trj_b - conflict_point
-    dis2cv_gs_norm = np.linalg.norm(dis2cv_gs, axis=1)
-    dis2cv_gs_min = np.amin(dis2cv_gs_norm)
-    t_step_gs = np.where(dis2cv_gs_min == dis2cv_gs_norm)
-    t_step_gs = t_step_gs[0][0]
-    if trj_b[t_step_gs, 1] > conflict_point[1]:
-        t_step_gs = t_step_gs - 1
+        dis2cv_gs = trj_b - conflict_point
+        dis2cv_gs_norm = np.linalg.norm(dis2cv_gs, axis=1)
+        dis2cv_gs_min = np.amin(dis2cv_gs_norm)
+        t_step_gs = np.where(dis2cv_gs_min == dis2cv_gs_norm)
+        t_step_gs = t_step_gs[0][0]
+        if trj_b[t_step_gs, 1] > conflict_point[1]:
+            t_step_gs = t_step_gs - 1
 
-    # calculate PET
-    pet = np.abs(t_step_gs - t_step_lt) * 0.12 + 0.24
-    return pet, t_step_lt, t_step_gs, conflict_point
+        # calculate PET
+        pet = np.abs(t_step_gs - t_step_lt) * 0.12 + 0.24
+        return pet, t_step_lt, t_step_gs, conflict_point
+
+    elif type_cal == "apet":
+        # calculate APET
+        seg_len_a = np.linalg.norm(trj_a[1:, :] - trj_a[:-1, :], axis=1)
+        seg_len_b = np.linalg.norm(trj_b[1:, :] - trj_b[:-1, :], axis=1)
+        vel_a = seg_len_a/0.12
+        vel_b = seg_len_b/0.12
+        seg_len_a = np.concatenate([np.array([0]), seg_len_a])
+        seg_len_b = np.concatenate([np.array([0]), seg_len_b])
+        longi_progress_a = np.cumsum(seg_len_a)
+        longi_progress_b = np.cumsum(seg_len_b)
+        dis2conf_a = -(longi_progress_a-longi_progress_a[min_dis2cv_index])
+        dis2conf_b = -(longi_progress_b-longi_progress_b[min_dis2cv_index])
+
+        ttcp_a = dis2conf_a[:-1]/vel_a
+        ttcp_b = dis2conf_b[:-1]/vel_b
+
+        solid_len = min(np.size(ttcp_a[ttcp_a > 0], 0), np.size(ttcp_b[ttcp_b > 0], 0))
+
+        apet = ttcp_a[:solid_len] - ttcp_b[:solid_len]
+
+        return apet
 
 
 def divide_pet_in_nds():
@@ -620,7 +646,7 @@ def divide_pet_in_nds():
                 gs_trj_case = gs_info_multi[cross_id][start_frame:, 0:2]
                 lt_trj_case = inter_info[case_index][0][start_frame:, 0:2]
 
-                pet_temp, t_step_lt, t_step_gs, conflict_point = cal_pet(lt_trj_case, gs_trj_case[i, :])
+                pet_temp, t_step_lt, t_step_gs, conflict_point = cal_pet(lt_trj_case, gs_trj_case, "pet")
 
                 lt_ipv = np.mean(ipv_data_cross[:, 0])
                 gs_ipv = np.mean(ipv_data_cross[:, 7])
@@ -675,12 +701,6 @@ def divide_pet_in_nds():
 
 
 def show_crossing_event(case_index):
-    fig = plt.figure(1)
-    ax1 = fig.add_subplot(111)
-    ax1.set(xlim=[-23, 53], ylim=[-31, 57])
-    img = plt.imread('background_pic/Jianhexianxia.jpg')
-    ax1.imshow(img, extent=[-23, 53, -31, 57])
-
     cross_id, data_cross, data_non_cross = analyze_ipv_in_nds(case_index)
 
     # save data into an excel with the format of:
@@ -690,12 +710,22 @@ def show_crossing_event(case_index):
     if not cross_id == -1 and not case_index == 114:
         lt_trj_case = data_cross[:, 2:4]
         gs_trj_case = data_cross[:, 9:11]
+        apet = cal_pet(lt_trj_case, gs_trj_case, "apet")
+
+        fig1 = plt.figure(1)
+        ax1 = fig1.add_subplot(111)
+        ax1.set(xlim=[-23, 53], ylim=[-31, 57])
+        img = plt.imread('background_pic/Jianhexianxia.jpg')
+        ax1.imshow(img, extent=[-23, 53, -31, 57])
         ax1.plot(lt_trj_case[:, 0], lt_trj_case[:, 1])
         ax1.plot(gs_trj_case[:, 0], gs_trj_case[:, 1])
         lt_mean_ipv = np.mean(data_cross[4:, 0])
         gs_mean_ipv = np.mean(data_cross[4:, 7])
         ax1.text(0, 60, 'LT:'+str(lt_mean_ipv), fontsize=10)
         ax1.text(0, 65, 'GS:'+str(gs_mean_ipv), fontsize=10)
+
+        plt.figure(2)
+        plt.plot(apet)
 
 
 if __name__ == '__main__':
@@ -722,5 +752,7 @@ if __name__ == '__main__':
     "divide pet distribution according to the ipv of two agents"
     # divide_pet_in_nds()
 
-    "show crossing trajectories in a case"
+    "show crossing trajectories and pet process in a case"
     show_crossing_event(30)
+
+
