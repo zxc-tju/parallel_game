@@ -2,9 +2,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.interpolate import splrep, splev
 import math
+from shapely.geometry import LineString
 
 
-def smooth_cv(cv_init, point_num=1000):
+def smooth_ployline(cv_init, point_num=1000):
     cv = cv_init
     list_x = cv[:, 0]
     list_y = cv[:, 1]
@@ -25,7 +26,7 @@ def smooth_cv(cv_init, point_num=1000):
     y_smooth = splev(s_smooth, bspl_y)
     new_cv = np.array([x_smooth, y_smooth]).T
 
-    delta_new_cv = new_cv[1:, ]-new_cv[:-1, ]
+    delta_new_cv = new_cv[1:, ] - new_cv[:-1, ]
     s_accumulated = np.cumsum(np.linalg.norm(delta_new_cv, axis=1))
     s_accumulated = np.concatenate(([0], s_accumulated), axis=0)
     return new_cv, s_accumulated
@@ -115,7 +116,7 @@ def get_central_vertices(cv_type, origin_point):
     elif cv_type == 'gs_nds':  # go straight in NDS
         cv_init = np.array([origin_point, [23, 45.77], [23.55, 49.654], [24.58, 56.65]])
     assert cv_init is not None
-    cv_smoothed, s_accumulated = smooth_cv(cv_init)
+    cv_smoothed, s_accumulated = smooth_ployline(cv_init)
     return cv_smoothed, s_accumulated
 
 
@@ -139,8 +140,16 @@ def kinematic_model(u, init_state, TRACK_LEN, dt):
         psi = psi + (v_temp / f_len) * np.sin(beta) * dt
         v_temp = v_temp + a * dt
 
-        vx = v_temp*np.cos(psi)
-        vy = v_temp*np.sin(psi)
+        vx = v_temp * np.cos(psi)
+        vy = v_temp * np.sin(psi)
 
         track.append([x, y, vx, vy, psi])
     return np.array(track)
+
+
+def get_intersection_point(polyline1, polyline2):
+    s1 = LineString(polyline1)
+    s2 = LineString(polyline2)
+
+    inter_point = s1.intersection(s2)
+    return inter_point
