@@ -7,6 +7,7 @@ import matplotlib.transforms as mt
 from agent import Agent, cal_interior_cost, cal_group_cost
 from tools.utility import get_central_vertices, smooth_cv
 import pandas as pd
+from scipy.interpolate import interp2d
 
 from openpyxl import load_workbook
 
@@ -462,18 +463,18 @@ def analyze_ipv_in_nds(case_id, fig=False):
     plt.show()
 
     # save ipv during the crossing event
-    ipv_data_crossing = []
-    ipv_data_non_crossing = []
+    case_data_crossing = []
+    case_data_non_crossing = []
     if not crossing_id == -1:
-        df_ipv_data = pd.read_excel(file_name, sheet_name=crossing_id)
-        ipv_data_crossing = df_ipv_data.values[4:, :]
+        df_data = pd.read_excel(file_name, sheet_name=crossing_id)
+        case_data_crossing = df_data.values[4:, :]
 
     for sheet_id in range(num_sheet):
         if not sheet_id == crossing_id:
-            df_ipv_data = pd.read_excel(file_name, sheet_name=sheet_id)
-            ipv_data_non_crossing.append(df_ipv_data.values[4:, :])
+            df_data = pd.read_excel(file_name, sheet_name=sheet_id)
+            case_data_non_crossing.append(df_data.values[4:, :])
 
-    return crossing_id, ipv_data_crossing, ipv_data_non_crossing
+    return crossing_id, case_data_crossing, case_data_non_crossing
 
 
 def show_ipv_distribution():
@@ -556,6 +557,147 @@ def show_ipv_distribution():
     plt.show()
 
 
+def cal_pet(trj_a, trj_b):
+    min_dis = 99
+    min_dis2cv_index = None
+    for i in range(np.size(trj_b, 0)):
+        dis2cv_lt_temp = np.linalg.norm(trj_a - trj_b, axis=1)
+        min_dis2cv_index_temp = np.where(np.amin(dis2cv_lt_temp) == dis2cv_lt_temp)
+        min_dis2cv_temp = dis2cv_lt_temp[min_dis2cv_index_temp[0]]
+        if min_dis2cv_temp[0] < min_dis:
+            min_dis = min_dis2cv_temp[0]
+            min_dis2cv_index = min_dis2cv_index_temp[0]
+    conflict_point = trj_a[min_dis2cv_index[0], :]
+
+    # find the time step when being near the conflict point
+    dis2cv_lt = trj_a - conflict_point
+    dis2cv_lt_norm = np.linalg.norm(dis2cv_lt, axis=1)
+    dis2cv_lt_min = np.amin(dis2cv_lt_norm)
+    t_step_lt = np.where(dis2cv_lt_min == dis2cv_lt_norm)
+    t_step_lt = t_step_lt[0][0]
+    if trj_a[t_step_lt, 0] > conflict_point[0]:
+        t_step_lt = t_step_lt - 1
+
+    dis2cv_gs = trj_b - conflict_point
+    dis2cv_gs_norm = np.linalg.norm(dis2cv_gs, axis=1)
+    dis2cv_gs_min = np.amin(dis2cv_gs_norm)
+    t_step_gs = np.where(dis2cv_gs_min == dis2cv_gs_norm)
+    t_step_gs = t_step_gs[0][0]
+    if trj_b[t_step_gs, 1] > conflict_point[1]:
+        t_step_gs = t_step_gs - 1
+
+    # calculate PET
+    pet = np.abs(t_step_gs - t_step_lt) * 0.12 + 0.24
+    return pet, t_step_lt, t_step_gs, conflict_point
+
+
+def divide_pet_in_nds():
+    pet_comp = []
+    pet_coop = []
+    pet_collection = []
+
+    fig = plt.figure(1)
+    ax1 = fig.add_subplot(111)
+    ax1.set(xlim=[-23, 53], ylim=[-31, 57])
+    img = plt.imread('background_pic/Jianhexianxia.jpg')
+    ax1.imshow(img, extent=[-23, 53, -31, 57])
+
+    for case_index in range(131):
+        if case_index not in {93, 99, 114}:
+            # 93、99：no interaction
+            # 114: undivided 2 cases
+
+            cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(case_index)
+            o, _ = find_inter_od(case_index)
+            start_frame = int(o[cross_id])
+
+            # abstract interaction info. of a given case
+            case_info = inter_info[case_index]
+            # go-straight vehicles
+            gs_info_multi = case_info[1:inter_num[0, case_index] + 1]
+
+            if not cross_id == -1 and not case_index == 114:
+                gs_trj_case = gs_info_multi[cross_id][start_frame:, 0:2]
+                lt_trj_case = inter_info[case_index][0][start_frame:, 0:2]
+
+                pet_temp, t_step_lt, t_step_gs, conflict_point = cal_pet(lt_trj_case, gs_trj_case[i, :])
+
+                lt_ipv = np.mean(ipv_data_cross[:, 0])
+                gs_ipv = np.mean(ipv_data_cross[:, 7])
+
+                pet_collection.append([lt_ipv, gs_ipv, pet_temp])
+
+                ax1.scatter(lt_trj_case[t_step_lt, 0], lt_trj_case[t_step_lt, 1])
+                ax1.scatter(gs_trj_case[t_step_gs, 0], gs_trj_case[t_step_gs, 1])
+                ax1.scatter(conflict_point[0], conflict_point[1], color="black")
+
+                if np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) < 0:  # weighted according to confidence
+                    ax1.plot(lt_trj_case[:, 0], lt_trj_case[:, 1], color="red",
+                             alpha=-np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57)
+                    ax1.plot(gs_trj_case[:, 0], gs_trj_case[:, 1], color="red",
+                             alpha=-np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57)
+
+                    pet_comp.append(pet_temp)
+
+                else:
+                    ax1.plot(lt_trj_case[:, 0], lt_trj_case[:, 1], color="green",
+                             alpha=np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57)
+                    ax1.plot(gs_trj_case[:, 0], gs_trj_case[:, 1], color="green",
+                             alpha=np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57)
+
+                    pet_coop.append(pet_temp)
+
+    plt.figure(2)
+    plt.title('PET distribution (grouped)')
+    plt.hist(pet_comp,
+             alpha=0.5,
+             color='red',
+             label='competitive')
+    plt.hist(pet_coop,
+             alpha=0.5,
+             color='green',
+             label='cooperative')
+    plt.legend()
+    plt.xlabel('PET')
+    plt.ylabel('Counts')
+
+    PET_collection_array = np.array(pet_collection)
+
+    # save pet data
+    filename = './outputs/pet_distribution.xlsx'
+    with pd.ExcelWriter(filename) as writer:
+        df_pet_distribution = pd.DataFrame(PET_collection_array)
+        df_pet_distribution.to_excel(writer, startcol=0, index=False)
+        df_pet_comp = pd.DataFrame(pet_comp)
+        df_pet_coop = pd.DataFrame(pet_coop)
+        df_pet_comp.to_excel(writer, startcol=0, index=False, sheet_name="competitive")
+        df_pet_coop.to_excel(writer, startcol=0, index=False, sheet_name="cooperative")
+
+
+def show_crossing_event(case_index):
+    fig = plt.figure(1)
+    ax1 = fig.add_subplot(111)
+    ax1.set(xlim=[-23, 53], ylim=[-31, 57])
+    img = plt.imread('background_pic/Jianhexianxia.jpg')
+    ax1.imshow(img, extent=[-23, 53, -31, 57])
+
+    cross_id, data_cross, data_non_cross = analyze_ipv_in_nds(case_index)
+
+    # save data into an excel with the format of:
+    # 0-ipv_lt | ipv_lt_error | lt_px | lt_py  | lt_vx  | lt_vy  | lt_heading  |...
+    # 7-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
+
+    if not cross_id == -1 and not case_index == 114:
+        lt_trj_case = data_cross[:, 2:4]
+        gs_trj_case = data_cross[:, 9:11]
+        ax1.plot(lt_trj_case[:, 0], lt_trj_case[:, 1])
+        ax1.plot(gs_trj_case[:, 0], gs_trj_case[:, 1])
+        lt_mean_ipv = np.mean(data_cross[4:, 0])
+        gs_mean_ipv = np.mean(data_cross[4:, 7])
+        ax1.text(0, 60, 'LT:'+str(lt_mean_ipv), fontsize=10)
+        ax1.text(0, 65, 'GS:'+str(gs_mean_ipv), fontsize=10)
+
+
 if __name__ == '__main__':
     "calculate ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
@@ -564,14 +706,10 @@ if __name__ == '__main__':
     # analyze_nds(30)
 
     "show trajectories in NDS"
-    # visualize_nds(30)
+    # visualize_nds(114)
 
     "find crossing event and the ipv of yield front-coming vehicle (if there is)"
-    # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
-
-    for case_index in range(131):
-        cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(case_index)
-        print(cross_id)
+    # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(21, True)
 
     "show ipv distribution in whole dataset"
     # show_ipv_distribution()
@@ -580,3 +718,9 @@ if __name__ == '__main__':
     # o, d = find_inter_od(30)
 
     # draw_rectangle(5, 5, 45)
+
+    "divide pet distribution according to the ipv of two agents"
+    # divide_pet_in_nds()
+
+    "show crossing trajectories in a case"
+    show_crossing_event(30)
