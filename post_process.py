@@ -7,7 +7,7 @@ import math
 import gc
 import pandas as pd
 from matplotlib import pyplot as plt
-from tools.utility import get_central_vertices, smooth_cv, savitzky_golay
+from tools.utility import get_central_vertices, smooth_ployline, savitzky_golay
 import numpy as np
 
 ipv_update_method = 1
@@ -183,7 +183,7 @@ def get_results(gs_ipv, lt_ipv):
 
     # ====draw left turn
     y_lt = np.array(agent_lt.estimated_inter_agent.ipv_collection)
-    point_smoothed_lt, _ = smooth_cv(np.array([x_range, y_lt]).T)
+    point_smoothed_lt, _ = smooth_ployline(np.array([x_range, y_lt]).T)
     x_smoothed_lt = point_smoothed_lt[:, 0]
     y_lt_smoothed = point_smoothed_lt[:, 1]
     ax2.plot(x_smoothed_lt, y_lt_smoothed,
@@ -193,7 +193,7 @@ def get_results(gs_ipv, lt_ipv):
     if ipv_update_method == 1:
         # error bar
         y_error_lt = np.array(agent_lt.estimated_inter_agent.ipv_error_collection)
-        error_smoothed_lt, _ = smooth_cv(np.array([x_range, y_error_lt]).T)
+        error_smoothed_lt, _ = smooth_ployline(np.array([x_range, y_error_lt]).T)
         y_error_lt_smoothed = error_smoothed_lt[:, 1]
         ax2.fill_between(x_smoothed_lt, y_lt_smoothed - y_error_lt_smoothed, y_lt_smoothed + y_error_lt_smoothed,
                          alpha=0.3,
@@ -207,7 +207,7 @@ def get_results(gs_ipv, lt_ipv):
     # ====draw go straight
     y_gs = np.array(agent_gs.estimated_inter_agent.ipv_collection)
     # smoothen data
-    point_smoothed_gs, _ = smooth_cv(np.array([x_range, y_gs]).T)
+    point_smoothed_gs, _ = smooth_ployline(np.array([x_range, y_gs]).T)
     x_smoothed_gs = point_smoothed_gs[:, 0]
     y_gs_smoothed = point_smoothed_gs[:, 1]
     ax2.plot(x_smoothed_gs, y_gs_smoothed,
@@ -217,7 +217,7 @@ def get_results(gs_ipv, lt_ipv):
     if ipv_update_method == 1:
         # error bar
         y_error_gs = np.array(agent_gs.estimated_inter_agent.ipv_error_collection)
-        error_smoothed_gs, _ = smooth_cv(np.array([x_range, y_error_gs]).T)
+        error_smoothed_gs, _ = smooth_ployline(np.array([x_range, y_error_gs]).T)
         y_error_gs_smoothed = error_smoothed_gs[:, 1]
         ax2.fill_between(x_smoothed_gs, y_gs_smoothed - y_error_gs_smoothed, y_gs_smoothed + y_error_gs_smoothed,
                          alpha=0.3,
