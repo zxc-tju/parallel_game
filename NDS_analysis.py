@@ -185,7 +185,7 @@ def analyze_nds(case_id):
 
     inter_id = 0
     inter_id_save = inter_id
-    file_name = './outputs/NDS_analysis/v3/' + str(case_id) + '.xlsx'
+    file_name = './outputs/NDS_analysis/v4/' + str(case_id) + '.xlsx'
 
     for t in range(np.size(lt_info, 0)):
 
@@ -596,6 +596,16 @@ def cal_pet(trj_a, trj_b, type_cal):
 
     elif type_cal == 'apet':
 
+        smoothed_trj_a, smoothed_progress_a = smooth_ployline(trj_a)
+        cp2trj_a = np.linalg.norm(smoothed_trj_a - conflict_point, axis=1)
+        min_dcp2trj_a = np.amin(cp2trj_a)
+        cp_index_a = np.where(min_dcp2trj_a == cp2trj_a)
+
+        smoothed_trj_b, smoothed_progress_b = smooth_ployline(trj_b)
+        cp2trj_b = np.linalg.norm(smoothed_trj_b - conflict_point, axis=1)
+        min_dcp2trj_b = np.amin(cp2trj_b)
+        cp_index_b = np.where(min_dcp2trj_b == cp2trj_b)
+
         seg_len_a = np.linalg.norm(trj_a[1:, :] - trj_a[:-1, :], axis=1)
         seg_len_b = np.linalg.norm(trj_b[1:, :] - trj_b[:-1, :], axis=1)
         vel_a = seg_len_a / 0.12
@@ -605,23 +615,29 @@ def cal_pet(trj_a, trj_b, type_cal):
         longi_progress_a = np.cumsum(seg_len_a)
         longi_progress_b = np.cumsum(seg_len_b)
 
-        dis2conf_a = -(longi_progress_a - longi_progress_a[min_dis2cv_index])
-        dis2conf_b = -(longi_progress_b - longi_progress_b[min_dis2cv_index])
+        dis2conf_a = -(longi_progress_a - smoothed_progress_a[cp_index_a])
+        dis2conf_b = -(longi_progress_b - smoothed_progress_b[cp_index_b])
 
         ttcp_a = dis2conf_a[:-1] / vel_a
         ttcp_b = dis2conf_b[:-1] / vel_b
 
         solid_len = min(np.size(ttcp_a[ttcp_a > 0], 0), np.size(ttcp_b[ttcp_b > 0], 0))
 
-        apet = ttcp_a[:solid_len] - ttcp_b[:solid_len]
+        apet = np.abs(ttcp_a[:solid_len] - ttcp_b[:solid_len]) + 0.24
 
-        return apet
+        return apet, ttcp_a, ttcp_b
 
 
 def divide_pet_in_nds():
     pet_comp = []
     pet_coop = []
     pet_collection = []
+
+    fig = plt.figure(1)
+    ax1 = fig.add_subplot(111)
+    ax1.set(xlim=[-23, 53], ylim=[-31, 57])
+    img = plt.imread('background_pic/Jianhexianxia.jpg')
+    ax1.imshow(img, extent=[-23, 53, -31, 57])
 
     for case_index in range(131):
 
@@ -632,7 +648,7 @@ def divide_pet_in_nds():
         o, _ = find_inter_od(case_index)
         start_frame = int(o[cross_id])
 
-        if not cross_id == -1 and not case_index == 114:
+        if not cross_id == -1 and case_index not in {114, 129}:
 
             # go-straight vehicles
             gs_info_multi = inter_info[case_index][1:inter_num[0, case_index] + 1]
@@ -645,12 +661,20 @@ def divide_pet_in_nds():
             data_cross = data_cross[4:, :]
             lt_ipv = np.mean(data_cross[:, 0])
             gs_ipv = np.mean(data_cross[:, 7])
-            pet_collection.append([lt_ipv, gs_ipv, pet_temp])
+            lt_vel = np.mean(np.linalg.norm(data_cross[:, 4:5], axis=1))
+            gs_vel = np.mean(np.linalg.norm(data_cross[:, 11:12], axis=1))
+            vel = (lt_vel+gs_vel) * 0.5
+
+            pet_collection.append([lt_ipv, gs_ipv, pet_temp, vel])
 
             if lt_ipv < 0:
                 pet_comp.append(pet_temp)
+                ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="red", alpha=0.5)
+                # alpha=-np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57
+
             else:
                 pet_coop.append(pet_temp)
+                ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="green", alpha=0.5)
 
     plt.figure(2)
     plt.title('PET distribution (grouped)')
@@ -672,7 +696,7 @@ def divide_pet_in_nds():
     filename = './outputs/pet_distribution.xlsx'
     with pd.ExcelWriter(filename) as writer:
         df_pet_distribution = pd.DataFrame(pet_collection_array)
-        df_pet_distribution.to_excel(writer, startcol=0, index=False)
+        df_pet_distribution.to_excel(writer, startcol=0, index=False, sheet_name="all")
         df_pet_comp = pd.DataFrame(pet_comp)
         df_pet_coop = pd.DataFrame(pet_coop)
         df_pet_comp.to_excel(writer, startcol=0, index=False, sheet_name="competitive")
@@ -706,7 +730,11 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
             ax1.scatter(conflict_point[0], conflict_point[1], color="black", alpha=0.5)
 
             plt.text(55, 30, 'PET:' + str(pet))
-
+            lt_mean_ipv = np.mean(data_cross[4:, 0])
+            gs_mean_ipv = np.mean(data_cross[4:, 7])
+            ax1.text(0, 60, 'LT:'+str(lt_mean_ipv), fontsize=10)
+            ax1.text(0, 65, 'GS:'+str(gs_mean_ipv), fontsize=10)
+            #
             if np.mean(data_cross[4:, 0]) < 0:
                 ax1.plot(lt_trj[:, 0], lt_trj[:, 1], color="red", alpha=0.5)
                 # alpha=-np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57
@@ -719,16 +747,12 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
                 plt.savefig('./outputs/NDS_analysis/crossing_event/' + str(case_index) + '.png')
 
         # calculate anticipated PET of the process
-        apet = cal_pet(lt_trj, gs_trj, "apet")
-        #
-        #
-        # lt_mean_ipv = np.mean(data_cross[4:, 0])
-        # gs_mean_ipv = np.mean(data_cross[4:, 7])
-        # ax1.text(0, 60, 'LT:'+str(lt_mean_ipv), fontsize=10)
-        # ax1.text(0, 65, 'GS:'+str(gs_mean_ipv), fontsize=10)
-        #
-        # plt.figure(2)
-        # plt.plot(apet)
+        apet, ttc_lt, ttc_gs = cal_pet(lt_trj, gs_trj, "apet")
+
+        plt.figure(2)
+        plt.plot(apet, color='black')
+        plt.plot(ttc_lt, color='blue')
+        plt.plot(ttc_gs, color='purple')
 
 
 if __name__ == '__main__':
@@ -742,7 +766,7 @@ if __name__ == '__main__':
     # visualize_nds(114)
 
     "find crossing event and the ipv of yield front-coming vehicle (if there is)"
-    # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(21, True)
+    # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
 
     "show ipv distribution in whole dataset"
     # show_ipv_distribution()
@@ -756,7 +780,4 @@ if __name__ == '__main__':
     divide_pet_in_nds()
 
     "show crossing trajectories and pet process in a case"
-    # for case_index in range(131):
-    #     if case_index not in {114}:
-    #         show_crossing_event(case_index)
     # show_crossing_event(30)
