@@ -7,12 +7,12 @@ from tools.utility import get_central_vertices, kinematic_model
 import copy
 
 # simulation setting
-dt = 0.1
+dt = 0.12
 TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
-WEIGHT_DEVIATION = 0.5
+WEIGHT_DEVIATION = 0.8
 WEIGHT_STEERING = 0.5
 weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_STEERING])
 weight_metric = weight_metric / weight_metric.sum()
@@ -27,7 +27,7 @@ virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-WEIGHT_GRP = 0.9
+WEIGHT_GRP = 0.5
 
 # likelihood function
 sigma = 0.1
@@ -289,12 +289,6 @@ def cal_interior_cost(action, track, target):
     test = cv - track[0, 0:2]
     init_dis2cv = np.linalg.norm(test, axis=1)
     init_min_dis2cv = np.amin(init_dis2cv)
-    init_index = np.where(init_min_dis2cv == init_dis2cv)
-
-    # find the on-reference point of the track end
-    # end_dis2cv = np.linalg.norm(cv - track[-1, 0:2], axis=1)
-    # end_init_dis2cv = np.amin(end_dis2cv)
-    # end_index = np.where(end_init_dis2cv == end_dis2cv)
 
     # initialize an array to store distance from each point in the track to cv
     dis2cv = np.zeros([np.size(track, 0), 1])
@@ -308,7 +302,7 @@ def cal_interior_cost(action, track, target):
     # print('cost of travel delay:', cost_travel_distance)
 
     "2. cost of lane deviation"
-    cost_mean_deviation = max(0, dis2cv.mean() - 0.3)
+    cost_mean_deviation = max(0, dis2cv.mean())
     # print('cost of lane deviation:', cost_mean_deviation)
 
     "3. cost of steering"
@@ -331,19 +325,26 @@ def cal_interior_cost(action, track, target):
 
 def cal_group_cost(track_packed):
     track_self, track_inter = track_packed
-    rel_distance = np.linalg.norm(track_self - track_inter, axis=1)
+    pos_rel = track_inter - track_self
+    dis_rel = np.linalg.norm(pos_rel, axis=1)
+    vel_self = (track_self[1:, :] - track_self[0:-1, :]) / dt
+    vel_inter = (track_inter[1:, :] - track_inter[0:-1, :]) / dt
+    vel_rel = vel_self - vel_inter
     "version 1"
-    min_rel_distance = np.amin(rel_distance)  # minimal distance
-    min_index = np.where(min_rel_distance == rel_distance)[0]  # the time step when reach the minimal distance
-    cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0)) / rel_distance[0]
+    # min_rel_distance = np.amin(rel_distance)  # minimal distance
+    # min_index = np.where(min_rel_distance == rel_distance)[0]  # the time step when reach the minimal distance
+    # cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0)) / rel_distance[0]
 
     "version 2"
-    # rel_speed = (rel_distance[1:] - rel_distance[0:-1]) / dt
-    # rel_speed[np.where(rel_speed > 0)] = 0
-    # cost_group2 = -np.sum(rel_speed) / (np.size(track_self, 0))
+    vel_rel_along_o = pos_rel[0, :].dot(vel_rel[0, :])/dis_rel[0]
+    ttc_o = dis_rel[0]/vel_rel_along_o
+    vel_rel_along_d = pos_rel[-1, :].dot(vel_rel[-1, :]) / dis_rel[-1]
+    ttc_d = dis_rel[-1] / vel_rel_along_d
+    ttc_up_from_decision = ttc_d - (ttc_o-(np.size(track_self, 0)-1) * dt)
+    cost_group2 = -ttc_up_from_decision
 
     # print('group cost:', cost_group)
-    return cost_group1 * WEIGHT_GRP
+    return cost_group2 * WEIGHT_GRP
 
 
 def cal_reliability(act_trck, vir_trck_coll):

@@ -105,7 +105,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     return np.convolve(m[::-1], y, mode='valid')
 
 
-def get_central_vertices(cv_type, origin_point):
+def get_central_vertices(cv_type, origin_point=None):
     cv_init = None
     if cv_type == 'lt':  # left turn
         cv_init = np.array([[0, -10], [9, -7.5], [12, -5.2], [13.5, 0], [14, 10], [14, 20], [14, 30]])
