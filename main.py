@@ -18,7 +18,7 @@ in_loop_illustration_needed = 0
 num_step = 30
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/version22/'
+output_directory = './outputs/simulation/version24'
 final_illustration_needed = 0
 save_data_needed = 1
 
@@ -45,7 +45,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
     "====IRB process===="
     for t in range(num_step):
-        # print('time_step: ', t, '/', num_step)
+        print('time_step: ', t, '/', num_step)
 
         "==plan for left-turn=="
         # ==interaction with parallel virtual agents
@@ -221,21 +221,22 @@ if __name__ == '__main__':
     #              Process(target=multi_simulate, args=(6, [2], [2])),
     #              Process(target=multi_simulate, args=(7, [2], [3]))
     #              ]
-    processes = [Process(target=multi_simulate, args=(1, [-3], [2])),
-                 Process(target=multi_simulate, args=(2, [-2], [2])),
-                 Process(target=multi_simulate, args=(3, [-1], [2])),
-                 Process(target=multi_simulate, args=(4, [0], [2])),
-                 Process(target=multi_simulate, args=(5, [1], [2])),
-                 Process(target=multi_simulate, args=(6, [2], [2])),
-                 Process(target=multi_simulate, args=(7, [3], [2]))
-                 ]
-    [p.start() for p in processes]  # 开启进程
-    [p.join() for p in processes]  # 等待进程依次结束
+    # processes = [Process(target=multi_simulate, args=(1, [-3], [2])),
+    #              Process(target=multi_simulate, args=(2, [-2], [2])),
+    #              Process(target=multi_simulate, args=(3, [-1], [2])),
+    #              Process(target=multi_simulate, args=(4, [0], [2])),
+    #              Process(target=multi_simulate, args=(5, [1], [2])),
+    #              Process(target=multi_simulate, args=(6, [2], [2])),
+    #              Process(target=multi_simulate, args=(7, [3], [2]))
+    #              ]
+    # [p.start() for p in processes]  # 开启进程
+    # [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
-    # for gs_ipv in [0]:
-    #     for lt_ipv in [2]:
-    #         simulate(gs_ipv, lt_ipv)
+    for gs_ipv in [2]:
+        for lt_ipv in [2]:
+            print('gs=2, lt=2')
+            simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()
     print(f"whole process takes {toc - tic:0.4f} seconds")

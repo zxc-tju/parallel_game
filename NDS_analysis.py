@@ -30,7 +30,7 @@ dt = 0.12s
 # the number of go-straight vehicles that interact with the left-turn vehicle
 inter_num = mat['interact_agent_num']
 
-virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
+# virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
 
 def draw_rectangle(x, y, deg):
@@ -758,8 +758,8 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
 if __name__ == '__main__':
     "calculate ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
-    # for case_index in range(131):
-    #     analyze_nds(case_index)
+    for case_index in range(26, 30):
+        analyze_nds(case_index)
     # analyze_nds(30)
 
     "show trajectories in NDS"
@@ -777,7 +777,7 @@ if __name__ == '__main__':
     # draw_rectangle(5, 5, 45)
 
     "divide pet distribution according to the ipv of two agents"
-    divide_pet_in_nds()
+    # divide_pet_in_nds()
 
     "show crossing trajectories and pet process in a case"
     # show_crossing_event(30)

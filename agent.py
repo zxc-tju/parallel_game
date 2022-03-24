@@ -13,7 +13,7 @@ MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
 WEIGHT_DEVIATION = 0.8
-WEIGHT_STEERING = 0.5
+WEIGHT_STEERING = 0
 weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_STEERING])
 weight_metric = weight_metric / weight_metric.sum()
 
@@ -27,10 +27,10 @@ virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-WEIGHT_GRP = 0.5
+WEIGHT_GRP = 0.1
 
 # likelihood function
-sigma = 0.1
+sigma = 0.02
 
 
 class Agent:
@@ -99,7 +99,6 @@ class Agent:
                 agent_self_temp.solve_game_IBR(virtual_inter_agent.trj_solution)
                 virtual_inter_agent.solve_game_IBR(agent_self_temp.trj_solution)
                 if count_iter > 10:
-                    count_iter = 0
                     break
             virtual_agent_track_collection.append(virtual_inter_agent.trj_solution)
         self.estimated_inter_agent.virtual_track_collection.append(virtual_agent_track_collection)
@@ -272,8 +271,11 @@ def utility_IBR(self_info, track_inter):
         track_self = track_info_self[:, 0:2]
         track_all = [track_self, track_inter[:, 0:2]]
         # print(np.sin(self_info[3]))
-        util = np.cos(self_info[3]) * cal_interior_cost(u, track_self, self_info[4]) + \
-               np.sin(self_info[3]) * cal_group_cost(track_all)
+        interior_cost = cal_interior_cost(u, track_self, self_info[4])
+        group_cost = cal_group_cost(track_all)
+        util = np.cos(self_info[3]) * interior_cost + np.sin(self_info[3]) * group_cost
+        # print('interior_cost:', interior_cost)
+        # print('group_cost:', group_cost)
         return util
 
     return fun
@@ -336,12 +338,13 @@ def cal_group_cost(track_packed):
     # cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0)) / rel_distance[0]
 
     "version 2"
-    vel_rel_along_o = pos_rel[0, :].dot(vel_rel[0, :])/dis_rel[0]
-    ttc_o = dis_rel[0]/vel_rel_along_o
-    vel_rel_along_d = pos_rel[-1, :].dot(vel_rel[-1, :]) / dis_rel[-1]
-    ttc_d = dis_rel[-1] / vel_rel_along_d
-    ttc_up_from_decision = ttc_d - (ttc_o-(np.size(track_self, 0)-1) * dt)
-    cost_group2 = -ttc_up_from_decision
+    vel_rel_along_sum = 0
+    for i in range(np.size(vel_rel, 0)):
+        nearness_temp = pos_rel[i+1, :].dot(vel_rel[i]) / dis_rel[i]
+        # do not give reward to negative nearness (flee action)
+        vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+
+    cost_group2 = vel_rel_along_sum / TRACK_LEN
 
     # print('group cost:', cost_group)
     return cost_group2 * WEIGHT_GRP
