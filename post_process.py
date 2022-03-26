@@ -12,14 +12,14 @@ import numpy as np
 
 ipv_update_method = 1
 show_gif = 0
-save_fig = 0
+save_fig = 1
 save_data = 1
 
 
 def get_results(gs_ipv, lt_ipv):
 
     # import data
-    version_num = '23'
+    version_num = '25'
     filename = './outputs/simulation/version' + str(version_num) + '/data/agents_info' \
                + '_gs_' + str(gs_ipv) \
                + '_lt_' + str(lt_ipv) \
@@ -105,7 +105,7 @@ def get_results(gs_ipv, lt_ipv):
         df_link = pd.DataFrame(link)
         df_pet = pd.DataFrame(pet)
 
-        with pd.ExcelWriter('/simulation/outputs/excel/' + str(version_num) + '/output'
+        with pd.ExcelWriter('outputs/simulation/version' + str(version_num) + '/excel/output'
                             + '_gs_' + str(gs_ipv)
                             + '_lt_' + str(lt_ipv) + '.xlsx') as writer:
             df_lt_ob_trj.to_excel(writer, index=False, sheet_name='lt_ob_trj')
@@ -247,7 +247,7 @@ def get_results(gs_ipv, lt_ipv):
 if __name__ == '__main__':
     # ipv_list = [-3, -2, -1, 0, 1, 2, 3]
     # ipv_list = [-2, 0, 2]
-    ipv_list = [-2]
+    ipv_list = [0]
     for gs in [2]:
         for lt in ipv_list:
             get_results(gs, lt)

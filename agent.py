@@ -31,6 +31,7 @@ WEIGHT_GRP = 0.1
 
 # likelihood function
 sigma = 0.02
+sigma2 = 0.05
 
 
 class Agent:
@@ -150,7 +151,7 @@ class Agent:
                     virtual_track_collection.append(candidates[i][0:time_duration, 0:2])
                 actual_track = inter_agent.observed_trajectory[start_time:current_time, 0:2]
 
-                ipv_weight = cal_reliability(actual_track, virtual_track_collection)
+                ipv_weight = cal_reliability([], actual_track, virtual_track_collection, [])
 
                 # weighted sum of all candidates' IPVs
                 self.estimated_inter_agent.ipv = sum(virtual_agent_IPV_range * ipv_weight)
@@ -184,9 +185,7 @@ class Agent:
                 u_margin_inter1 = u_conducted_inter * 1.01
                 track_margin_inter1 = kinematic_model(u_margin_inter1, init_state_4_kine_inter, time_duration + 1, dt)
                 track_margin_self1 = kinematic_model(u_margin_self1, init_state_4_kine_self, time_duration + 1, dt)
-                cost_inerior_margin1 = cal_interior_cost(u_margin_inter1,
-                                                        track_margin_inter1[:, 0:2],
-                                                        inter_agent.target)
+                cost_inerior_margin1 = cal_interior_cost(track_margin_inter1[:, 0:2], inter_agent.target)
                 cost_group_margin1 = cal_group_cost([track_margin_inter1[:, 0:2], track_margin_self1[:, 0:2]])
 
                 # # info at margin2
@@ -205,9 +204,7 @@ class Agent:
                 # info at actual solution
                 track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
                 track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
-                cost_inerior = cal_interior_cost(u_conducted_inter,
-                                                 track_actual_inter,
-                                                 inter_agent.target)
+                cost_inerior = cal_interior_cost(track_actual_inter, inter_agent.target)
                 cost_group = cal_group_cost([track_actual_inter, track_actual_self])
                 # atan
                 self.estimated_inter_agent.ipv = - math.atan((cost_inerior - cost_inerior_margin1)
@@ -229,7 +226,10 @@ class Agent:
             self.virtual_track_collection.append(virtual_track_temp[:, 0:2])
 
         # calculate reliability of each track
-        ipv_weight = cal_reliability(self_actual_track, self.virtual_track_collection)
+        ipv_weight = cal_reliability(inter_track,
+                                     self_actual_track,
+                                     self.virtual_track_collection,
+                                     self.target)
 
         # weighted sum of all candidates' IPVs
         self.ipv = sum(ipv_range * ipv_weight)
@@ -271,7 +271,7 @@ def utility_IBR(self_info, track_inter):
         track_self = track_info_self[:, 0:2]
         track_all = [track_self, track_inter[:, 0:2]]
         # print(np.sin(self_info[3]))
-        interior_cost = cal_interior_cost(u, track_self, self_info[4])
+        interior_cost = cal_interior_cost(track_self, self_info[4])
         group_cost = cal_group_cost(track_all)
         util = np.cos(self_info[3]) * interior_cost + np.sin(self_info[3]) * group_cost
         # print('interior_cost:', interior_cost)
@@ -281,7 +281,7 @@ def utility_IBR(self_info, track_inter):
     return fun
 
 
-def cal_interior_cost(action, track, target):
+def cal_interior_cost(track, target):
     if target in {'gs_nds', 'lt_nds'}:
         cv, s = get_central_vertices(target, track[0, :])
     else:
@@ -304,23 +304,16 @@ def cal_interior_cost(action, track, target):
     # print('cost of travel delay:', cost_travel_distance)
 
     "2. cost of lane deviation"
-    cost_mean_deviation = max(0, dis2cv.mean())
+    cost_mean_deviation = max(0.2, dis2cv.mean())
     # print('cost of lane deviation:', cost_mean_deviation)
 
     "3. cost of steering"
     cost_steering = 0
-    # if target in {'gs_nds', 'gs'} and action is not []:
-    #     delta_slice = slice(int(np.size(action, 0) / 2), np.size(action, 0))
-    #     delta = action[delta_slice]
-    #     cost_steering = np.sum(np.abs(delta)) / np.size(track, 0)
 
     cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_steering])
 
     "overall cost"
     cost_interior = weight_metric.dot(cost_metric.T)
-    # cost_interior = WEIGHT_DELAY * cost_travel_distance + \
-    #                 WEIGHT_DEVIATION * cost_mean_deviation + \
-    #                 WEIGHT_STEERING * cost_steering
 
     return cost_interior * WEIGHT_INT
 
@@ -340,7 +333,7 @@ def cal_group_cost(track_packed):
     "version 2"
     vel_rel_along_sum = 0
     for i in range(np.size(vel_rel, 0)):
-        nearness_temp = pos_rel[i+1, :].dot(vel_rel[i]) / dis_rel[i]
+        nearness_temp = pos_rel[i+1, :].dot(vel_rel[i]) / dis_rel[i + 1]
         # do not give reward to negative nearness (flee action)
         vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
 
@@ -350,28 +343,49 @@ def cal_group_cost(track_packed):
     return cost_group2 * WEIGHT_GRP
 
 
-def cal_reliability(act_trck, vir_trck_coll):
+def cal_reliability(inter_track, act_trck, vir_trck_coll, target):
     """
 
+    :param target:
+    :param inter_track:
     :param act_trck: actual_track
     :param vir_trck_coll: virtual_track_collection
     :return:
     """
-
     candidates_num = len(vir_trck_coll)
     var = np.zeros(candidates_num)
-    for i in range(candidates_num):
-        virtual_track = vir_trck_coll[i]
-        rel_dis = np.linalg.norm(virtual_track - act_trck, axis=1)  # distance vector
-        var[i] = np.power(
-            np.prod(
-                (1 / sigma / np.sqrt(2 * math.pi))
-                * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
-            )
-            , 1 / np.size(act_trck, 0))
+    interior_cost_vir = np.zeros(candidates_num)
+    group_cost_vir = np.zeros(candidates_num)
+    delta_pref = np.zeros(candidates_num)
+    cost_preference_vir = np.zeros(candidates_num)
+    if np.size(inter_track) == 0:
+        for i in range(candidates_num):
+            virtual_track = vir_trck_coll[i]
+            rel_dis = np.linalg.norm(virtual_track - act_trck, axis=1)  # distance vector
+            var[i] = np.power(
+                np.prod(
+                    (1 / sigma / np.sqrt(2 * math.pi))
+                    * np.exp(- rel_dis ** 2 / (2 * sigma ** 2))
+                )
+                , 1 / np.size(act_trck, 0))
 
-        if var[i] < 0:
-            var[i] = 0
+            if var[i] < 0:
+                var[i] = 0
+
+    else:
+        interior_cost_observed = cal_interior_cost(act_trck, target)
+        group_cost_observed = cal_group_cost([act_trck, inter_track])
+        cost_preference_observed = math.atan(group_cost_observed / interior_cost_observed)
+        for i in range(candidates_num):
+            virtual_track = vir_trck_coll[i]
+            interior_cost_vir[i] = cal_interior_cost(virtual_track, target)
+            group_cost_vir[i] = cal_group_cost([virtual_track, inter_track])
+            cost_preference_vir[i] = math.atan(group_cost_vir[i] / interior_cost_vir[i])
+            delta_pref[i] = cost_preference_vir[i] - cost_preference_observed
+            p1 = (1 / sigma2 / np.sqrt(2 * math.pi))
+            p2 = np.exp(- delta_pref[i] ** 2 / (2 * sigma2 ** 2))
+            var[i] = (1 / sigma2 / np.sqrt(2 * math.pi)) * np.exp(- delta_pref[i] ** 2 / (2 * sigma2 ** 2))
+
     if sum(var):
         weight = var / (sum(var))
     else:

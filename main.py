@@ -18,19 +18,19 @@ in_loop_illustration_needed = 0
 num_step = 30
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/simulation/version24'
-final_illustration_needed = 0
+output_directory = './outputs/simulation/version25'
+final_illustration_needed = 1
 save_data_needed = 1
 
 
 def simulate(gs_ipv_sim, lt_ipv_sim):
     # initial state of the left-turn vehicle
     init_position_lt = np.array([11, -5.8])
-    init_velocity_lt = np.array([2, 0.3])
+    init_velocity_lt = np.array([1.5, 0.3])
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
     init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-0.5, 0])
+    init_velocity_gs = np.array([-1, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -93,6 +93,7 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
         # set figures
         fig = plt.figure(1)
+        plt.title('gs_' + str(gs_ipv_sim) + '_lt_' + str(lt_ipv_sim))
         ax1 = fig.add_subplot(121)
         ax1.set(xlim=[5, 25], ylim=[-15, 15])
         ax2 = fig.add_subplot(122)
@@ -234,8 +235,8 @@ if __name__ == '__main__':
 
     "single test"
     for gs_ipv in [2]:
-        for lt_ipv in [2]:
-            print('gs=2, lt=2')
+        for lt_ipv in [-2]:
+            print('gs=' + str(gs_ipv), 'lt=' + str(lt_ipv))
             simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()

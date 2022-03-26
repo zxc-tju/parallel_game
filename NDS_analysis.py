@@ -32,6 +32,8 @@ inter_num = mat['interact_agent_num']
 
 # virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
+current_nds_data_version = 5
+
 
 def draw_rectangle(x, y, deg):
     car_len = 5
@@ -185,7 +187,7 @@ def analyze_nds(case_id):
 
     inter_id = 0
     inter_id_save = inter_id
-    file_name = './outputs/NDS_analysis/v4/' + str(case_id) + '.xlsx'
+    file_name = './outputs/NDS_analysis/v' + str(current_nds_data_version) + '/' + str(case_id) + '.xlsx'
 
     for t in range(np.size(lt_info, 0)):
 
@@ -282,39 +284,16 @@ def analyze_nds(case_id):
             "====end of simulation-based method===="
 
             "====cost-based method===="
-            # # load observed trajectories
+            # load observed trajectories
             # lt_track_observed = lt_info[start_time:t + 1, 0:2]
             # gs_track_observed = gs_info_multi[inter_id][start_time:t + 1, 0:2]
             #
-            # # generate two agents
-            # init_position_lt = lt_info[start_time, 0:2]
-            # init_velocity_lt = lt_info[start_time, 2:4]
-            # init_heading_lt = lt_info[start_time, 4]
-            # agent_lt = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt_nds')
-            # agent_lt.ipv = 0
-            # init_position_gs = gs_info_multi[inter_id][start_time, 0:2]
-            # init_velocity_gs = gs_info_multi[inter_id][start_time, 2:4]
-            # init_heading_gs = gs_info_multi[inter_id][start_time, 4]
-            # agent_gs = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs_nds')
-            # agent_gs.ipv = 0
-            #
-            # # plan under selfish assumption
-            # lt_track_selfish = agent_lt.solve_game_IBR(gs_track_observed)
-            # lt_track_selfish = lt_track_selfish[:, 0:2]
-            # gs_track_selfish = agent_lt.solve_game_IBR(lt_track_observed)
-            # gs_track_selfish = gs_track_selfish[:, 0:2]
-            #
             # # cost results in observation
-            # lt_interior_cost_observed = cal_interior_cost([], lt_track_observed, 'lt_nds')
-            # gs_interior_cost_observed = cal_interior_cost([], gs_track_observed, 'gs_nds')
-            # group_cost_observed = cal_group_cost([lt_track_observed, gs_track_observed])
+            # interior_cost_lt = cal_interior_cost([], lt_track_observed, 'lt_nds')
+            # interior_cost_gs = cal_interior_cost([], gs_track_observed, 'gs_nds')
+            # group_cost_lt = cal_group_cost([lt_track_observed, gs_track_observed])
+            # group_cost_gs = cal_group_cost([gs_track_observed, lt_track_observed])
             #
-            # # cost result in assumption
-            # lt_interior_cost_assumed = cal_interior_cost([], lt_track_selfish, 'lt_nds')
-            # gs_interior_cost_assumed = cal_interior_cost([], gs_track_selfish, 'gs_nds')
-            # group_cost_lt_assumed = cal_group_cost([lt_track_selfish, gs_track_observed])
-            # group_cost_gs_assumed = cal_group_cost([lt_track_observed, gs_track_selfish])
-
             # ipv_collection[t, 0] =
             # ipv_collection[t, 1] =
             "====end of cost-based method===="
@@ -391,7 +370,7 @@ def analyze_nds(case_id):
 
 
 def analyze_ipv_in_nds(case_id, fig=False):
-    file_name = './outputs/NDS_analysis/v3/' + str(case_id) + '.xlsx'
+    file_name = './outputs/NDS_analysis/v' + str(current_nds_data_version) + '/' + str(case_id) + '.xlsx'
     file = pd.ExcelFile(file_name)
     num_sheet = len(file.sheet_names)
     # print(num_sheet)
@@ -516,7 +495,7 @@ def show_ipv_distribution():
             mean_temp4 = np.array([np.mean(ipv_non_cross_gs[i + 1])])
             mean_ipv_non_cross_gs = np.concatenate((mean_ipv_non_cross_gs, mean_temp4), axis=0)
 
-    filename = './outputs/ipv_distribution.xlsx'
+    filename = './outputs/ipv_distribution_v' + str(current_nds_data_version) + '.xlsx'
     with pd.ExcelWriter(filename) as writer:
 
         data1 = np.vstack((mean_ipv_cross_gs, mean_ipv_cross_lt))
@@ -678,11 +657,11 @@ def divide_pet_in_nds():
 
     plt.figure(2)
     plt.title('PET distribution (grouped)')
-    plt.hist(pet_comp,
+    plt.hist(pet_comp, bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
              alpha=0.5,
              color='red',
              label='competitive')
-    plt.hist(pet_coop,
+    plt.hist(pet_coop, bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
              alpha=0.5,
              color='green',
              label='cooperative')
@@ -693,7 +672,7 @@ def divide_pet_in_nds():
     pet_collection_array = np.array(pet_collection)
 
     # save pet data
-    filename = './outputs/pet_distribution.xlsx'
+    filename = './outputs/pet_distribution_v' + str(current_nds_data_version) + '.xlsx'
     with pd.ExcelWriter(filename) as writer:
         df_pet_distribution = pd.DataFrame(pet_collection_array)
         df_pet_distribution.to_excel(writer, startcol=0, index=False, sheet_name="all")
@@ -744,7 +723,8 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
                 ax1.plot(lt_trj[:, 0], lt_trj[:, 1], color="green", alpha=0.5)
                 ax1.plot(gs_trj[:, 0], gs_trj[:, 1], color="green", alpha=0.5)
             if issavefig:
-                plt.savefig('./outputs/NDS_analysis/crossing_event/' + str(case_index) + '.png')
+                plt.savefig('./outputs/NDS_analysis/crossing_event_v' + str(current_nds_data_version)
+                            + '/' + str(case_index) + '.png')
 
         # calculate anticipated PET of the process
         apet, ttc_lt, ttc_gs = cal_pet(lt_trj, gs_trj, "apet")
@@ -753,17 +733,18 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
         plt.plot(apet, color='black')
         plt.plot(ttc_lt, color='blue')
         plt.plot(ttc_gs, color='purple')
+        plt.ylim([-10, 30])
 
 
 if __name__ == '__main__':
     "calculate ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
-    for case_index in range(26, 30):
-        analyze_nds(case_index)
+    # for case_index in range(115, 131):
+    #     analyze_nds(case_index)
     # analyze_nds(30)
 
     "show trajectories in NDS"
-    # visualize_nds(114)
+    # visualize_nds(21)
 
     "find crossing event and the ipv of yield front-coming vehicle (if there is)"
     # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
@@ -777,7 +758,7 @@ if __name__ == '__main__':
     # draw_rectangle(5, 5, 45)
 
     "divide pet distribution according to the ipv of two agents"
-    # divide_pet_in_nds()
+    divide_pet_in_nds()
 
     "show crossing trajectories and pet process in a case"
     # show_crossing_event(30)
