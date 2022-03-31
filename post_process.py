@@ -104,16 +104,26 @@ def get_results(gs_ipv, lt_ipv):
         df_gs_trj_coll = pd.DataFrame(gs_trj_coll)
         df_link = pd.DataFrame(link)
         df_pet = pd.DataFrame(pet)
+        df_estimated_gs_ipv = pd.DataFrame(agent_lt.estimated_inter_agent.ipv_collection, columns=['ipv'])
+        df_estimated_gs_ipv_error = pd.DataFrame(agent_lt.estimated_inter_agent.ipv_error_collection, columns=['error'])
+        df_estimated_lt_ipv = pd.DataFrame(agent_gs.estimated_inter_agent.ipv_collection, columns=['ipv'])
+        df_estimated_lt_ipv_error = pd.DataFrame(agent_gs.estimated_inter_agent.ipv_error_collection, columns=['error'])
 
         with pd.ExcelWriter('outputs/simulation/version' + str(version_num) + '/excel/output'
                             + '_gs_' + str(gs_ipv)
-                            + '_lt_' + str(lt_ipv) + '.xlsx') as writer:
+                            + '_lt_' + str(lt_ipv) + '.xlsx',
+                            mode='a',
+                            if_sheet_exists="overlay") as writer:
             df_lt_ob_trj.to_excel(writer, index=False, sheet_name='lt_ob_trj')
             df_gs_ob_trj.to_excel(writer, index=False, sheet_name='gs_ob_trj')
             df_lt_trj_coll.to_excel(writer, index=False, sheet_name='lt_trj_coll')
             df_gs_trj_coll.to_excel(writer, index=False, sheet_name='gs_trj_coll')
             df_link.to_excel(writer, index=False, sheet_name='link')
             df_pet.to_excel(writer, index=False, sheet_name='PET')
+            df_estimated_gs_ipv.to_excel(writer, index=False, startcol=0, sheet_name='ipv_gs')
+            df_estimated_gs_ipv_error.to_excel(writer, index=False,  startcol=1, sheet_name='ipv_gs')
+            df_estimated_lt_ipv.to_excel(writer, index=False, startcol=0, sheet_name='ipv_lt')
+            df_estimated_lt_ipv_error.to_excel(writer, index=False, startcol=1, sheet_name='ipv_lt')
 
     if save_fig or show_gif:
 
@@ -247,7 +257,7 @@ def get_results(gs_ipv, lt_ipv):
 if __name__ == '__main__':
     # ipv_list = [-3, -2, -1, 0, 1, 2, 3]
     # ipv_list = [-2, 0, 2]
-    ipv_list = [0]
+    ipv_list = [-2]
     for gs in [2]:
         for lt in ipv_list:
             get_results(gs, lt)

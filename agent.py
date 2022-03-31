@@ -5,6 +5,7 @@ from scipy.optimize import minimize
 from matplotlib import pyplot as plt
 from tools.utility import get_central_vertices, kinematic_model
 import copy
+from tools.utility import get_intersection_point
 
 # simulation setting
 dt = 0.12
@@ -12,14 +13,15 @@ TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
-WEIGHT_DEVIATION = 0.8
-WEIGHT_STEERING = 0
-weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_STEERING])
+WEIGHT_DEVIATION = 0.8  # for simulation
+WEIGHT_JERK = 0
+weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_JERK])
 weight_metric = weight_metric / weight_metric.sum()
 
 # parameters of action bounds
 MAX_STEERING_ANGLE = math.pi / 6
-MAX_ACCELERATION = 3.0
+MAX_ACCELERATION = 3
+MAX_SPEED = 20
 
 # initial guess on interacting agent's IPV
 INITIAL_IPV_GUESS = 0
@@ -27,11 +29,11 @@ virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-WEIGHT_GRP = 0.1
+WEIGHT_GRP = 0.4
 
 # likelihood function
 sigma = 0.02
-sigma2 = 0.05
+sigma2 = 0.4
 
 
 class Agent:
@@ -166,51 +168,51 @@ class Agent:
                 "====rational perspective method===="
 
                 # rearrange conducted actions at each time step
-                u_list_self = []
-                u_list_inter = []
-                for i in range(start_time, current_time):
-                    u_list_self.append([self.action_collection[i][0, 0], self.action_collection[i][0, 1]])
-                    u_list_inter.append(
-                        [inter_agent.action_collection[i][0, 0], inter_agent.action_collection[i][0, 1]])
-
-                # initial state
-                init_state_4_kine_self = self.observed_trajectory[start_time, :]
-                init_state_4_kine_inter = inter_agent.observed_trajectory[start_time, :]
-
-                u_conducted_self = np.array(u_list_self)
-                u_conducted_inter = np.array(u_list_inter)
-
-                # info at margin1
-                u_margin_self1 = u_conducted_self * 1.01
-                u_margin_inter1 = u_conducted_inter * 1.01
-                track_margin_inter1 = kinematic_model(u_margin_inter1, init_state_4_kine_inter, time_duration + 1, dt)
-                track_margin_self1 = kinematic_model(u_margin_self1, init_state_4_kine_self, time_duration + 1, dt)
-                cost_inerior_margin1 = cal_interior_cost(track_margin_inter1[:, 0:2], inter_agent.target)
-                cost_group_margin1 = cal_group_cost([track_margin_inter1[:, 0:2], track_margin_self1[:, 0:2]])
-
-                # # info at margin2
-                # u_margin_self2 = u_conducted_self * 0.999
-                # u_margin_inter2 = u_conducted_inter * 0.999
-                # track_margin_inter2 = kinematic_model(u_margin_inter2, init_state_4_kine_inter, time_duration + 1, dt)
-                # track_margin_self2 = kinematic_model(u_margin_self2, init_state_4_kine_self, time_duration + 1, dt)
-                # cost_inerior_margin2 = cal_interior_cost(u_margin_inter2,
-                #                                          track_margin_inter2[:, 0:2],
-                #                                          inter_agent.target)
-                # cost_group_margin2 = cal_group_cost([track_margin_inter2[:, 0:2], track_margin_self2[:, 0:2]])
+                # u_list_self = []
+                # u_list_inter = []
+                # for i in range(start_time, current_time):
+                #     u_list_self.append([self.action_collection[i][0, 0], self.action_collection[i][0, 1]])
+                #     u_list_inter.append(
+                #         [inter_agent.action_collection[i][0, 0], inter_agent.action_collection[i][0, 1]])
+                #
+                # # initial state
+                # init_state_4_kine_self = self.observed_trajectory[start_time, :]
+                # init_state_4_kine_inter = inter_agent.observed_trajectory[start_time, :]
+                #
+                # u_conducted_self = np.array(u_list_self)
+                # u_conducted_inter = np.array(u_list_inter)
+                #
+                # # info at margin1
+                # u_margin_self1 = u_conducted_self * 1.01
+                # u_margin_inter1 = u_conducted_inter * 1.01
+                # track_margin_inter1 = kinematic_model(u_margin_inter1, init_state_4_kine_inter, time_duration + 1, dt)
+                # track_margin_self1 = kinematic_model(u_margin_self1, init_state_4_kine_self, time_duration + 1, dt)
+                # cost_inerior_margin1 = cal_interior_cost(track_margin_inter1[:, 0:2], inter_agent.target)
+                # cost_group_margin1 = cal_group_cost([track_margin_inter1[:, 0:2], track_margin_self1[:, 0:2]])
+                #
+                # # # info at margin2
+                # # u_margin_self2 = u_conducted_self * 0.999
+                # # u_margin_inter2 = u_conducted_inter * 0.999
+                # # track_margin_inter2 = kinematic_model(u_margin_inter2, init_state_4_kine_inter, time_duration + 1, dt)
+                # # track_margin_self2 = kinematic_model(u_margin_self2, init_state_4_kine_self, time_duration + 1, dt)
+                # # cost_inerior_margin2 = cal_interior_cost(u_margin_inter2,
+                # #                                          track_margin_inter2[:, 0:2],
+                # #                                          inter_agent.target)
+                # # cost_group_margin2 = cal_group_cost([track_margin_inter2[:, 0:2], track_margin_self2[:, 0:2]])
+                # # # atan
+                # # self.estimated_inter_agent.ipv = - math.atan((cost_inerior_margin1 - cost_inerior_margin2)
+                # #                                              / (cost_group_margin1 - cost_group_margin2))
+                #
+                # # info at actual solution
+                # track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
+                # track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
+                # cost_inerior = cal_interior_cost(track_actual_inter, inter_agent.target)
+                # cost_group = cal_group_cost([track_actual_inter, track_actual_self])
                 # # atan
-                # self.estimated_inter_agent.ipv = - math.atan((cost_inerior_margin1 - cost_inerior_margin2)
-                #                                              / (cost_group_margin1 - cost_group_margin2))
-
-                # info at actual solution
-                track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
-                track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
-                cost_inerior = cal_interior_cost(track_actual_inter, inter_agent.target)
-                cost_group = cal_group_cost([track_actual_inter, track_actual_self])
-                # atan
-                self.estimated_inter_agent.ipv = - math.atan((cost_inerior - cost_inerior_margin1)
-                                                             / (cost_group - cost_group_margin1))
-                # save updated ipv and estimation error
-                self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
+                # self.estimated_inter_agent.ipv = - math.atan((cost_inerior - cost_inerior_margin1)
+                #                                              / (cost_group - cost_group_margin1))
+                # # save updated ipv and estimation error
+                # self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
                 "====end of rational perspective method===="
 
     def estimate_self_ipv_in_NDS(self, self_actual_track, inter_track):
@@ -272,7 +274,7 @@ def utility_IBR(self_info, track_inter):
         track_all = [track_self, track_inter[:, 0:2]]
         # print(np.sin(self_info[3]))
         interior_cost = cal_interior_cost(track_self, self_info[4])
-        group_cost = cal_group_cost(track_all)
+        group_cost = cal_group_cost(track_all, self_info[4])
         util = np.cos(self_info[3]) * interior_cost + np.sin(self_info[3]) * group_cost
         # print('interior_cost:', interior_cost)
         # print('group_cost:', group_cost)
@@ -297,20 +299,27 @@ def cal_interior_cost(track, target):
     for i in range(np.size(track, 0)):
         dis2cv[i] = np.amin(np.linalg.norm(cv - track[i, 0:2], axis=1))
 
-    "1. cost of travel delay"
+    "1. cost of travel delay [0,1]"
     # calculate the on-reference distance of the given track (the longer the better)
     travel_distance = np.linalg.norm(track[-1, 0:2] - track[0, 0:2]) / np.size(track, 0)
     cost_travel_distance = - travel_distance
+    # cost_travel_distance = - travel_distance / (MAX_SPEED * dt)
     # print('cost of travel delay:', cost_travel_distance)
 
-    "2. cost of lane deviation"
+    "2. cost of lane deviation [0,1]"
+    # cost_mean_deviation = min(1, dis2cv.mean())
     cost_mean_deviation = max(0.2, dis2cv.mean())
     # print('cost of lane deviation:', cost_mean_deviation)
 
-    "3. cost of steering"
-    cost_steering = 0
+    "3. cost of jerk"
+    # dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
+    # vel = (dis[1:] - dis[0:-1]) / dt
+    # acc = (vel[1:] - vel[0:-1]) / dt
+    # jerk = (acc[1:] - acc[0:-1]) / dt
+    # cost_jerk = max(np.abs(jerk))
+    cost_jerk = 0
 
-    cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_steering])
+    cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_jerk])
 
     "overall cost"
     cost_interior = weight_metric.dot(cost_metric.T)
@@ -318,29 +327,64 @@ def cal_interior_cost(track, target):
     return cost_interior * WEIGHT_INT
 
 
-def cal_group_cost(track_packed):
+def cal_group_cost(track_packed, self_target):
     track_self, track_inter = track_packed
     pos_rel = track_inter - track_self
     dis_rel = np.linalg.norm(pos_rel, axis=1)
+
     vel_self = (track_self[1:, :] - track_self[0:-1, :]) / dt
     vel_inter = (track_inter[1:, :] - track_inter[0:-1, :]) / dt
     vel_rel = vel_self - vel_inter
+
+    acc_self = (vel_self[1:, :] - vel_self[0:-1, :]) / dt
+    acc_inter = (vel_inter[1:, :] - vel_inter[0:-1, :]) / dt
+    acc_rel = acc_self - acc_inter
+
+    # cv_self, progress_self = get_central_vertices(self_target, track_self[0, :])
+    # if self_target in {'lt_nds'}:
+    #     cv_inter, progress_inter = get_central_vertices('gs_nds', track_inter[0, :])
+    # else:
+    #     cv_inter, progress_inter = get_central_vertices('lt_nds', track_inter[0, :])
+    #
+    # conflict_point_str = get_intersection_point(cv_self, cv_inter)
+    # conflict_point = np.array(conflict_point_str)
+
     "version 1"
     # min_rel_distance = np.amin(rel_distance)  # minimal distance
     # min_index = np.where(min_rel_distance == rel_distance)[0]  # the time step when reach the minimal distance
     # cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0)) / rel_distance[0]
 
     "version 2"
-    vel_rel_along_sum = 0
-    for i in range(np.size(vel_rel, 0)):
-        nearness_temp = pos_rel[i+1, :].dot(vel_rel[i]) / dis_rel[i + 1]
-        # do not give reward to negative nearness (flee action)
-        vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+    # vel_rel_along_sum = 0
+    # for i in range(np.size(vel_rel, 0)):
+    #     nearness_temp = pos_rel[i+1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
+    #     # do not give reward to negative nearness (flee action)
+    #     vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+    # cost_group2 = vel_rel_along_sum / TRACK_LEN
 
-    cost_group2 = vel_rel_along_sum / TRACK_LEN
+    "version 3 "
+    # TODO:考虑是否通过冲突点
+    acc_self_along_sum = 0
+    for i in range(np.size(acc_self, 0)):
+        nearness_temp = pos_rel[i + 2, :].dot(acc_self[i, :]) / dis_rel[i + 2]
+        acc_self_along_sum = acc_self_along_sum + nearness_temp
+        # acc_self_along_sum = acc_self_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+    cost_group3 = acc_self_along_sum / TRACK_LEN / MAX_ACCELERATION  # [-1,1]
+
+    "version 4： consider whether the plan is increasing or decreasing the APET"
+    # acc_along_cv_sum = 0
+    # if conflict_point_str.is_empty:
+    #     cost_group4 = 0
+    # else:
+    #     pos2cp_rel = track_self - conflict_point
+    #     dis2cp_rel = np.linalg.norm(pos2cp_rel, axis=1)
+    #     for i in range(np.size(acc_self, 0)):
+    #         nearness_temp = pos2cp_rel[i + 2, :].dot(acc_self[i, :]) / dis2cp_rel[i + 2]
+    #
+    # cost_group4 = 0
 
     # print('group cost:', cost_group)
-    return cost_group2 * WEIGHT_GRP
+    return cost_group3 * WEIGHT_GRP
 
 
 def cal_reliability(inter_track, act_trck, vir_trck_coll, target):
@@ -373,13 +417,24 @@ def cal_reliability(inter_track, act_trck, vir_trck_coll, target):
                 var[i] = 0
 
     else:
-        interior_cost_observed = cal_interior_cost(act_trck, target)
-        group_cost_observed = cal_group_cost([act_trck, inter_track])
-        cost_preference_observed = math.atan(group_cost_observed / interior_cost_observed)
         for i in range(candidates_num):
             virtual_track = vir_trck_coll[i]
             interior_cost_vir[i] = cal_interior_cost(virtual_track, target)
-            group_cost_vir[i] = cal_group_cost([virtual_track, inter_track])
+            group_cost_vir[i] = cal_group_cost([virtual_track, inter_track], target)
+        interior_cost_observed = cal_interior_cost(act_trck, target)
+        group_cost_observed = cal_group_cost([act_trck, inter_track], target)
+
+        # min_interior_cost = min(min(interior_cost_vir), interior_cost_observed)
+        # min_group_cost = min(min(group_cost_vir), group_cost_observed)
+        #
+        # interior_cost_vir = interior_cost_vir - min_interior_cost
+        # group_cost_vir = group_cost_vir - min_group_cost
+        # interior_cost_observed = interior_cost_observed - min_interior_cost
+        # group_cost_observed = group_cost_observed - min_group_cost
+
+        cost_preference_observed = math.atan(group_cost_observed / interior_cost_observed)
+
+        for i in range(candidates_num):
             cost_preference_vir[i] = math.atan(group_cost_vir[i] / interior_cost_vir[i])
             delta_pref[i] = cost_preference_vir[i] - cost_preference_observed
             p1 = (1 / sigma2 / np.sqrt(2 * math.pi))

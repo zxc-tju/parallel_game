@@ -11,9 +11,9 @@ from scipy.interpolate import interp2d
 
 from openpyxl import load_workbook
 
-illustration_needed = False
+illustration_needed = True
 print_needed = False
-
+save_data_needed = False
 # load data
 mat = scipy.io.loadmat('./data/NDS_data.mat')
 # full interaction information
@@ -32,7 +32,7 @@ inter_num = mat['interact_agent_num']
 
 # virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
-current_nds_data_version = 5
+current_nds_data_version = 6
 
 
 def draw_rectangle(x, y, deg):
@@ -65,22 +65,23 @@ def visualize_nds(case_id):
     gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
 
     fig = plt.figure(1)
-    manager = plt.get_current_fig_manager()
-    manager.full_screen_toggle()
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
-    ax2.set(xlim=[-22, 53], ylim=[-31, 57])
-    img = plt.imread('background_pic/Jianhexianxia.jpg')
-    ax2.imshow(img, extent=[-22, 53, -31, 57])
+    # manager = plt.get_current_fig_manager()
+    # manager.full_screen_toggle()
+    ax1 = fig.add_subplot(111)
+    # ax2 = fig.add_subplot(122)
+    # ax2.set(xlim=[-22, 53], ylim=[-31, 57])
+    # img = plt.imread('background_pic/Jianhexianxia.jpg')
+    # ax2.imshow(img, extent=[-22, 53, -31, 57])
 
     for t in range(np.size(lt_info, 0)):
-        if t in {2, 14, 30, 40}:
+        if t in {40}:
             print('pause!')
         t_end = t + 10
         ax1.cla()
         ax1.set(xlim=[-22, 53], ylim=[-31, 57])
         img = plt.imread('background_pic/Jianhexianxia.jpg')
         ax1.imshow(img, extent=[-22, 53, -31, 57])
+        plt.text(-10, 60, 'T=' + str(t), fontsize=30)
 
         # position of go-straight vehicles
         for gs_id in range(np.size(gs_info_multi, 0)):
@@ -110,20 +111,20 @@ def visualize_nds(case_id):
         # ax1.legend()
         plt.pause(0.1)
 
-    # show full track of all agents
-    ax2.plot(lt_info[:, 0], lt_info[:, 1],
-             alpha=0.8,
-             color='blue')
-    for gs_id in range(np.size(gs_info_multi, 0)):
-        # find solid frames
-        frames = np.where(gs_info_multi[gs_id][:, 0] < 1e-3)
-        # the first solid frame id
-        frame_start = len(frames[0])
-        # tracks
-        ax2.plot(gs_info_multi[gs_id][frame_start:, 0], gs_info_multi[gs_id][frame_start:, 1],
-                 alpha=0.8,
-                 color='red')
-    plt.show()
+    # # show full track of all agents
+    # ax2.plot(lt_info[:, 0], lt_info[:, 1],
+    #          alpha=0.8,
+    #          color='blue')
+    # for gs_id in range(np.size(gs_info_multi, 0)):
+    #     # find solid frames
+    #     frames = np.where(gs_info_multi[gs_id][:, 0] < 1e-3)
+    #     # the first solid frame id
+    #     frame_start = len(frames[0])
+    #     # tracks
+    #     ax2.plot(gs_info_multi[gs_id][frame_start:, 0], gs_info_multi[gs_id][frame_start:, 1],
+    #              alpha=0.8,
+    #              color='red')
+    # plt.show()
 
 
 def find_inter_od(case_id):
@@ -203,54 +204,55 @@ def analyze_nds(case_id):
                 start_time = max(int(inter_o[inter_id]), t - 10)
 
         # save data of last one
-        if inter_id_save < inter_id or t == inter_d[-1]:
-            # if inter_d[inter_id_save] - inter_o[inter_id_save] > 3:
-            '''
-            inter_id_save < inter_id：  interacting agent changed
-            t == inter_d[-1]:  end frame of the last agent
-            inter_d[inter_id_save]-inter_o[inter_id_save] > 3：  interacting period is long enough
-            '''
-            # save data into an excel with the format of:
-            # 0-ipv_lt | ipv_lt_error | lt_px | lt_py  | lt_vx  | lt_vy  | lt_heading  |...
-            # 7-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
+        if save_data_needed:
+            if inter_id_save < inter_id or t == inter_d[-1]:
+                # if inter_d[inter_id_save] - inter_o[inter_id_save] > 3:
+                '''
+                inter_id_save < inter_id：  interacting agent changed
+                t == inter_d[-1]:  end frame of the last agent
+                inter_d[inter_id_save]-inter_o[inter_id_save] > 3：  interacting period is long enough
+                '''
+                # save data into an excel with the format of:
+                # 0-ipv_lt | ipv_lt_error | lt_px | lt_py  | lt_vx  | lt_vy  | lt_heading  |...
+                # 7-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
 
-            df_ipv_lt = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0],
-                                     columns=["ipv_lt"])
-            df_ipv_lt_error = pd.DataFrame(
-                ipv_error_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0],
-                columns=["ipv_lt_error"])
-            df_motion_lt = pd.DataFrame(lt_info[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:5],
-                                        columns=["lt_px", "lt_py", "lt_vx", "lt_vy", "lt_heading"])
+                df_ipv_lt = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0],
+                                         columns=["ipv_lt"])
+                df_ipv_lt_error = pd.DataFrame(
+                    ipv_error_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0],
+                    columns=["ipv_lt_error"])
+                df_motion_lt = pd.DataFrame(lt_info[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:5],
+                                            columns=["lt_px", "lt_py", "lt_vx", "lt_vy", "lt_heading"])
 
-            df_ipv_gs = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 1],
-                                     columns=["ipv_gs"])
-            df_ipv_gs_error = pd.DataFrame(
-                ipv_error_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 1],
-                columns=["ipv_gs_error"])
-            df_motion_gs = pd.DataFrame(gs_info_multi[inter_id_save]
-                                        [int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:5],
-                                        columns=["gs_px", "gs_py", "gs_vx", "gs_vy", "gs_heading"])
+                df_ipv_gs = pd.DataFrame(ipv_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 1],
+                                         columns=["ipv_gs"])
+                df_ipv_gs_error = pd.DataFrame(
+                    ipv_error_collection[int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 1],
+                    columns=["ipv_gs_error"])
+                df_motion_gs = pd.DataFrame(gs_info_multi[inter_id_save]
+                                            [int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:5],
+                                            columns=["gs_px", "gs_py", "gs_vx", "gs_vy", "gs_heading"])
 
-            if inter_id_save == 0:
-                with pd.ExcelWriter(file_name) as writer:
-                    df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
-                    df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
-                    df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
+                if inter_id_save == 0:
+                    with pd.ExcelWriter(file_name) as writer:
+                        df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
+                        df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
+                        df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
 
-                    df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
-                    df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
-                    df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
-            else:
-                with pd.ExcelWriter(file_name, mode="a", if_sheet_exists="overlay") as writer:
-                    df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
-                    df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
-                    df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
+                        df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
+                        df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
+                        df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
+                else:
+                    with pd.ExcelWriter(file_name, mode="a", if_sheet_exists="overlay") as writer:
+                        df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
+                        df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
+                        df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
 
-                    df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
-                    df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
-                    df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
+                        df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
+                        df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
+                        df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
 
-            inter_id_save = inter_id
+                inter_id_save = inter_id
 
         "IPV estimation process"
         if flag and (t - start_time > 3):
@@ -730,10 +732,11 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
         apet, ttc_lt, ttc_gs = cal_pet(lt_trj, gs_trj, "apet")
 
         plt.figure(2)
-        plt.plot(apet, color='black')
-        plt.plot(ttc_lt, color='blue')
-        plt.plot(ttc_gs, color='purple')
-        plt.ylim([-10, 30])
+        x_range = range(start_frame, start_frame + len(apet))
+        plt.plot(x_range, apet, color='black')
+        plt.plot(x_range, ttc_lt[0: len(apet)], color='blue')
+        plt.plot(x_range, ttc_gs[0: len(apet)], color='purple')
+        # plt.ylim([-10, 30])
 
 
 if __name__ == '__main__':
@@ -741,10 +744,10 @@ if __name__ == '__main__':
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
     # for case_index in range(115, 131):
     #     analyze_nds(case_index)
-    # analyze_nds(30)
+    analyze_nds(30)
 
     "show trajectories in NDS"
-    # visualize_nds(21)
+    # visualize_nds(30)
 
     "find crossing event and the ipv of yield front-coming vehicle (if there is)"
     # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
@@ -758,7 +761,7 @@ if __name__ == '__main__':
     # draw_rectangle(5, 5, 45)
 
     "divide pet distribution according to the ipv of two agents"
-    divide_pet_in_nds()
+    # divide_pet_in_nds()
 
     "show crossing trajectories and pet process in a case"
     # show_crossing_event(30)
