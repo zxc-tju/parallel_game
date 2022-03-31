@@ -13,7 +13,7 @@ TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
-WEIGHT_DEVIATION = 0.8  # for simulation
+WEIGHT_DEVIATION = 0.8
 WEIGHT_JERK = 0
 weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_JERK])
 weight_metric = weight_metric / weight_metric.sum()
@@ -29,7 +29,8 @@ virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-WEIGHT_GRP = 0.4
+WEIGHT_GRP = 0.4  # stable for nds analysis
+# WEIGHT_GRP = 0.1
 
 # likelihood function
 sigma = 0.02
@@ -299,16 +300,15 @@ def cal_interior_cost(track, target):
     for i in range(np.size(track, 0)):
         dis2cv[i] = np.amin(np.linalg.norm(cv - track[i, 0:2], axis=1))
 
-    "1. cost of travel delay [0,1]"
+    "1. cost of travel delay"
     # calculate the on-reference distance of the given track (the longer the better)
     travel_distance = np.linalg.norm(track[-1, 0:2] - track[0, 0:2]) / np.size(track, 0)
     cost_travel_distance = - travel_distance
-    # cost_travel_distance = - travel_distance / (MAX_SPEED * dt)
     # print('cost of travel delay:', cost_travel_distance)
 
-    "2. cost of lane deviation [0,1]"
+    "2. cost of lane deviation"
     # cost_mean_deviation = min(1, dis2cv.mean())
-    cost_mean_deviation = max(0.2, dis2cv.mean())
+    cost_mean_deviation = max(0.2, dis2cv.mean())  # stable for nds analysis
     # print('cost of lane deviation:', cost_mean_deviation)
 
     "3. cost of jerk"
@@ -354,37 +354,24 @@ def cal_group_cost(track_packed, self_target):
     # min_index = np.where(min_rel_distance == rel_distance)[0]  # the time step when reach the minimal distance
     # cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0)) / rel_distance[0]
 
-    "version 2"
+    "version 2: testing for simulation"
     # vel_rel_along_sum = 0
     # for i in range(np.size(vel_rel, 0)):
     #     nearness_temp = pos_rel[i+1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
     #     # do not give reward to negative nearness (flee action)
     #     vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
-    # cost_group2 = vel_rel_along_sum / TRACK_LEN
+    # cost_group = vel_rel_along_sum / TRACK_LEN
 
-    "version 3 "
-    # TODO:考虑是否通过冲突点
+    "version 3: stable for nds analysis"
     acc_self_along_sum = 0
     for i in range(np.size(acc_self, 0)):
         nearness_temp = pos_rel[i + 2, :].dot(acc_self[i, :]) / dis_rel[i + 2]
         acc_self_along_sum = acc_self_along_sum + nearness_temp
         # acc_self_along_sum = acc_self_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
-    cost_group3 = acc_self_along_sum / TRACK_LEN / MAX_ACCELERATION  # [-1,1]
-
-    "version 4： consider whether the plan is increasing or decreasing the APET"
-    # acc_along_cv_sum = 0
-    # if conflict_point_str.is_empty:
-    #     cost_group4 = 0
-    # else:
-    #     pos2cp_rel = track_self - conflict_point
-    #     dis2cp_rel = np.linalg.norm(pos2cp_rel, axis=1)
-    #     for i in range(np.size(acc_self, 0)):
-    #         nearness_temp = pos2cp_rel[i + 2, :].dot(acc_self[i, :]) / dis2cp_rel[i + 2]
-    #
-    # cost_group4 = 0
+    cost_group = acc_self_along_sum / TRACK_LEN / MAX_ACCELERATION  # [-1,1]
 
     # print('group cost:', cost_group)
-    return cost_group3 * WEIGHT_GRP
+    return cost_group * WEIGHT_GRP
 
 
 def cal_reliability(inter_track, act_trck, vir_trck_coll, target):

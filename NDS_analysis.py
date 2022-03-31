@@ -11,9 +11,9 @@ from scipy.interpolate import interp2d
 
 from openpyxl import load_workbook
 
-illustration_needed = True
+illustration_needed = False
 print_needed = False
-save_data_needed = False
+save_data_needed = True
 # load data
 mat = scipy.io.loadmat('./data/NDS_data.mat')
 # full interaction information
@@ -742,9 +742,9 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
 if __name__ == '__main__':
     "calculate ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
-    # for case_index in range(115, 131):
-    #     analyze_nds(case_index)
-    analyze_nds(30)
+    for case_index in range(115, 131):
+        analyze_nds(case_index)
+    # analyze_nds(30)
 
     "show trajectories in NDS"
     # visualize_nds(30)

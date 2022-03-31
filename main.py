@@ -20,7 +20,7 @@ num_step = 30
 "*****Check below before run!!!*****"
 output_directory = './outputs/simulation/version25'
 final_illustration_needed = 1
-save_data_needed = 1
+save_data_needed = 0
 
 
 def simulate(gs_ipv_sim, lt_ipv_sim):
@@ -235,7 +235,7 @@ if __name__ == '__main__':
 
     "single test"
     for gs_ipv in [2]:
-        for lt_ipv in [-2]:
+        for lt_ipv in [2]:
             print('gs=' + str(gs_ipv), 'lt=' + str(lt_ipv))
             simulate(gs_ipv, lt_ipv)
 
