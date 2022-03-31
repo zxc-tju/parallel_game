@@ -235,7 +235,7 @@ if __name__ == '__main__':
 
     "single test"
     for gs_ipv in [2]:
-        for lt_ipv in [2]:
+        for lt_ipv in [0]:
             print('gs=' + str(gs_ipv), 'lt=' + str(lt_ipv))
             simulate(gs_ipv, lt_ipv)
 

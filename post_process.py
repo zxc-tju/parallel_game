@@ -11,9 +11,9 @@ from tools.utility import get_central_vertices, smooth_ployline, savitzky_golay
 import numpy as np
 
 ipv_update_method = 1
-show_gif = 0
-save_fig = 1
-save_data = 1
+show_gif = 1
+save_fig = 0
+save_data = 0
 
 
 def get_results(gs_ipv, lt_ipv):

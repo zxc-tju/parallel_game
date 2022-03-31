@@ -7,6 +7,13 @@ from tools.utility import get_central_vertices, kinematic_model
 import copy
 from tools.utility import get_intersection_point
 
+'''##========Check Target=======##'''
+
+TARGET = 'simulation'
+# TARGET = 'nds analysis'
+
+'''==============================='''
+
 # simulation setting
 dt = 0.12
 TRACK_LEN = 10
@@ -29,8 +36,10 @@ virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-# WEIGHT_GRP = 0.4  # stable for nds analysis
-WEIGHT_GRP = 0.1  # stable for simulation
+if TARGET == 'nds analysis':
+    WEIGHT_GRP = 0.4  # stable for nds analysis
+elif TARGET == 'simulation':
+    WEIGHT_GRP = 0.1  # stable for simulation
 
 # likelihood function
 sigma = 0.02
@@ -71,7 +80,7 @@ class Agent:
         p, v, h = self_info[0:3]
         init_state_4_kine = [p[0], p[1], v[0], v[1], h]  # initial state
         fun = utility_IBR(self_info, inter_track)  # objective function
-        u0 = np.concatenate([1*np.ones([(track_len - 1), 1]),
+        u0 = np.concatenate([1 * np.ones([(track_len - 1), 1]),
                              np.zeros([(track_len - 1), 1])])  # initialize solution
         bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(track_len - 1)] + \
               [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(track_len - 1)]  # boundaries
@@ -331,29 +340,32 @@ def cal_group_cost(track_packed, self_target):
     vel_rel = vel_self - vel_inter
 
     acc_self = (vel_self[1:, :] - vel_self[0:-1, :]) / dt
-    acc_inter = (vel_inter[1:, :] - vel_inter[0:-1, :]) / dt
-    acc_rel = acc_self - acc_inter
+    # acc_inter = (vel_inter[1:, :] - vel_inter[0:-1, :]) / dt
+    # acc_rel = acc_self - acc_inter
 
     "version 1"
     # min_rel_distance = np.amin(rel_distance)  # minimal distance
     # min_index = np.where(min_rel_distance == rel_distance)[0]  # the time step when reach the minimal distance
     # cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0)) / rel_distance[0]
 
-    "version 2: stable for simulation"
-    vel_rel_along_sum = 0
-    for i in range(np.size(vel_rel, 0)):
-        nearness_temp = pos_rel[i+1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
-        # do not give reward to negative nearness (flee action)
-        vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
-    cost_group = vel_rel_along_sum / TRACK_LEN
+    cost_group = 0
+    if TARGET == 'simulation':
+        "version 2: stable for simulation"
+        vel_rel_along_sum = 0
+        for i in range(np.size(vel_rel, 0)):
+            nearness_temp = pos_rel[i + 1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
+            # do not give reward to negative nearness (flee action)
+            vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+        cost_group = vel_rel_along_sum / TRACK_LEN
 
-    "version 3: stable for nds analysis"
-    # acc_self_along_sum = 0
-    # for i in range(np.size(acc_self, 0)):
-    #     nearness_temp = pos_rel[i + 2, :].dot(acc_self[i, :]) / dis_rel[i + 2]
-    #     acc_self_along_sum = acc_self_along_sum + nearness_temp
-    #     # acc_self_along_sum = acc_self_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
-    # cost_group = acc_self_along_sum / TRACK_LEN / MAX_ACCELERATION  # [-1,1]
+    elif TARGET == 'nds analysis':
+        "version 3: stable for nds analysis"
+        acc_self_along_sum = 0
+        for i in range(np.size(acc_self, 0)):
+            nearness_temp = pos_rel[i + 2, :].dot(acc_self[i, :]) / dis_rel[i + 2]
+            acc_self_along_sum = acc_self_along_sum + nearness_temp
+            # acc_self_along_sum = acc_self_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+        cost_group = acc_self_along_sum / TRACK_LEN / MAX_ACCELERATION  # [-1,1]
 
     # print('group cost:', cost_group)
     return cost_group * WEIGHT_GRP
@@ -406,7 +418,7 @@ def cal_reliability(inter_track, act_trck, vir_trck_coll, target):
     if sum(var):
         weight = var / (sum(var))
     else:
-        weight = np.ones(candidates_num)/candidates_num
+        weight = np.ones(candidates_num) / candidates_num
     # print(weight)
     return weight
 
