@@ -29,8 +29,8 @@ virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-WEIGHT_GRP = 0.4  # stable for nds analysis
-# WEIGHT_GRP = 0.1
+# WEIGHT_GRP = 0.4  # stable for nds analysis
+WEIGHT_GRP = 0.1  # stable for simulation
 
 # likelihood function
 sigma = 0.02
@@ -290,11 +290,6 @@ def cal_interior_cost(track, target):
     else:
         cv, s = get_central_vertices(target, None)
 
-    # find the on-reference point of the track starting
-    test = cv - track[0, 0:2]
-    init_dis2cv = np.linalg.norm(test, axis=1)
-    init_min_dis2cv = np.amin(init_dis2cv)
-
     # initialize an array to store distance from each point in the track to cv
     dis2cv = np.zeros([np.size(track, 0), 1])
     for i in range(np.size(track, 0)):
@@ -307,8 +302,7 @@ def cal_interior_cost(track, target):
     # print('cost of travel delay:', cost_travel_distance)
 
     "2. cost of lane deviation"
-    # cost_mean_deviation = min(1, dis2cv.mean())
-    cost_mean_deviation = max(0.2, dis2cv.mean())  # stable for nds analysis
+    cost_mean_deviation = max(0.2, dis2cv.mean())
     # print('cost of lane deviation:', cost_mean_deviation)
 
     "3. cost of jerk"
@@ -340,35 +334,26 @@ def cal_group_cost(track_packed, self_target):
     acc_inter = (vel_inter[1:, :] - vel_inter[0:-1, :]) / dt
     acc_rel = acc_self - acc_inter
 
-    # cv_self, progress_self = get_central_vertices(self_target, track_self[0, :])
-    # if self_target in {'lt_nds'}:
-    #     cv_inter, progress_inter = get_central_vertices('gs_nds', track_inter[0, :])
-    # else:
-    #     cv_inter, progress_inter = get_central_vertices('lt_nds', track_inter[0, :])
-    #
-    # conflict_point_str = get_intersection_point(cv_self, cv_inter)
-    # conflict_point = np.array(conflict_point_str)
-
     "version 1"
     # min_rel_distance = np.amin(rel_distance)  # minimal distance
     # min_index = np.where(min_rel_distance == rel_distance)[0]  # the time step when reach the minimal distance
     # cost_group1 = -min_rel_distance * min_index[0] / (np.size(track_self, 0)) / rel_distance[0]
 
-    "version 2: testing for simulation"
-    # vel_rel_along_sum = 0
-    # for i in range(np.size(vel_rel, 0)):
-    #     nearness_temp = pos_rel[i+1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
-    #     # do not give reward to negative nearness (flee action)
-    #     vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
-    # cost_group = vel_rel_along_sum / TRACK_LEN
+    "version 2: stable for simulation"
+    vel_rel_along_sum = 0
+    for i in range(np.size(vel_rel, 0)):
+        nearness_temp = pos_rel[i+1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
+        # do not give reward to negative nearness (flee action)
+        vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+    cost_group = vel_rel_along_sum / TRACK_LEN
 
     "version 3: stable for nds analysis"
-    acc_self_along_sum = 0
-    for i in range(np.size(acc_self, 0)):
-        nearness_temp = pos_rel[i + 2, :].dot(acc_self[i, :]) / dis_rel[i + 2]
-        acc_self_along_sum = acc_self_along_sum + nearness_temp
-        # acc_self_along_sum = acc_self_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
-    cost_group = acc_self_along_sum / TRACK_LEN / MAX_ACCELERATION  # [-1,1]
+    # acc_self_along_sum = 0
+    # for i in range(np.size(acc_self, 0)):
+    #     nearness_temp = pos_rel[i + 2, :].dot(acc_self[i, :]) / dis_rel[i + 2]
+    #     acc_self_along_sum = acc_self_along_sum + nearness_temp
+    #     # acc_self_along_sum = acc_self_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+    # cost_group = acc_self_along_sum / TRACK_LEN / MAX_ACCELERATION  # [-1,1]
 
     # print('group cost:', cost_group)
     return cost_group * WEIGHT_GRP
@@ -404,24 +389,14 @@ def cal_reliability(inter_track, act_trck, vir_trck_coll, target):
                 var[i] = 0
 
     else:
+        interior_cost_observed = cal_interior_cost(act_trck, target)
+        group_cost_observed = cal_group_cost([act_trck, inter_track], target)
+        cost_preference_observed = math.atan(group_cost_observed / interior_cost_observed)
+
         for i in range(candidates_num):
             virtual_track = vir_trck_coll[i]
             interior_cost_vir[i] = cal_interior_cost(virtual_track, target)
             group_cost_vir[i] = cal_group_cost([virtual_track, inter_track], target)
-        interior_cost_observed = cal_interior_cost(act_trck, target)
-        group_cost_observed = cal_group_cost([act_trck, inter_track], target)
-
-        # min_interior_cost = min(min(interior_cost_vir), interior_cost_observed)
-        # min_group_cost = min(min(group_cost_vir), group_cost_observed)
-        #
-        # interior_cost_vir = interior_cost_vir - min_interior_cost
-        # group_cost_vir = group_cost_vir - min_group_cost
-        # interior_cost_observed = interior_cost_observed - min_interior_cost
-        # group_cost_observed = group_cost_observed - min_group_cost
-
-        cost_preference_observed = math.atan(group_cost_observed / interior_cost_observed)
-
-        for i in range(candidates_num):
             cost_preference_vir[i] = math.atan(group_cost_vir[i] / interior_cost_vir[i])
             delta_pref[i] = cost_preference_vir[i] - cost_preference_observed
             p1 = (1 / sigma2 / np.sqrt(2 * math.pi))
