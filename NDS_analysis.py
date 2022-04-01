@@ -539,9 +539,17 @@ def show_ipv_distribution():
 
 
 def cal_pet(trj_a, trj_b, type_cal):
+    """
+    calculate the PET of two given trajectory
+    :param trj_a:
+    :param trj_b:
+    :param type_cal: PET of APET
+    :return:
+    """
+
+    "find the conflict point"
     conflict_point_str = get_intersection_point(trj_a, trj_b)
     conflict_point = np.array(conflict_point_str)
-
     if conflict_point_str.is_empty:  # there is no intersection between given polylines
         min_dis = 99
         min_dis2cv_index_a = None
@@ -557,54 +565,44 @@ def cal_pet(trj_a, trj_b, type_cal):
                 min_dis2cv_index_b = i
         conflict_point = (trj_a[min_dis2cv_index_a[0], :] + trj_b[min_dis2cv_index_b, :]) / 2
 
+    "find the point that most closed to cp in each trajectory"
+    smoothed_trj_a, smoothed_progress_a = smooth_ployline(trj_a)
+    cp2trj_a = np.linalg.norm(smoothed_trj_a - conflict_point, axis=1)
+    min_dcp2trj_a = np.amin(cp2trj_a)
+    cp_index_a = np.where(min_dcp2trj_a == cp2trj_a)
+
+    smoothed_trj_b, smoothed_progress_b = smooth_ployline(trj_b)
+    cp2trj_b = np.linalg.norm(smoothed_trj_b - conflict_point, axis=1)
+    min_dcp2trj_b = np.amin(cp2trj_b)
+    cp_index_b = np.where(min_dcp2trj_b == cp2trj_b)
+
+    "calculate time to cp"
+    seg_len_a = np.linalg.norm(trj_a[1:, :] - trj_a[:-1, :], axis=1)
+    seg_len_b = np.linalg.norm(trj_b[1:, :] - trj_b[:-1, :], axis=1)
+    vel_a = seg_len_a / 0.12
+    vel_b = seg_len_b / 0.12
+    seg_len_a = np.concatenate([np.array([0]), seg_len_a])
+    seg_len_b = np.concatenate([np.array([0]), seg_len_b])
+    longi_progress_a = np.cumsum(seg_len_a)
+    longi_progress_b = np.cumsum(seg_len_b)
+
+    dis2conf_a = -(longi_progress_a - smoothed_progress_a[cp_index_a])
+    dis2conf_b = -(longi_progress_b - smoothed_progress_b[cp_index_b])
+
+    ttcp_a = dis2conf_a[:-1] / vel_a
+    ttcp_b = dis2conf_b[:-1] / vel_b
+
+    solid_len = min(np.size(ttcp_a[ttcp_a > 0], 0), np.size(ttcp_b[ttcp_b > 0], 0))
+
+    "PET and APET"
+    apet = np.abs(ttcp_a[:solid_len] - ttcp_b[:solid_len]) + 0.24
+    pet = max(ttcp_a[solid_len-1], ttcp_b[solid_len-1]) - min(ttcp_a[solid_len-1], ttcp_b[solid_len-1]) + 0.24
+
     if type_cal == 'pet':
-        # find the time step when being near the conflict point
-        dis2cv_lt = trj_a - conflict_point
-        dis2cv_lt_norm = np.linalg.norm(dis2cv_lt, axis=1)
-        dis2cv_lt_min = np.amin(dis2cv_lt_norm)
-        t_step_lt = np.where(dis2cv_lt_min == dis2cv_lt_norm)
-        t_step_lt = t_step_lt[0][0]
 
-        dis2cv_gs = trj_b - conflict_point
-        dis2cv_gs_norm = np.linalg.norm(dis2cv_gs, axis=1)
-        dis2cv_gs_min = np.amin(dis2cv_gs_norm)
-        t_step_gs = np.where(dis2cv_gs_min == dis2cv_gs_norm)
-        t_step_gs = t_step_gs[0][0]
-
-        # calculate PET
-        pet = np.abs(t_step_gs - t_step_lt) * 0.12 + 0.24
-        return pet, t_step_lt, t_step_gs, conflict_point
+        return pet, conflict_point
 
     elif type_cal == 'apet':
-
-        smoothed_trj_a, smoothed_progress_a = smooth_ployline(trj_a)
-        cp2trj_a = np.linalg.norm(smoothed_trj_a - conflict_point, axis=1)
-        min_dcp2trj_a = np.amin(cp2trj_a)
-        cp_index_a = np.where(min_dcp2trj_a == cp2trj_a)
-
-        smoothed_trj_b, smoothed_progress_b = smooth_ployline(trj_b)
-        cp2trj_b = np.linalg.norm(smoothed_trj_b - conflict_point, axis=1)
-        min_dcp2trj_b = np.amin(cp2trj_b)
-        cp_index_b = np.where(min_dcp2trj_b == cp2trj_b)
-
-        seg_len_a = np.linalg.norm(trj_a[1:, :] - trj_a[:-1, :], axis=1)
-        seg_len_b = np.linalg.norm(trj_b[1:, :] - trj_b[:-1, :], axis=1)
-        vel_a = seg_len_a / 0.12
-        vel_b = seg_len_b / 0.12
-        seg_len_a = np.concatenate([np.array([0]), seg_len_a])
-        seg_len_b = np.concatenate([np.array([0]), seg_len_b])
-        longi_progress_a = np.cumsum(seg_len_a)
-        longi_progress_b = np.cumsum(seg_len_b)
-
-        dis2conf_a = -(longi_progress_a - smoothed_progress_a[cp_index_a])
-        dis2conf_b = -(longi_progress_b - smoothed_progress_b[cp_index_b])
-
-        ttcp_a = dis2conf_a[:-1] / vel_a
-        ttcp_b = dis2conf_b[:-1] / vel_b
-
-        solid_len = min(np.size(ttcp_a[ttcp_a > 0], 0), np.size(ttcp_b[ttcp_b > 0], 0))
-
-        apet = np.abs(ttcp_a[:solid_len] - ttcp_b[:solid_len]) + 0.24
 
         return apet, ttcp_a, ttcp_b
 
@@ -637,7 +635,7 @@ def divide_pet_in_nds():
             # left-turn vehicle
             lt_trj = inter_info[case_index][0][start_frame:, 0:2]
 
-            pet_temp, _, _, _ = cal_pet(lt_trj, gs_trj, 'pet')
+            pet_temp, _ = cal_pet(lt_trj, gs_trj, 'pet')
 
             data_cross = data_cross[4:, :]
             lt_ipv = np.mean(data_cross[:, 0])
@@ -684,7 +682,7 @@ def divide_pet_in_nds():
         df_pet_coop.to_excel(writer, startcol=0, index=False, sheet_name="cooperative")
 
 
-def show_crossing_event(case_index, isfig=True, issavefig=False):
+def show_crossing_event(case_index, isfig=True, issavedata=False):
     cross_id, data_cross, _ = analyze_ipv_in_nds(case_index)
     o, _ = find_inter_od(case_index)
     start_frame = int(o[cross_id])
@@ -698,7 +696,7 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
         lt_trj = inter_info[case_index][0][start_frame:, 0:2]
 
         # calculate PET of the whole event
-        pet, t_step_lt, t_step_gs, conflict_point = cal_pet(lt_trj, gs_trj, "pet")
+        pet, conflict_point = cal_pet(lt_trj, gs_trj, "pet")
         if isfig:
             fig = plt.figure(1)
             ax1 = fig.add_subplot(111)
@@ -706,8 +704,8 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
             img = plt.imread('background_pic/Jianhexianxia.jpg')
             ax1.imshow(img, extent=[-23, 53, -31, 57])
 
-            ax1.scatter(lt_trj[t_step_lt, 0], lt_trj[t_step_lt, 1])
-            ax1.scatter(gs_trj[t_step_gs, 0], gs_trj[t_step_gs, 1])
+            # ax1.scatter(lt_trj[t_step_lt, 0], lt_trj[t_step_lt, 1])
+            # ax1.scatter(gs_trj[t_step_gs, 0], gs_trj[t_step_gs, 1])
             ax1.scatter(conflict_point[0], conflict_point[1], color="black", alpha=0.5)
 
             plt.text(55, 30, 'PET:' + str(pet))
@@ -724,26 +722,42 @@ def show_crossing_event(case_index, isfig=True, issavefig=False):
             else:
                 ax1.plot(lt_trj[:, 0], lt_trj[:, 1], color="green", alpha=0.5)
                 ax1.plot(gs_trj[:, 0], gs_trj[:, 1], color="green", alpha=0.5)
-            if issavefig:
-                plt.savefig('./outputs/NDS_analysis/crossing_event_v' + str(current_nds_data_version)
-                            + '/' + str(case_index) + '.png')
+            # if issavedata:
+                # plt.savefig('./outputs/NDS_analysis/crossing_event_v' + str(current_nds_data_version)
+                #             + '/' + str(case_index) + '.png')
 
         # calculate anticipated PET of the process
         apet, ttc_lt, ttc_gs = cal_pet(lt_trj, gs_trj, "apet")
-
-        plt.figure(2)
         x_range = range(start_frame, start_frame + len(apet))
-        plt.plot(x_range, apet, color='black')
-        plt.plot(x_range, ttc_lt[0: len(apet)], color='blue')
-        plt.plot(x_range, ttc_gs[0: len(apet)], color='purple')
-        # plt.ylim([-10, 30])
+
+        if issavedata:
+            df_xrange = pd.DataFrame(x_range, columns=['time'])
+            df_apet = pd.DataFrame(apet, columns=['APET'])
+            df_ttc_lt = pd.DataFrame(ttc_lt[0: len(apet)], columns=['TTCP_lt'])
+            df_ttc_gs = pd.DataFrame(ttc_gs[0: len(apet)], columns=['TTCP_gs'])
+            df_pet = pd.DataFrame(np.array([pet]), columns=['PET'])
+            filename = './outputs/NDS_analysis/v' + str(current_nds_data_version) \
+                       + '/APET_case_' + str(case_index) + '.xlsx'
+            with pd.ExcelWriter(filename) as writer:
+                df_xrange.to_excel(writer, startcol=0, index=False)
+                df_apet.to_excel(writer, startcol=1, index=False)
+                df_ttc_lt.to_excel(writer, startcol=2, index=False)
+                df_ttc_gs.to_excel(writer, startcol=3, index=False)
+                df_pet.to_excel(writer, startcol=4, index=False)
+
+        if isfig:
+            plt.figure(2)
+            plt.plot(x_range, apet, color='black')
+            plt.plot(x_range, ttc_lt[0: len(apet)], color='blue')
+            plt.plot(x_range, ttc_gs[0: len(apet)], color='purple')
+            # plt.ylim([-10, 30])
 
 
 if __name__ == '__main__':
     "calculate ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
-    for case_index in range(115, 131):
-        analyze_nds(case_index)
+    # for case_index in range(115, 131):
+    #     analyze_nds(case_index)
     # analyze_nds(30)
 
     "show trajectories in NDS"
@@ -764,4 +778,4 @@ if __name__ == '__main__':
     # divide_pet_in_nds()
 
     "show crossing trajectories and pet process in a case"
-    # show_crossing_event(30)
+    show_crossing_event(30, isfig=False, issavedata=True)
