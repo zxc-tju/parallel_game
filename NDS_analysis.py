@@ -595,8 +595,8 @@ def cal_pet(trj_a, trj_b, type_cal):
     solid_len = min(np.size(ttcp_a[ttcp_a > 0], 0), np.size(ttcp_b[ttcp_b > 0], 0))
 
     "PET and APET"
-    apet = np.abs(ttcp_a[:solid_len] - ttcp_b[:solid_len]) + 0.24
-    pet = max(ttcp_a[solid_len-1], ttcp_b[solid_len-1]) - min(ttcp_a[solid_len-1], ttcp_b[solid_len-1]) + 0.24
+    apet = np.abs(ttcp_a[:solid_len] - ttcp_b[:solid_len])
+    pet = max(ttcp_a[solid_len-1], ttcp_b[solid_len-1]) - min(ttcp_a[solid_len-1], ttcp_b[solid_len-1])
 
     if type_cal == 'pet':
 
@@ -778,4 +778,4 @@ if __name__ == '__main__':
     # divide_pet_in_nds()
 
     "show crossing trajectories and pet process in a case"
-    show_crossing_event(30, isfig=False, issavedata=True)
+    show_crossing_event(30, isfig=True, issavedata=True)
