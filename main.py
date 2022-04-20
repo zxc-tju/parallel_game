@@ -18,9 +18,9 @@ in_loop_illustration_needed = 0
 num_step = 30
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/simulation/version25'
+output_directory = './outputs/simulation/version26'
 final_illustration_needed = 1
-save_data_needed = 0
+save_data_needed = 1
 
 
 def simulate(gs_ipv_sim, lt_ipv_sim):
@@ -40,8 +40,11 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     agent_lt.estimated_inter_agent = copy.deepcopy(agent_gs)
     agent_gs.estimated_inter_agent = copy.deepcopy(agent_lt)
     # initialize IPV
-    agent_lt.ipv = lt_ipv_sim * math.pi / 8
-    agent_gs.ipv = gs_ipv_sim * math.pi / 8
+    # agent_lt.ipv = lt_ipv_sim * math.pi / 8
+    # agent_gs.ipv = gs_ipv_sim * math.pi / 8
+
+    agent_lt.ipv = lt_ipv_sim
+    agent_gs.ipv = gs_ipv_sim
 
     "====IRB process===="
     for t in range(num_step):
@@ -234,10 +237,13 @@ if __name__ == '__main__':
     # [p.join() for p in processes]  # 等待进程依次结束
 
     "single test"
-    for gs_ipv in [2]:
-        for lt_ipv in [0]:
-            print('gs=' + str(gs_ipv), 'lt=' + str(lt_ipv))
-            simulate(gs_ipv, lt_ipv)
+    # for gs_ipv in [1]:
+    #     for lt_ipv in [-1]:
+    #         print('gs=' + str(gs_ipv), 'lt=' + str(lt_ipv))
+    #         simulate(gs_ipv, lt_ipv)
+    gs_ipv = 0.06
+    lt_ipv = 0.27
+    simulate(gs_ipv, lt_ipv)
 
     toc = time.perf_counter()
     print(f"whole process takes {toc - tic:0.4f} seconds")
