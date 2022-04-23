@@ -15,22 +15,22 @@ notes for ipv_update_method:
 """
 
 in_loop_illustration_needed = 0
-num_step = 30
+num_step = 20
 
 "*****Check below before run!!!*****"
-output_directory = './outputs/simulation/version26'
+output_directory = './outputs/simulation/version27'
 final_illustration_needed = 1
 save_data_needed = 1
 
 
-def simulate(gs_ipv_sim, lt_ipv_sim):
+def simulate(gs_ipv_sim, lt_ipv_sim, rd, case_id):
     # initial state of the left-turn vehicle
     init_position_lt = np.array([11, -5.8])
-    init_velocity_lt = np.array([1.5, 0.3])
+    init_velocity_lt = np.array([2, 2])
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
-    init_position_gs = np.array([18, -2])
-    init_velocity_gs = np.array([-1, 0])
+    init_position_gs = np.array([19, -2])
+    init_velocity_gs = np.array([-1.5, 0])
     init_heading_gs = math.pi
 
     # generate LT and GS agents
@@ -81,12 +81,13 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
     "====save data===="
     if save_data_needed:
         filename = output_directory + '/data/agents_info' \
-                   + '_gs_' + str(gs_ipv_sim) \
-                   + '_lt_' + str(lt_ipv_sim) + '.pckl'
+                   + '_round_' + str(rd) \
+                   + '_case_' + str(case_id) \
+                   + '.pckl'
         f = open(filename, 'wb')
         pickle.dump([agent_lt, agent_gs], f)
         f.close()
-        print('gs_' + str(gs_ipv_sim) + '_lt_' + str(lt_ipv_sim), 'saved')
+        print('round_' + str(rd) + '_case_' + str(case_id), ' saved')
 
     "====visualization===="
     if final_illustration_needed:
@@ -96,11 +97,10 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
 
         # set figures
         fig = plt.figure(1)
-        plt.title('gs_' + str(gs_ipv_sim) + '_lt_' + str(lt_ipv_sim))
-        ax1 = fig.add_subplot(121)
-        ax1.set(xlim=[5, 25], ylim=[-15, 15])
-        ax2 = fig.add_subplot(122)
-        # ax2.set(xlim=[5, 25], ylim=[-15, 15])
+        plt.title('round_' + str(rd) + '_case_' + str(case_id))
+        ax1 = fig.add_subplot(131)
+        ax2 = fig.add_subplot(132)
+        ax3 = fig.add_subplot(133)
 
         "====show plans at each time step===="
         # central vertices
@@ -135,6 +135,8 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
                      color='black',
                      alpha=0.2)
 
+        ax1.set(xlim=[5, 25], ylim=[-15, 15])
+
         "====show IPV and uncertainty===="
         x_range = np.array(range(len(agent_lt.estimated_inter_agent.ipv_collection)))
         y_lt = np.array(agent_gs.estimated_inter_agent.ipv_collection)
@@ -167,8 +169,16 @@ def simulate(gs_ipv_sim, lt_ipv_sim):
                              color='blue',
                              label='lt IPV error')
 
+        "====show velocity===="
+        x_range = np.array(range(np.size(agent_lt.observed_trajectory, 0)))
+        vel_norm_lt = np.linalg.norm(agent_lt.observed_trajectory[2:4], axis=1)
+        vel_norm_gs = np.linalg.norm(agent_gs.observed_trajectory[2:4], axis=1)
+        ax3.plot(x_range, vel_norm_lt, color='red', label='LT velocity')
+        ax3.plot(x_range, vel_norm_gs, color='blue', label='FC velocity')
+
         ax1.legend()
         ax2.legend()
+        ax3.legend()
         plt.show()
 
 
@@ -177,7 +187,7 @@ def multi_simulate(process_id, gs_ipv_set, lt_ipv_set):
     num_all = len(gs_ipv_set) * len(lt_ipv_set)
     for gs_ipv_temp in gs_ipv_set:
         for lt_ipv_temp in lt_ipv_set:
-            simulate(gs_ipv_temp, lt_ipv_temp)
+            simulate(gs_ipv_temp, lt_ipv_temp, -1, -1)
             count += 1
             print('#======process ', process_id, ':', count / num_all * 100, '%')
 
@@ -241,9 +251,12 @@ if __name__ == '__main__':
     #     for lt_ipv in [-1]:
     #         print('gs=' + str(gs_ipv), 'lt=' + str(lt_ipv))
     #         simulate(gs_ipv, lt_ipv)
-    gs_ipv = 0.06
-    lt_ipv = 0.27
-    simulate(gs_ipv, lt_ipv)
+
+    lt_ipv = 0.785
+    gs_ipv = 0.5
+    rd = 1
+    caseid = 1
+    simulate(gs_ipv, lt_ipv, rd, caseid)
 
     toc = time.perf_counter()
     print(f"whole process takes {toc - tic:0.4f} seconds")
