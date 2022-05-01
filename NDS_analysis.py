@@ -8,8 +8,8 @@ from agent import Agent, cal_interior_cost, cal_group_cost
 from tools.utility import get_central_vertices, smooth_ployline, get_intersection_point
 import pandas as pd
 from scipy.interpolate import interp2d
-
 from openpyxl import load_workbook
+
 
 illustration_needed = False
 print_needed = False
@@ -32,7 +32,7 @@ inter_num = mat['interact_agent_num']
 
 # virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
-current_nds_data_version = 6
+current_nds_data_version = 3
 
 
 def draw_rectangle(x, y, deg):
@@ -65,8 +65,8 @@ def visualize_nds(case_id):
     gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
 
     fig = plt.figure(1)
-    # manager = plt.get_current_fig_manager()
-    # manager.full_screen_toggle()
+    manager = plt.get_current_fig_manager()
+    manager.full_screen_toggle()
     ax1 = fig.add_subplot(111)
     # ax2 = fig.add_subplot(122)
     # ax2.set(xlim=[-22, 53], ylim=[-31, 57])
@@ -74,7 +74,7 @@ def visualize_nds(case_id):
     # ax2.imshow(img, extent=[-22, 53, -31, 57])
 
     for t in range(np.size(lt_info, 0)):
-        if t in {40}:
+        if t in {30}:
             print('pause!')
         t_end = t + 10
         ax1.cla()
@@ -501,11 +501,11 @@ def show_ipv_distribution():
     with pd.ExcelWriter(filename) as writer:
 
         data1 = np.vstack((mean_ipv_cross_gs, mean_ipv_cross_lt))
-        df_ipv_distribution = pd.DataFrame(data1.T)
+        df_ipv_distribution = pd.DataFrame(data1.T, columns=['cross_gs', 'cross_lt'])
         df_ipv_distribution.to_excel(writer, startcol=0, index=False)
 
         data2 = np.vstack((mean_ipv_non_cross_gs, mean_ipv_non_cross_lt))
-        df_ipv_distribution = pd.DataFrame(data2.T)
+        df_ipv_distribution = pd.DataFrame(data2.T, columns=['non_cross_gs', 'non_cross_lt'])
         df_ipv_distribution.to_excel(writer, startcol=2, index=False)
 
     plt.figure(1)
@@ -543,7 +543,7 @@ def cal_pet(trj_a, trj_b, type_cal):
     calculate the PET of two given trajectory
     :param trj_a:
     :param trj_b:
-    :param type_cal: PET of APET
+    :param type_cal: PET or APET
     :return:
     """
 
@@ -566,12 +566,12 @@ def cal_pet(trj_a, trj_b, type_cal):
         conflict_point = (trj_a[min_dis2cv_index_a[0], :] + trj_b[min_dis2cv_index_b, :]) / 2
 
     "find the point that most closed to cp in each trajectory"
-    smoothed_trj_a, smoothed_progress_a = smooth_ployline(trj_a)
+    smoothed_trj_a, smoothed_progress_a = smooth_ployline(trj_a, point_num=100)
     cp2trj_a = np.linalg.norm(smoothed_trj_a - conflict_point, axis=1)
     min_dcp2trj_a = np.amin(cp2trj_a)
     cp_index_a = np.where(min_dcp2trj_a == cp2trj_a)
 
-    smoothed_trj_b, smoothed_progress_b = smooth_ployline(trj_b)
+    smoothed_trj_b, smoothed_progress_b = smooth_ployline(trj_b, point_num=100)
     cp2trj_b = np.linalg.norm(smoothed_trj_b - conflict_point, axis=1)
     min_dcp2trj_b = np.amin(cp2trj_b)
     cp_index_b = np.where(min_dcp2trj_b == cp2trj_b)
@@ -596,6 +596,7 @@ def cal_pet(trj_a, trj_b, type_cal):
 
     "PET and APET"
     apet = np.abs(ttcp_a[:solid_len] - ttcp_b[:solid_len])
+
     pet = max(ttcp_a[solid_len-1], ttcp_b[solid_len-1]) - min(ttcp_a[solid_len-1], ttcp_b[solid_len-1])
 
     if type_cal == 'pet':
@@ -608,9 +609,11 @@ def cal_pet(trj_a, trj_b, type_cal):
 
 
 def divide_pet_in_nds():
-    pet_comp = []
-    pet_coop = []
-    pet_collection = []
+    comp_lt_collection = []
+    coop_lt_collection = []
+    comp_gs_collection = []
+    coop_gs_collection = []
+    all_collection = []
 
     fig = plt.figure(1)
     ax1 = fig.add_subplot(111)
@@ -636,32 +639,59 @@ def divide_pet_in_nds():
             lt_trj = inter_info[case_index][0][start_frame:, 0:2]
 
             pet_temp, _ = cal_pet(lt_trj, gs_trj, 'pet')
+            apet, ttcp_lt, ttcp_gs = cal_pet(lt_trj, gs_trj, 'apet')
 
             data_cross = data_cross[4:, :]
             lt_ipv = np.mean(data_cross[:, 0])
             gs_ipv = np.mean(data_cross[:, 7])
-            lt_vel = np.mean(np.linalg.norm(data_cross[:, 4:5], axis=1))
-            gs_vel = np.mean(np.linalg.norm(data_cross[:, 11:12], axis=1))
-            vel = (lt_vel+gs_vel) * 0.5
 
-            pet_collection.append([lt_ipv, gs_ipv, pet_temp, vel])
+            vel_lt = np.linalg.norm(data_cross[:, 4:6], axis=1)
+            vel_mean_lt = np.mean(vel_lt)
+            vel_gs = np.linalg.norm(data_cross[:, 11:13], axis=1)
+            vel_mean_gs = np.mean(vel_gs)
+            vel_gs_max = max(vel_gs)
+            vel_ave = (vel_mean_lt + vel_mean_gs) * 0.5
 
+            acc_gs = (vel_gs[1:] - vel_gs[:-1])/0.12
+            acc_mean_gs = np.mean(acc_gs)
+            acc_min_gs = min(acc_gs)
+
+            all_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave, acc_mean_gs, acc_min_gs])
+
+            # divide and show trajectories according to ipv
             if lt_ipv < 0:
-                pet_comp.append(pet_temp)
+                comp_lt_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave,
+                                           acc_mean_gs, acc_min_gs, ttcp_lt[0], ttcp_gs[0]])
                 ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="red", alpha=0.5)
                 # alpha=-np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57
 
             else:
-                pet_coop.append(pet_temp)
+                coop_lt_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave,
+                                           acc_mean_gs, acc_min_gs, ttcp_lt[0], ttcp_gs[0]])
                 ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="green", alpha=0.5)
 
+            if gs_ipv < 0:
+                comp_gs_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave, vel_mean_gs, vel_gs_max])
+                ax1.plot(gs_info_multi[cross_id][:, 0], gs_info_multi[cross_id][:, 1], color="red", alpha=0.5)
+
+            else:
+                coop_gs_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave, vel_mean_gs, vel_gs_max])
+                ax1.plot(gs_info_multi[cross_id][:, 0], gs_info_multi[cross_id][:, 1], color="green", alpha=0.5)
+
+    # reconstruct data into array
+    pet_collection = np.array(all_collection)
+    comp_lt_collection = np.array(comp_lt_collection)
+    coop_lt_collection = np.array(coop_lt_collection)
+    comp_gs_collection = np.array(comp_gs_collection)
+    coop_gs_collection = np.array(coop_gs_collection)
+
     plt.figure(2)
-    plt.title('PET distribution (grouped)')
-    plt.hist(pet_comp, bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+    plt.title('PET distribution (divided by ipv of LT vehicles)')
+    plt.hist(comp_lt_collection[:, 2], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
              alpha=0.5,
              color='red',
              label='competitive')
-    plt.hist(pet_coop, bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+    plt.hist(coop_lt_collection[:, 2], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
              alpha=0.5,
              color='green',
              label='cooperative')
@@ -669,17 +699,78 @@ def divide_pet_in_nds():
     plt.xlabel('PET')
     plt.ylabel('Counts')
 
-    pet_collection_array = np.array(pet_collection)
+    plt.figure(3)
+    ax1 = plt.subplot(121)
+    plt.title('mean GS acc distribution (divided by ipv of LT vehicles)')
+    ax1.hist(comp_lt_collection[:, 4],
+             alpha=0.5,
+             color='red',
+             label='competitive')
+    ax1.hist(coop_lt_collection[:, 4],
+             alpha=0.5,
+             color='green',
+             label='cooperative')
+    ax1.legend()
+    plt.xlabel('mean GS acc')
+    plt.ylabel('Counts')
+
+    ax2 = plt.subplot(122)
+    plt.title('min GS acc distribution (divided by ipv of LT vehicles)')
+    ax2.hist(comp_lt_collection[:, 5],
+             alpha=0.5,
+             color='red',
+             label='competitive')
+    ax2.hist(coop_lt_collection[:, 5],
+             alpha=0.5,
+             color='green',
+             label='cooperative')
+    ax2.legend()
+    plt.xlabel('min GS acc')
+    plt.ylabel('Counts')
+
+    plt.figure(4)
+    ax1 = plt.subplot(121)
+    plt.title('mean GS speed (divided by ipv of GS vehicles)')
+    ax1.hist(comp_gs_collection[:, 4],
+             alpha=0.5,
+             color='red',
+             label='competitive')
+    ax1.hist(coop_gs_collection[:, 4],
+             alpha=0.5,
+             color='green',
+             label='cooperative')
+    ax1.legend()
+    plt.xlabel('mean GS speed')
+    plt.ylabel('Counts')
+
+    ax2 = plt.subplot(122)
+    plt.title('max GS speed distribution (divided by ipv of GS vehicles)')
+    ax2.hist(comp_gs_collection[:, 5],
+             alpha=0.5,
+             color='red',
+             label='competitive')
+    ax2.hist(coop_gs_collection[:, 5],
+             alpha=0.5,
+             color='green',
+             label='cooperative')
+    ax2.legend()
+    plt.xlabel('max GS speed')
+    plt.ylabel('Counts')
 
     # save pet data
     filename = './outputs/pet_distribution_v' + str(current_nds_data_version) + '.xlsx'
     with pd.ExcelWriter(filename) as writer:
-        df_pet_distribution = pd.DataFrame(pet_collection_array)
-        df_pet_distribution.to_excel(writer, startcol=0, index=False, sheet_name="all")
-        df_pet_comp = pd.DataFrame(pet_comp)
-        df_pet_coop = pd.DataFrame(pet_coop)
-        df_pet_comp.to_excel(writer, startcol=0, index=False, sheet_name="competitive")
-        df_pet_coop.to_excel(writer, startcol=0, index=False, sheet_name="cooperative")
+        df_all = pd.DataFrame(pet_collection,
+                              columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel', 'acc_mean_gs', 'acc_min_gs'])
+        df_all.to_excel(writer, startcol=0, index=False, sheet_name="all")
+        df_comp = pd.DataFrame(comp_lt_collection,
+                               columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
+                                        'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
+        df_coop = pd.DataFrame(coop_lt_collection,
+                               columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
+                                        'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
+        df_comp.to_excel(writer, startcol=0, index=False, sheet_name="competitive")
+        df_coop.to_excel(writer, startcol=0, index=False, sheet_name="cooperative")
 
 
 def show_crossing_event(case_index, isfig=True, issavedata=False):
@@ -714,6 +805,8 @@ def show_crossing_event(case_index, isfig=True, issavedata=False):
             ax1.text(0, 60, 'LT:'+str(lt_mean_ipv), fontsize=10)
             ax1.text(0, 65, 'GS:'+str(gs_mean_ipv), fontsize=10)
             #
+
+            # if np.mean(data_cross[4:, 0] * (1 - data_cross[4:, 1])) < 0:
             if np.mean(data_cross[4:, 0]) < 0:
                 ax1.plot(lt_trj[:, 0], lt_trj[:, 1], color="red", alpha=0.5)
                 # alpha=-np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57
@@ -756,7 +849,7 @@ def show_crossing_event(case_index, isfig=True, issavedata=False):
 if __name__ == '__main__':
     "calculate ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
-    # for case_index in range(115, 131):
+    # for case_index in range(99, 100):
     #     analyze_nds(case_index)
     # analyze_nds(30)
 
@@ -767,7 +860,7 @@ if __name__ == '__main__':
     # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
 
     "show ipv distribution in whole dataset"
-    # show_ipv_distribution()
+    show_ipv_distribution()
 
     "find the origin and ending of the each interaction event in a single case"
     # o, d = find_inter_od(30)
@@ -778,4 +871,4 @@ if __name__ == '__main__':
     # divide_pet_in_nds()
 
     "show crossing trajectories and pet process in a case"
-    show_crossing_event(30, isfig=True, issavedata=True)
+    # show_crossing_event(30, isfig=True, issavedata=True)
