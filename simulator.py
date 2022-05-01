@@ -36,30 +36,24 @@ class Simulator:
         self.agent_gs.ipv = self.scenario.ipv['gs']
         self.tag = case_tag
 
-    def ibr_iteration(self, num_step):
+    def ibr_iteration(self, num_step, iter_limit):
         self.num_step = num_step
         for t in range(self.num_step):
             print('time_step: ', t, '/', self.num_step)
 
             "==plan for left-turn=="
             # ==interaction with parallel virtual agents
-            self.agent_lt.interact_with_parallel_virtual_agents(self.agent_gs)
+            self.agent_lt.interact_with_parallel_virtual_agents(self.agent_gs, iter_limit)
 
             # ==interaction with estimated agent
-            self.agent_lt.interact_with_estimated_agents()
-
-            # if in_loop_illustration_needed:
-            #     self.agent_lt.draw()
+            self.agent_lt.interact_with_estimated_agents(iter_limit)
 
             "==plan for go straight=="
             # ==interaction with parallel virtual agents
-            self.agent_gs.interact_with_parallel_virtual_agents(self.agent_lt)
+            self.agent_gs.interact_with_parallel_virtual_agents(self.agent_lt, iter_limit)
 
             # ==interaction with estimated agent
-            self.agent_gs.interact_with_estimated_agents()
-
-            # if in_loop_illustration_needed:
-            #     agent_gs.draw()
+            self.agent_gs.interact_with_estimated_agents(iter_limit)
 
             "==update state=="
             self.agent_lt.update_state(self.agent_gs, 1)
@@ -79,13 +73,11 @@ class Simulator:
         cv_gs, _ = get_central_vertices('gs')
 
         # set figures
-        fig = plt.figure(1)
-        plt.title('_case_' + str(self.tag))
-        ax1 = fig.add_subplot(131)
-        ax2 = fig.add_subplot(132)
-        ax3 = fig.add_subplot(133)
+        fig = plt.figure(figsize=(12, 4))
+        fig.suptitle('case_' + str(self.tag))
 
         "====show plans at each time step===="
+        ax1 = fig.add_subplot(131, title='trajectory')
         # central vertices
         ax1.plot(cv_it[:, 0], cv_it[:, 1], 'r-')
         ax1.plot(cv_gs[:, 0], cv_gs[:, 1], 'b-')
@@ -121,6 +113,7 @@ class Simulator:
         ax1.set(xlim=[5, 25], ylim=[-15, 15])
 
         "====show IPV and uncertainty===="
+        ax2 = fig.add_subplot(132, title='ipv')
         x_range = np.array(range(len(self.agent_lt.estimated_inter_agent.ipv_collection)))
         y_lt = np.array(self.agent_gs.estimated_inter_agent.ipv_collection)
         y_gs = np.array(self.agent_lt.estimated_inter_agent.ipv_collection)
@@ -152,6 +145,7 @@ class Simulator:
                          label='lt IPV error')
 
         "====show velocity===="
+        ax3 = fig.add_subplot(133, title='velocity')
         x_range = np.array(range(np.size(self.agent_lt.observed_trajectory, 0)))
         vel_norm_lt = np.linalg.norm(self.agent_lt.observed_trajectory[:, 2:4], axis=1)
         vel_norm_gs = np.linalg.norm(self.agent_gs.observed_trajectory[:, 2:4], axis=1)
@@ -175,14 +169,19 @@ if __name__ == '__main__':
     init_velocity_gs = [-1.5, 0]
     init_heading_gs = math.pi
     ipv_gs = math.pi / 4
-
     simu_scenario = Scenario([init_position_lt, init_position_gs],
                              [init_velocity_lt, init_velocity_gs],
                              [init_heading_lt, init_heading_gs],
                              [ipv_lt, ipv_gs])
 
-    simu = Simulator(27)
+    simu = Simulator(28)
+
     tag = 'test'
     simu.initialize(simu_scenario, tag)
-    simu.ibr_iteration(2)
+
+    steps = 1
+    iterations = 3
+    simu.ibr_iteration(steps, iterations)
+    simu.save_data()
     simu.visualize()
+

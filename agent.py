@@ -91,9 +91,10 @@ class Agent:
         self.trj_solution = kinematic_model(x, init_state_4_kine, track_len, dt)
         return self.trj_solution
 
-    def interact_with_parallel_virtual_agents(self, agent_inter):
+    def interact_with_parallel_virtual_agents(self, agent_inter, iter_limit=10):
         """
         generate copy of the interacting agent and interact with them
+        :param iter_limit:
         :param agent_inter: Agent:interacting agent
         :return:
         """
@@ -111,12 +112,12 @@ class Agent:
                 last_self_track = agent_self_temp.trj_solution
                 agent_self_temp.solve_game_IBR(virtual_inter_agent.trj_solution)
                 virtual_inter_agent.solve_game_IBR(agent_self_temp.trj_solution)
-                if count_iter > 10:
+                if count_iter > iter_limit:
                     break
             virtual_agent_track_collection.append(virtual_inter_agent.trj_solution)
         self.estimated_inter_agent.virtual_track_collection.append(virtual_agent_track_collection)
 
-    def interact_with_estimated_agents(self):
+    def interact_with_estimated_agents(self, iter_limit=10):
         """
         interact with the estimated interacting agent. this agent's IPV is continuously updated.
         :return:
@@ -128,7 +129,7 @@ class Agent:
             last_self_track = self.trj_solution
             self.solve_game_IBR(self.estimated_inter_agent.trj_solution)
             self.estimated_inter_agent.solve_game_IBR(self.trj_solution)
-            if count_iter > 10:  # limited to less than 10 iterations
+            if count_iter > iter_limit:  # limited to less than 10 iterations
                 break
 
     def update_state(self, inter_agent, method):
