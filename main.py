@@ -26,10 +26,10 @@ save_data_needed = 1
 def simulate(gs_ipv_sim, lt_ipv_sim, rd, case_id):
     # initial state of the left-turn vehicle
     init_position_lt = np.array([11, -5.8])
-    init_velocity_lt = np.array([2, 2])
+    init_velocity_lt = np.array([1.5, 0.3])
     init_heading_lt = math.pi / 4
     # initial state of the go-straight vehicle
-    init_position_gs = np.array([19, -2])
+    init_position_gs = np.array([22, -2])
     init_velocity_gs = np.array([-1.5, 0])
     init_heading_gs = math.pi
 
@@ -171,8 +171,8 @@ def simulate(gs_ipv_sim, lt_ipv_sim, rd, case_id):
 
         "====show velocity===="
         x_range = np.array(range(np.size(agent_lt.observed_trajectory, 0)))
-        vel_norm_lt = np.linalg.norm(agent_lt.observed_trajectory[2:4], axis=1)
-        vel_norm_gs = np.linalg.norm(agent_gs.observed_trajectory[2:4], axis=1)
+        vel_norm_lt = np.linalg.norm(agent_lt.observed_trajectory[:, 2:4], axis=1)
+        vel_norm_gs = np.linalg.norm(agent_gs.observed_trajectory[:, 2:4], axis=1)
         ax3.plot(x_range, vel_norm_lt, color='red', label='LT velocity')
         ax3.plot(x_range, vel_norm_gs, color='blue', label='FC velocity')
 
@@ -252,10 +252,10 @@ if __name__ == '__main__':
     #         print('gs=' + str(gs_ipv), 'lt=' + str(lt_ipv))
     #         simulate(gs_ipv, lt_ipv)
 
-    lt_ipv = 0.785
-    gs_ipv = 0.5
+    lt_ipv = 0.4
+    gs_ipv = -0.03
     rd = 1
-    caseid = 1
+    caseid = 4
     simulate(gs_ipv, lt_ipv, rd, caseid)
 
     toc = time.perf_counter()
