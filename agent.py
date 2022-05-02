@@ -21,14 +21,15 @@ MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
 WEIGHT_DEVIATION = 0.8
-WEIGHT_JERK = 0
-weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_JERK])
+WEIGHT_OVERSPEED = 0.2
+weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_OVERSPEED])
 weight_metric = weight_metric / weight_metric.sum()
 
 # parameters of action bounds
 MAX_STEERING_ANGLE = math.pi / 6
 MAX_ACCELERATION = 3
-MAX_SPEED = 20
+# MAX_SPEED = 20
+MAX_SPEED = 8
 
 # initial guess on interacting agent's IPV
 INITIAL_IPV_GUESS = 0
@@ -315,7 +316,12 @@ def cal_interior_cost(track, target):
     cost_mean_deviation = max(0.2, dis2cv.mean())
     # print('cost of lane deviation:', cost_mean_deviation)
 
-    "3. cost of jerk"
+    "3. cost of overspeed"
+    dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
+    vel = (dis[1:] - dis[0:-1]) / dt
+    cost_overspeed = max(vel) - MAX_SPEED
+
+    "4. cost of jerk"
     # dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
     # vel = (dis[1:] - dis[0:-1]) / dt
     # acc = (vel[1:] - vel[0:-1]) / dt
@@ -323,7 +329,7 @@ def cal_interior_cost(track, target):
     # cost_jerk = max(np.abs(jerk))
     cost_jerk = 0
 
-    cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_jerk])
+    cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_overspeed])
 
     "overall cost"
     cost_interior = weight_metric.dot(cost_metric.T)
