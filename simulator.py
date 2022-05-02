@@ -18,6 +18,7 @@ class Scenario:
 
 class Simulator:
     def __init__(self, version):
+        self.semantic_result = None
         self.version = version
         self.output_directory = './outputs/simulation/version' + str(self.version)
         self.tag = None
@@ -61,12 +62,24 @@ class Simulator:
 
     def save_data(self):
         filename = self.output_directory + '/data/agents_info' \
-                   + '_case_' + str(self.tag) \
+                   + 'case_' + str(self.tag) \
                    + '.pckl'
         f = open(filename, 'wb')
-        pickle.dump([self.agent_lt, self.agent_gs], f)
+        pickle.dump([self.agent_lt, self.agent_gs, self.semantic_result, self.tag], f)
         f.close()
-        print('_case_' + str(self.tag), ' saved')
+        print('case_' + str(self.tag), ' saved')
+
+    def post_process(self):
+        track_lt = self.agent_lt.observed_trajectory
+        track_gs = self.agent_gs.observed_trajectory
+        pos_delta = track_gs - track_lt
+        pos_x_smaller = pos_delta[pos_delta[:, 0] < 0]
+        pos_y_larger = pos_x_smaller[pos_x_smaller[:, 1] > 0]
+        yield_points = np.size(pos_y_larger, 0)
+        if yield_points:
+            self.semantic_result = 'yield'
+        else:
+            self.semantic_result = 'rush'
 
     def visualize(self):
         cv_it, _ = get_central_vertices('lt')
@@ -77,7 +90,7 @@ class Simulator:
         fig.suptitle('case_' + str(self.tag))
 
         "====show plans at each time step===="
-        ax1 = fig.add_subplot(131, title='trajectory')
+        ax1 = fig.add_subplot(131, title='trajectory_LT_' + self.semantic_result)
         # central vertices
         ax1.plot(cv_it[:, 0], cv_it[:, 1], 'r-')
         ax1.plot(cv_gs[:, 0], cv_gs[:, 1], 'b-')
@@ -155,33 +168,40 @@ class Simulator:
         ax1.legend()
         ax2.legend()
         ax3.legend()
-        plt.show()
+
+        plt.savefig(self.output_directory + '/figures/'
+                    + 'case_' + str(self.tag) + '.png')
+        # plt.show()
 
 
 if __name__ == '__main__':
+    r = 1
+    c = 1
+    tag = 'round2-' + str(r)+',' + str(c)  # TODO
+    # tag = 'test'
+
     # initial state of the left-turn vehicle
     init_position_lt = [11, -5.8]
     init_velocity_lt = [1.5, 0.3]
     init_heading_lt = math.pi / 4
-    ipv_lt = math.pi / 4
+    ipv_lt = math.pi / 8
     # initial state of the go-straight vehicle
-    init_position_gs = [22, -2]
-    init_velocity_gs = [-1.5, 0]
+    init_position_gs = [20 + (c-1) * 5, -2]  # TODO
+    init_velocity_gs = [-5, 0]
     init_heading_gs = math.pi
-    ipv_gs = math.pi / 4
+    ipv_gs = -math.pi / 4 + (r-1) * math.pi / 8  # TODO
     simu_scenario = Scenario([init_position_lt, init_position_gs],
                              [init_velocity_lt, init_velocity_gs],
                              [init_heading_lt, init_heading_gs],
                              [ipv_lt, ipv_gs])
 
     simu = Simulator(28)
-
-    tag = 'test'
     simu.initialize(simu_scenario, tag)
 
-    steps = 1
+    steps = 20
     iterations = 3
     simu.ibr_iteration(steps, iterations)
+    simu.post_process()
     simu.save_data()
     simu.visualize()
 
