@@ -175,10 +175,14 @@ class Simulator:
 
 
 if __name__ == '__main__':
-    r = 1
-    c = 1
-    tag = 'round2-' + str(r)+',' + str(c)  # TODO
+
     # tag = 'test'
+
+    r = 5
+    c = 6
+    tag = 'round2-' + str(r)+'-' + str(c)
+
+    # tag = 'round3-VGIM-coop'
 
     # initial state of the left-turn vehicle
     init_position_lt = [11, -5.8]
@@ -186,10 +190,10 @@ if __name__ == '__main__':
     init_heading_lt = math.pi / 4
     ipv_lt = math.pi / 8
     # initial state of the go-straight vehicle
-    init_position_gs = [20 + (c-1) * 5, -2]  # TODO
+    init_position_gs = [20 + (c-1) * 2, -2]
     init_velocity_gs = [-5, 0]
     init_heading_gs = math.pi
-    ipv_gs = -math.pi / 4 + (r-1) * math.pi / 8  # TODO
+    ipv_gs = -math.pi / 4 + (r-1) * math.pi / 8
     simu_scenario = Scenario([init_position_lt, init_position_gs],
                              [init_velocity_lt, init_velocity_gs],
                              [init_heading_lt, init_heading_gs],
