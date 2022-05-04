@@ -16,6 +16,10 @@ TARGET = 'simulation'
 
 # simulation setting
 dt = 0.12
+if TARGET == 'nds analysis':
+    dt = 0.12  # stable for nds analysis
+elif TARGET == 'simulation':
+    dt = 0.1  # stable for simulation
 TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
