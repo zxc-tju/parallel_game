@@ -249,7 +249,7 @@ def main1():
 
     # initial state of the left-turn vehicle
     init_position_lt = [11, -5.8]  # TODO
-    init_velocity_lt = [0.25, 0.28]  # TODO
+    init_velocity_lt = [1.5, 0.3]  # TODO
     init_heading_lt = math.pi / 4  # TODO
     ipv_lt = math.pi / 8
     # initial state of the go-straight vehicle
@@ -267,8 +267,8 @@ def main1():
     simu.initialize(simu_scenario, tag)
 
     steps = 20
-    iterations = 3
-    simu.ibr_iteration(steps, iterations)
+    iteration_lt = 3
+    simu.ibr_iteration(steps, iteration_lt)
     simu.post_process()
     simu.save_data()
     simu.visualize()
@@ -280,23 +280,75 @@ def main2():
 
     1. model type is controlled by ipv and iteration number (3: VGIM , 1: Optimal controller)
 
-    2. Continuous Interaction: if LT yielded, print the ending point of the interaction and
-    the next interaction starts at the ending point
+    2. change tag for each simulation
 
-    3. change tag for each simulation
+    3. simulation results are saved in simulation/version29
 
-    4. simulation results are saved in simulation/version29
-
-    5*. straight-through traffic are endless and generated with random ipv and gap
+    4*. straight-through traffic are endless and generated with random ipv and gap
     :return:
     """
-    print('start main for random interaction')
+    for i in range(10):
+
+        task_id = 4
+        max_steps = 30
+
+        tag = 'VGIM-coop'
+        # tag = 'VGIM-dyna'
+        # tag = 'OPT-coop'
+        # tag = 'OPT-safe'
+        # tag = 'OPT-dyna'
+
+        # generate gs position
+        init_gs_px = 10 * (np.random.random() - 0.5) + 28
+
+        # initial state of the go-straight vehicle
+        init_position_gs = [init_gs_px, -2]
+        init_velocity_gs = [-5, 0]
+        init_heading_gs = math.pi
+        ipv_gs = math.pi / 4 * 2 * (np.random.random() - 0.5)
+
+        # initial state of the left-turn vehicle
+        init_position_lt = [11, -5.8]
+        init_velocity_lt = [1.5, 0.23]
+        init_heading_lt = math.pi / 4
+        if tag in {'VGIM-coop', 'OPT-coop'}:
+            ipv_lt = math.pi / 4
+        elif tag in {'OPT-safe'}:
+            ipv_lt = 3 * math.pi / 8
+        else:
+            if init_gs_px > 30:
+                ipv_lt = 0
+            else:
+                ipv_lt = math.pi / 4
+
+        simu_scenario = Scenario([init_position_lt, init_position_gs],
+                                 [init_velocity_lt, init_velocity_gs],
+                                 [init_heading_lt, init_heading_gs],
+                                 [ipv_lt, ipv_gs])
+        simu = Simulator(29)
+
+        print('==== start main for random interaction ====')
+        print('task id: ' + str(task_id))
+        print('case id: ' + str(i))
+        print('gs_px: ', init_gs_px)
+        print('gs_ipv: ', ipv_gs)
+
+        simu.initialize(simu_scenario, tag)
+
+        if tag in {'VGIM-coop', 'VGIM-dyna'}:
+            iteration_lt = 3
+        else:
+            iteration_lt = 0
+
+        simu.ibr_iteration(max_steps, iteration_lt)
+        simu.post_process()
+        simu.save_data(print_to_excel=True, raw_num=i, task_id=task_id)
+        simu.visualize(raw_num=i, task_id=task_id)
 
 
 if __name__ == '__main__':
     "无保护左转实验- 多模型对比"
-    main1()
+    # main1()
 
     "无保护左转实验- 随机交互"
     main2()
-
