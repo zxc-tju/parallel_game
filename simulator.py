@@ -73,13 +73,29 @@ class Simulator:
         track_lt = self.agent_lt.observed_trajectory
         track_gs = self.agent_gs.observed_trajectory
         pos_delta = track_gs - track_lt
+
+        "whether the LT vehicle yield"
         pos_x_smaller = pos_delta[pos_delta[:, 0] < 0]
         pos_y_larger = pos_x_smaller[pos_x_smaller[:, 1] > 0]
         yield_points = np.size(pos_y_larger, 0)
         if yield_points:
             self.semantic_result = 'yield'
+
+            "where the interaction finish"
+            ind_coll = np.where(pos_y_larger[0, 0] == pos_delta[:, 0])
+            ind = ind_coll[0] - 1
+            self.ending_point = {'lt': self.agent_lt.observed_trajectory[ind, :],
+                                 'gs': self.agent_gs.observed_trajectory[ind, :]}
+
+            print('LT vehicle yielded. \n')
+            print('interaction finished at No.' + str(ind+1) + ' frame\n')
+            print('GS info:' + str(self.ending_point['gs']) + '\n')
+            print('LT info:' + str(self.ending_point['lt']) + '\n')
+            print('px py vx vy heading')
+
         else:
             self.semantic_result = 'rush'
+            print('LT vehicle rushed. \n')
 
     def visualize(self):
         cv_it, _ = get_central_vertices('lt')
