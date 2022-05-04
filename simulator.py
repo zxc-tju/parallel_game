@@ -26,6 +26,7 @@ class Simulator:
         self.agent_lt = None
         self.agent_gs = None
         self.num_step = 0
+        self.ending_point = None
 
     def initialize(self, scenario, case_tag):
         self.scenario = scenario
@@ -65,7 +66,7 @@ class Simulator:
                    + 'case_' + str(self.tag) \
                    + '.pckl'
         f = open(filename, 'wb')
-        pickle.dump([self.agent_lt, self.agent_gs, self.semantic_result, self.tag], f)
+        pickle.dump([self.agent_lt, self.agent_gs, self.semantic_result, self.tag, self.ending_point], f)
         f.close()
         print('case_' + str(self.tag), ' saved')
 
@@ -148,11 +149,11 @@ class Simulator:
         y_gs = np.array(self.agent_lt.estimated_inter_agent.ipv_collection)
 
         # actual ipv
-        ax2.plot(x_range, self.agent_lt.ipv * math.pi / 8 * np.ones_like(x_range),
+        ax2.plot(x_range, self.agent_lt.ipv * np.ones_like(x_range),
                  color='red',
                  linewidth=5,
                  label='actual lt IPV')
-        ax2.plot(x_range, self.agent_gs.ipv * math.pi / 8 * np.ones_like(x_range),
+        ax2.plot(x_range, self.agent_gs.ipv * np.ones_like(x_range),
                  color='blue',
                  linewidth=5,
                  label='actual gs IPV')
@@ -190,26 +191,39 @@ class Simulator:
         # plt.show()
 
 
-if __name__ == '__main__':
+def main1():
+    """
+    ==== main for simulating unprotected left-turning ====
 
+    1. model type is controlled by ipv and iteration number (3: VGIM , 0: Optimal controller)
+
+    2. manual Continuous Interaction: if LT yielded, print the ending point of the interaction and
+    the next interaction starts at the ending point  (used for setting LT vehicle's initial state)
+
+    3. change FC vehicle' ipv and initial state, and scenario tag for each simulation
+
+    4. simulation results are saved in simulation/version28
+    :return:
+    """
     # tag = 'test'
 
-    r = 5
-    c = 6
-    tag = 'round2-' + str(r)+'-' + str(c)
+    # r = 5
+    # c = 6
+    # tag = 'round2-' + str(r)+'-' + str(c)
 
-    # tag = 'round3-VGIM-coop'
+    tag = 'round3-OPT-safe-gs-1'  # TODO
 
     # initial state of the left-turn vehicle
-    init_position_lt = [11, -5.8]
-    init_velocity_lt = [1.5, 0.3]
-    init_heading_lt = math.pi / 4
+    init_position_lt = [11, -5.8]  # TODO
+    init_velocity_lt = [0.25, 0.28]  # TODO
+    init_heading_lt = math.pi / 4  # TODO
     ipv_lt = math.pi / 8
     # initial state of the go-straight vehicle
-    init_position_gs = [20 + (c-1) * 2, -2]
+    init_position_gs = [22, -2]  # TODO
     init_velocity_gs = [-5, 0]
     init_heading_gs = math.pi
-    ipv_gs = -math.pi / 4 + (r-1) * math.pi / 8
+    ipv_gs = math.pi / 4  # TODO
+
     simu_scenario = Scenario([init_position_lt, init_position_gs],
                              [init_velocity_lt, init_velocity_gs],
                              [init_heading_lt, init_heading_gs],
@@ -224,4 +238,31 @@ if __name__ == '__main__':
     simu.post_process()
     simu.save_data()
     simu.visualize()
+
+
+def main2():
+    """
+    ==== main for simulating RANDOM* unprotected left-turning ====
+
+    1. model type is controlled by ipv and iteration number (3: VGIM , 1: Optimal controller)
+
+    2. Continuous Interaction: if LT yielded, print the ending point of the interaction and
+    the next interaction starts at the ending point
+
+    3. change tag for each simulation
+
+    4. simulation results are saved in simulation/version29
+
+    5*. straight-through traffic are endless and generated with random ipv and gap
+    :return:
+    """
+    print('start main for random interaction')
+
+
+if __name__ == '__main__':
+    "无保护左转实验- 多模型对比"
+    main1()
+
+    "无保护左转实验- 随机交互"
+    main2()
 
