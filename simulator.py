@@ -6,6 +6,9 @@ from agent import Agent
 from tools.utility import get_central_vertices
 import time
 import pickle
+import pandas as pd
+import xlsxwriter
+import os
 
 
 class Scenario:
@@ -69,6 +72,37 @@ class Simulator:
         pickle.dump([self.agent_lt, self.agent_gs, self.semantic_result, self.tag, self.ending_point], f)
         f.close()
         print('case_' + str(self.tag), ' saved')
+
+        if print_to_excel:
+
+            # prepare workbook
+            workbook = self.output_directory + '/excel/' + self.tag + '.xlsx'
+            if not os.path.exists(workbook):
+                wb = xlsxwriter.Workbook(workbook)
+                ws = wb.add_worksheet(self.tag + '-task-' + str(task_id))
+                wb.close()
+
+            # prepare data
+            data_interaction_event = [[self.agent_gs.observed_trajectory[0, 0],
+                                       self.agent_gs.ipv,
+                                       self.semantic_result], ]
+            if raw_num == 0:
+                pd_interaction_event = pd.DataFrame(data_interaction_event, columns=['gap', 'gs_ipv', 'result'])
+                # write data
+                with pd.ExcelWriter(workbook, mode='a', if_sheet_exists="overlay", engine="openpyxl") as writer:
+
+                    pd_interaction_event.to_excel(writer, index=False,
+                                                  sheet_name=self.tag + '-task-' + str(task_id),
+                                                  startrow=raw_num)
+
+            else:
+                pd_interaction_event = pd.DataFrame(data_interaction_event)
+                # write data
+                with pd.ExcelWriter(workbook, mode='a', if_sheet_exists="overlay", engine="openpyxl") as writer:
+
+                    pd_interaction_event.to_excel(writer, index=False, header=False,
+                                                  sheet_name=self.tag + '-task-' + str(task_id),
+                                                  startrow=raw_num + 1)
 
     def post_process(self):
         track_lt = self.agent_lt.observed_trajectory
