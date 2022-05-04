@@ -41,32 +41,37 @@ class Simulator:
         self.agent_gs.ipv = self.scenario.ipv['gs']
         self.tag = case_tag
 
-    def ibr_iteration(self, num_step, iter_limit):
+    def ibr_iteration(self, num_step, iter_limit_lt):
         self.num_step = num_step
+        iter_limit_gs = 3
         for t in range(self.num_step):
             print('time_step: ', t, '/', self.num_step)
 
             "==plan for left-turn=="
             # ==interaction with parallel virtual agents
-            self.agent_lt.interact_with_parallel_virtual_agents(self.agent_gs, iter_limit)
+            self.agent_lt.interact_with_parallel_virtual_agents(self.agent_gs, iter_limit_lt)
 
             # ==interaction with estimated agent
-            self.agent_lt.interact_with_estimated_agents(iter_limit)
+            self.agent_lt.interact_with_estimated_agents(iter_limit_lt)
 
             "==plan for go straight=="
             # ==interaction with parallel virtual agents
-            self.agent_gs.interact_with_parallel_virtual_agents(self.agent_lt, iter_limit)
+            self.agent_gs.interact_with_parallel_virtual_agents(self.agent_lt, iter_limit_gs)
 
             # ==interaction with estimated agent
-            self.agent_gs.interact_with_estimated_agents(iter_limit)
+            self.agent_gs.interact_with_estimated_agents(iter_limit_gs)
 
             "==update state=="
             self.agent_lt.update_state(self.agent_gs, 1)
             self.agent_gs.update_state(self.agent_lt, 1)
 
-    def save_data(self):
-        filename = self.output_directory + '/data/agents_info' \
-                   + 'case_' + str(self.tag) \
+            if self.agent_gs.observed_trajectory[-1, 0] < 13 or self.agent_lt.observed_trajectory[-1, 1] > -2:
+                break
+
+    def save_data(self, print_to_excel=False, raw_num=None, task_id=None):
+        filename = self.output_directory + '/data/' + str(self.tag) \
+                   + '_task_' + str(task_id) \
+                   + '_case_' + str(raw_num) \
                    + '.pckl'
         f = open(filename, 'wb')
         pickle.dump([self.agent_lt, self.agent_gs, self.semantic_result, self.tag, self.ending_point], f)
@@ -109,30 +114,36 @@ class Simulator:
         track_gs = self.agent_gs.observed_trajectory
         pos_delta = track_gs - track_lt
 
-        "whether the LT vehicle yield"
+        "whether the interaction finished"
         pos_x_smaller = pos_delta[pos_delta[:, 0] < 0]
-        pos_y_larger = pos_x_smaller[pos_x_smaller[:, 1] > 0]
-        yield_points = np.size(pos_y_larger, 0)
-        if yield_points:
-            self.semantic_result = 'yield'
+        if np.size(pos_x_smaller, 0):
 
-            "where the interaction finish"
-            ind_coll = np.where(pos_y_larger[0, 0] == pos_delta[:, 0])
-            ind = ind_coll[0] - 1
-            self.ending_point = {'lt': self.agent_lt.observed_trajectory[ind, :],
-                                 'gs': self.agent_gs.observed_trajectory[ind, :]}
+            "whether the LT vehicle yield"
+            pos_y_larger = pos_x_smaller[pos_x_smaller[:, 1] > 0]
+            yield_points = np.size(pos_y_larger, 0)
+            if yield_points:
+                self.semantic_result = 'yield'
 
-            print('LT vehicle yielded. \n')
-            print('interaction finished at No.' + str(ind+1) + ' frame\n')
-            print('GS info:' + str(self.ending_point['gs']) + '\n')
-            print('LT info:' + str(self.ending_point['lt']) + '\n')
-            print('px py vx vy heading')
+                "where the interaction finish"
+                ind_coll = np.where(pos_y_larger[0, 0] == pos_delta[:, 0])
+                ind = ind_coll[0] - 1
+                self.ending_point = {'lt': self.agent_lt.observed_trajectory[ind, :],
+                                     'gs': self.agent_gs.observed_trajectory[ind, :]}
 
+                print('LT vehicle yielded. \n')
+                # print('interaction finished at No.' + str(ind + 1) + ' frame\n')
+                # print('GS info:' + str(self.ending_point['gs']) + '\n')
+                # print('LT info:' + str(self.ending_point['lt']) + '\n')
+                # print('px py vx vy heading')
+
+            else:
+                self.semantic_result = 'rush'
+                print('LT vehicle rushed. \n')
         else:
-            self.semantic_result = 'rush'
-            print('LT vehicle rushed. \n')
+            self.semantic_result = 'unfinished'
+            print('interaction is not finished. \n')
 
-    def visualize(self):
+    def visualize(self, raw_num=0, task_id=0):
         cv_it, _ = get_central_vertices('lt')
         cv_gs, _ = get_central_vertices('gs')
 
@@ -174,7 +185,21 @@ class Simulator:
                      color='black',
                      alpha=0.2)
 
-        ax1.set(xlim=[5, 25], ylim=[-15, 15])
+        max_x_lt = max(self.agent_lt.observed_trajectory[:, 0])
+        max_y_lt = max(self.agent_lt.observed_trajectory[:, 1])
+        max_x_gs = max(self.agent_gs.observed_trajectory[:, 0])
+        max_y_gs = max(self.agent_gs.observed_trajectory[:, 1])
+        max_x = max(max_x_lt, max_x_gs)
+        max_y = max(max_y_lt, max_y_gs)
+
+        min_x_lt = min(self.agent_lt.observed_trajectory[:, 0])
+        min_y_lt = min(self.agent_lt.observed_trajectory[:, 1])
+        min_x_gs = min(self.agent_gs.observed_trajectory[:, 0])
+        min_y_gs = min(self.agent_gs.observed_trajectory[:, 1])
+        min_x = min(min_x_lt, min_x_gs)
+        min_y = min(min_y_lt, min_y_gs)
+
+        ax1.set(xlim=[min_x-3, max_x+3], ylim=[min_y-3, max_y+3])
 
         "====show IPV and uncertainty===="
         ax2 = fig.add_subplot(132, title='ipv')
@@ -220,9 +245,13 @@ class Simulator:
         ax2.legend()
         ax3.legend()
 
-        plt.savefig(self.output_directory + '/figures/'
-                    + 'case_' + str(self.tag) + '.png')
-        # plt.show()
+        plt.savefig(self.output_directory + '/figures/' + str(self.tag)
+                    + '_task_' + str(task_id)
+                    + '_case_' + str(raw_num)
+                    + '.png')
+
+        plt.pause(0.5)
+        plt.close('all')
 
 
 def main1():
