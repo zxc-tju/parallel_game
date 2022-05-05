@@ -65,7 +65,9 @@ class Simulator:
             self.agent_lt.update_state(self.agent_gs, 1)
             self.agent_gs.update_state(self.agent_lt, 1)
 
-            if self.agent_gs.observed_trajectory[-1, 0] < 13 or self.agent_lt.observed_trajectory[-1, 1] > -2:
+            if self.agent_gs.observed_trajectory[-1, 0] < self.agent_lt.observed_trajectory[-1, 0] \
+                    or self.agent_lt.observed_trajectory[-1, 1] > self.agent_gs.observed_trajectory[-1, 1]:
+                self.num_step = t + 1
                 break
 
     def save_data(self, print_to_excel=False, raw_num=None, task_id=None):
