@@ -1,14 +1,13 @@
 import copy
 import math
 import numpy as np
-from matplotlib import pyplot as plt
 from agent import Agent
 from tools.utility import get_central_vertices
-import time
 import pickle
 import pandas as pd
 import xlsxwriter
 import os
+import matplotlib.pyplot as plt
 
 
 class Scenario:
@@ -115,35 +114,44 @@ class Simulator:
         track_lt = self.agent_lt.observed_trajectory
         track_gs = self.agent_gs.observed_trajectory
         pos_delta = track_gs - track_lt
+        dis_delta = np.linalg.norm(pos_delta[:, 0:2], axis=1)
 
-        "whether the interaction finished"
-        pos_x_smaller = pos_delta[pos_delta[:, 0] < 0]
-        if np.size(pos_x_smaller, 0):
-
-            "whether the LT vehicle yield"
-            pos_y_larger = pos_x_smaller[pos_x_smaller[:, 1] > 0]
-            yield_points = np.size(pos_y_larger, 0)
-            if yield_points:
-                self.semantic_result = 'yield'
-
-                "where the interaction finish"
-                ind_coll = np.where(pos_y_larger[0, 0] == pos_delta[:, 0])
-                ind = ind_coll[0] - 1
-                self.ending_point = {'lt': self.agent_lt.observed_trajectory[ind, :],
-                                     'gs': self.agent_gs.observed_trajectory[ind, :]}
-
-                print('LT vehicle yielded. \n')
-                # print('interaction finished at No.' + str(ind + 1) + ' frame\n')
-                # print('GS info:' + str(self.ending_point['gs']) + '\n')
-                # print('LT info:' + str(self.ending_point['lt']) + '\n')
-                # print('px py vx vy heading')
-
-            else:
-                self.semantic_result = 'rush'
-                print('LT vehicle rushed. \n')
+        if min(dis_delta) < 2:
+            self.semantic_result = 'crashed'
+            print('interaction is crashed. \n')
         else:
-            self.semantic_result = 'unfinished'
-            print('interaction is not finished. \n')
+            pos_x_smaller = pos_delta[pos_delta[:, 0] < 0]
+            if np.size(pos_x_smaller, 0):
+
+                "whether the LT vehicle yield"
+                pos_y_larger = pos_x_smaller[pos_x_smaller[:, 1] > 0]
+                yield_points = np.size(pos_y_larger, 0)
+                if yield_points:
+                    self.semantic_result = 'yield'
+
+                    "where the interaction finish"
+                    ind_coll = np.where(pos_y_larger[0, 0] == pos_delta[:, 0])
+                    ind = ind_coll[0] - 1
+                    self.ending_point = {'lt': self.agent_lt.observed_trajectory[ind, :],
+                                         'gs': self.agent_gs.observed_trajectory[ind, :]}
+
+                    print('LT vehicle yielded. \n')
+                    # print('interaction finished at No.' + str(ind + 1) + ' frame\n')
+                    # print('GS info:' + str(self.ending_point['gs']) + '\n')
+                    # print('LT info:' + str(self.ending_point['lt']) + '\n')
+                    # print('px py vx vy heading')
+
+                else:
+                    self.semantic_result = 'rush'
+                    print('LT vehicle rushed. \n')
+            else:
+                pos_y_smaller = pos_delta[pos_delta[:, 1] < 0]
+                if np.size(pos_y_smaller, 0):
+                    self.semantic_result = 'rush'
+                    print('LT vehicle rushed. \n')
+                else:
+                    self.semantic_result = 'unfinished'
+                    print('interaction is not finished. \n')
 
     def visualize(self, raw_num=0, task_id=0):
         cv_it, _ = get_central_vertices('lt')
