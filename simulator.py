@@ -40,29 +40,36 @@ class Simulator:
         self.agent_gs.ipv = self.scenario.ipv['gs']
         self.tag = case_tag
 
-    def ibr_iteration(self, num_step, iter_limit_lt):
+    def ibr_iteration(self, num_step=30, lt_controller_type='VGIM'):
         self.num_step = num_step
-        iter_limit_gs = 3
+        iter_limit = 3
         for t in range(self.num_step):
             print('time_step: ', t, '/', self.num_step)
 
             "==plan for left-turn=="
-            # ==interaction with parallel virtual agents
-            self.agent_lt.interact_with_parallel_virtual_agents(self.agent_gs, iter_limit_lt)
+            if lt_controller_type == 'VGIM':
 
-            # ==interaction with estimated agent
-            self.agent_lt.interact_with_estimated_agents(iter_limit_lt)
+                # ==interaction with parallel virtual agents
+                self.agent_lt.interact_with_parallel_virtual_agents(self.agent_gs, iter_limit=iter_limit)
+
+                # ==interaction with estimated agent
+                self.agent_lt.interact_with_estimated_agents(iter_limit=iter_limit)
+
+            elif lt_controller_type == 'OPT':
+
+                # ==interaction with estimated agent
+                self.agent_lt.interact_with_estimated_agents(controller_type=lt_controller_type)
 
             "==plan for go straight=="
             # ==interaction with parallel virtual agents
-            self.agent_gs.interact_with_parallel_virtual_agents(self.agent_lt, iter_limit_gs)
+            self.agent_gs.interact_with_parallel_virtual_agents(self.agent_lt, iter_limit)
 
             # ==interaction with estimated agent
-            self.agent_gs.interact_with_estimated_agents(iter_limit_gs)
+            self.agent_gs.interact_with_estimated_agents(iter_limit)
 
             "==update state=="
-            self.agent_lt.update_state(self.agent_gs, 1)
-            self.agent_gs.update_state(self.agent_lt, 1)
+            self.agent_lt.update_state(self.agent_gs, controller_type=lt_controller_type)
+            self.agent_gs.update_state(self.agent_lt, controller_type='VGIM')
 
             if self.agent_gs.observed_trajectory[-1, 0] < self.agent_lt.observed_trajectory[-1, 0] \
                     or self.agent_lt.observed_trajectory[-1, 1] > self.agent_gs.observed_trajectory[-1, 1]:
@@ -153,7 +160,7 @@ class Simulator:
                     self.semantic_result = 'unfinished'
                     print('interaction is not finished. \n')
 
-    def visualize(self, raw_num=0, task_id=0):
+    def visualize(self, raw_num=0, task_id=0, controller_type='VGIM'):
         cv_it, _ = get_central_vertices('lt')
         cv_gs, _ = get_central_vertices('gs')
 
@@ -209,7 +216,7 @@ class Simulator:
         min_x = min(min_x_lt, min_x_gs)
         min_y = min(min_y_lt, min_y_gs)
 
-        ax1.set(xlim=[min_x-3, max_x+3], ylim=[min_y-3, max_y+3])
+        ax1.set(xlim=[min_x - 3, max_x + 3], ylim=[min_y - 3, max_y + 3])
 
         "====show IPV and uncertainty===="
         ax2 = fig.add_subplot(132, title='ipv')
@@ -286,6 +293,7 @@ def main1():
     # tag = 'round2-' + str(r)+'-' + str(c)
 
     tag = 'round3-OPT-safe-gs-1'  # TODO
+    controller_type = 'OPT'
 
     # initial state of the left-turn vehicle
     init_position_lt = [11, -5.8]  # TODO
@@ -306,9 +314,7 @@ def main1():
     simu = Simulator(28)
     simu.initialize(simu_scenario, tag)
 
-    steps = 20
-    iteration_lt = 3
-    simu.ibr_iteration(steps, iteration_lt)
+    simu.ibr_iteration(lt_controller_type=controller_type)
     simu.post_process()
     simu.save_data()
     simu.visualize()
@@ -377,11 +383,11 @@ def main2():
         simu.initialize(simu_scenario, tag)
 
         if tag in {'VGIM-coop', 'VGIM-dyna'}:
-            iteration_lt = 3
+            controller_type = 'VGIM'
         else:
-            iteration_lt = 0
+            controller_type = 'OPT'
 
-        simu.ibr_iteration(max_steps, iteration_lt)
+        simu.ibr_iteration(lt_controller_type=controller_type)
         simu.post_process()
         simu.save_data(print_to_excel=True, raw_num=i, task_id=task_id)
         simu.visualize(raw_num=i, task_id=task_id)

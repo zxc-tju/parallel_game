@@ -122,22 +122,26 @@ class Agent:
             virtual_agent_track_collection.append(virtual_inter_agent.trj_solution)
         self.estimated_inter_agent.virtual_track_collection.append(virtual_agent_track_collection)
 
-    def interact_with_estimated_agents(self, iter_limit=10):
+    def interact_with_estimated_agents(self, iter_limit=10, controller_type='VGIM'):
         """
         interact with the estimated interacting agent. this agent's IPV is continuously updated.
         :return:
         """
-        count_iter = 0  # count number of iteration
-        last_self_track = np.zeros_like(self.trj_solution)  # initialize a track reservation
-        while np.linalg.norm(self.trj_solution[:, 0:2] - last_self_track[:, 0:2]) > 1e-3:
-            count_iter += 1
-            last_self_track = self.trj_solution
-            self.solve_game_IBR(self.estimated_inter_agent.trj_solution)
+        if controller_type == 'VGIM':
+            count_iter = 0  # count number of iteration
+            last_self_track = np.zeros_like(self.trj_solution)  # initialize a track reservation
+            while np.linalg.norm(self.trj_solution[:, 0:2] - last_self_track[:, 0:2]) > 1e-3:
+                count_iter += 1
+                last_self_track = self.trj_solution
+                self.solve_game_IBR(self.estimated_inter_agent.trj_solution)
+                self.estimated_inter_agent.solve_game_IBR(self.trj_solution)
+                if count_iter > iter_limit:  # limited to less than 10 iterations
+                    break
+        elif controller_type == 'OPT':
             self.estimated_inter_agent.solve_game_IBR(self.trj_solution)
-            if count_iter > iter_limit:  # limited to less than 10 iterations
-                break
+            self.solve_game_IBR(self.estimated_inter_agent.trj_solution)
 
-    def update_state(self, inter_agent, method):
+    def update_state(self, inter_agent, controller_type='VGIM'):
         self.position = self.trj_solution[1, 0:2]
         self.velocity = self.trj_solution[1, 2:4]
         self.heading = self.trj_solution[1, -1]
@@ -155,13 +159,14 @@ class Agent:
         self.trj_solution_collection.append(self.trj_solution)
         self.action_collection.append(self.action)
 
-        # update IPV
-        current_time = np.size(self.observed_trajectory, 0) - 2
-        if current_time > 1:
-            start_time = max(0, current_time - 6)
-            time_duration = current_time - start_time
+        if controller_type == 'VGIM':
+            # update IPV
+            current_time = np.size(self.observed_trajectory, 0) - 2
+            if current_time > 1:
+                start_time = max(0, current_time - 6)
+                time_duration = current_time - start_time
 
-            if method == 1:
+                # if method == 1:
                 "====parallel game method===="
                 candidates = self.estimated_inter_agent.virtual_track_collection[start_time]
                 virtual_track_collection = []
@@ -180,56 +185,56 @@ class Agent:
                 self.estimated_inter_agent.ipv_error_collection.append(error)
                 "====end of parallel game method===="
 
-            elif method == 2:
-                "====rational perspective method===="
-
-                # rearrange conducted actions at each time step
-                # u_list_self = []
-                # u_list_inter = []
-                # for i in range(start_time, current_time):
-                #     u_list_self.append([self.action_collection[i][0, 0], self.action_collection[i][0, 1]])
-                #     u_list_inter.append(
-                #         [inter_agent.action_collection[i][0, 0], inter_agent.action_collection[i][0, 1]])
+                # elif method == 2:
+                #     "====rational perspective method===="
                 #
-                # # initial state
-                # init_state_4_kine_self = self.observed_trajectory[start_time, :]
-                # init_state_4_kine_inter = inter_agent.observed_trajectory[start_time, :]
-                #
-                # u_conducted_self = np.array(u_list_self)
-                # u_conducted_inter = np.array(u_list_inter)
-                #
-                # # info at margin1
-                # u_margin_self1 = u_conducted_self * 1.01
-                # u_margin_inter1 = u_conducted_inter * 1.01
-                # track_margin_inter1 = kinematic_model(u_margin_inter1, init_state_4_kine_inter, time_duration + 1, dt)
-                # track_margin_self1 = kinematic_model(u_margin_self1, init_state_4_kine_self, time_duration + 1, dt)
-                # cost_inerior_margin1 = cal_interior_cost(track_margin_inter1[:, 0:2], inter_agent.target)
-                # cost_group_margin1 = cal_group_cost([track_margin_inter1[:, 0:2], track_margin_self1[:, 0:2]])
-                #
-                # # # info at margin2
-                # # u_margin_self2 = u_conducted_self * 0.999
-                # # u_margin_inter2 = u_conducted_inter * 0.999
-                # # track_margin_inter2 = kinematic_model(u_margin_inter2, init_state_4_kine_inter, time_duration + 1, dt)
-                # # track_margin_self2 = kinematic_model(u_margin_self2, init_state_4_kine_self, time_duration + 1, dt)
-                # # cost_inerior_margin2 = cal_interior_cost(u_margin_inter2,
-                # #                                          track_margin_inter2[:, 0:2],
-                # #                                          inter_agent.target)
-                # # cost_group_margin2 = cal_group_cost([track_margin_inter2[:, 0:2], track_margin_self2[:, 0:2]])
-                # # # atan
-                # # self.estimated_inter_agent.ipv = - math.atan((cost_inerior_margin1 - cost_inerior_margin2)
-                # #                                              / (cost_group_margin1 - cost_group_margin2))
-                #
-                # # info at actual solution
-                # track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
-                # track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
-                # cost_inerior = cal_interior_cost(track_actual_inter, inter_agent.target)
-                # cost_group = cal_group_cost([track_actual_inter, track_actual_self])
-                # # atan
-                # self.estimated_inter_agent.ipv = - math.atan((cost_inerior - cost_inerior_margin1)
-                #                                              / (cost_group - cost_group_margin1))
-                # # save updated ipv and estimation error
-                # self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
-                "====end of rational perspective method===="
+                #     # rearrange conducted actions at each time step
+                #     # u_list_self = []
+                #     # u_list_inter = []
+                #     # for i in range(start_time, current_time):
+                #     #     u_list_self.append([self.action_collection[i][0, 0], self.action_collection[i][0, 1]])
+                #     #     u_list_inter.append(
+                #     #         [inter_agent.action_collection[i][0, 0], inter_agent.action_collection[i][0, 1]])
+                #     #
+                #     # # initial state
+                #     # init_state_4_kine_self = self.observed_trajectory[start_time, :]
+                #     # init_state_4_kine_inter = inter_agent.observed_trajectory[start_time, :]
+                #     #
+                #     # u_conducted_self = np.array(u_list_self)
+                #     # u_conducted_inter = np.array(u_list_inter)
+                #     #
+                #     # # info at margin1
+                #     # u_margin_self1 = u_conducted_self * 1.01
+                #     # u_margin_inter1 = u_conducted_inter * 1.01
+                #     # track_margin_inter1 = kinematic_model(u_margin_inter1, init_state_4_kine_inter, time_duration + 1, dt)
+                #     # track_margin_self1 = kinematic_model(u_margin_self1, init_state_4_kine_self, time_duration + 1, dt)
+                #     # cost_inerior_margin1 = cal_interior_cost(track_margin_inter1[:, 0:2], inter_agent.target)
+                #     # cost_group_margin1 = cal_group_cost([track_margin_inter1[:, 0:2], track_margin_self1[:, 0:2]])
+                #     #
+                #     # # # info at margin2
+                #     # # u_margin_self2 = u_conducted_self * 0.999
+                #     # # u_margin_inter2 = u_conducted_inter * 0.999
+                #     # # track_margin_inter2 = kinematic_model(u_margin_inter2, init_state_4_kine_inter, time_duration + 1, dt)
+                #     # # track_margin_self2 = kinematic_model(u_margin_self2, init_state_4_kine_self, time_duration + 1, dt)
+                #     # # cost_inerior_margin2 = cal_interior_cost(u_margin_inter2,
+                #     # #                                          track_margin_inter2[:, 0:2],
+                #     # #                                          inter_agent.target)
+                #     # # cost_group_margin2 = cal_group_cost([track_margin_inter2[:, 0:2], track_margin_self2[:, 0:2]])
+                #     # # # atan
+                #     # # self.estimated_inter_agent.ipv = - math.atan((cost_inerior_margin1 - cost_inerior_margin2)
+                #     # #                                              / (cost_group_margin1 - cost_group_margin2))
+                #     #
+                #     # # info at actual solution
+                #     # track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
+                #     # track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
+                #     # cost_inerior = cal_interior_cost(track_actual_inter, inter_agent.target)
+                #     # cost_group = cal_group_cost([track_actual_inter, track_actual_self])
+                #     # # atan
+                #     # self.estimated_inter_agent.ipv = - math.atan((cost_inerior - cost_inerior_margin1)
+                #     #                                              / (cost_group - cost_group_margin1))
+                #     # # save updated ipv and estimation error
+                #     # self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
+                #     "====end of rational perspective method===="
 
     def estimate_self_ipv_in_NDS(self, self_actual_track, inter_track):
         self_virtual_track_collection = []
