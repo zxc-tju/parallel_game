@@ -116,7 +116,7 @@ class Simulator:
         pos_delta = track_gs - track_lt
         dis_delta = np.linalg.norm(pos_delta[:, 0:2], axis=1)
 
-        if min(dis_delta) < 2:
+        if min(dis_delta) < 1:
             self.semantic_result = 'crashed'
             print('interaction is crashed. \n')
         else:
@@ -255,12 +255,13 @@ class Simulator:
         ax2.legend()
         ax3.legend()
 
+        # plt.ioff()
         plt.savefig(self.output_directory + '/figures/' + str(self.tag)
                     + '_task_' + str(task_id)
                     + '_case_' + str(raw_num)
                     + '.png')
 
-        plt.pause(0.5)
+        plt.pause(1)
         plt.close('all')
 
 
@@ -351,14 +352,14 @@ def main2():
         init_velocity_lt = [1.5, 0.23]
         init_heading_lt = math.pi / 4
         if tag in {'VGIM-coop', 'OPT-coop'}:
-            ipv_lt = math.pi / 4
+            ipv_lt = math.pi / 8
         elif tag in {'OPT-safe'}:
-            ipv_lt = 3 * math.pi / 8
+            ipv_lt = math.pi / 4
         else:
             if init_gs_px > 30:
                 ipv_lt = 0
             else:
-                ipv_lt = math.pi / 4
+                ipv_lt = math.pi / 8
 
         simu_scenario = Scenario([init_position_lt, init_position_gs],
                                  [init_velocity_lt, init_velocity_gs],
@@ -367,6 +368,7 @@ def main2():
         simu = Simulator(29)
 
         print('==== start main for random interaction ====')
+        print('task type: ', tag)
         print('task id: ' + str(task_id))
         print('case id: ' + str(i))
         print('gs_px: ', init_gs_px)
