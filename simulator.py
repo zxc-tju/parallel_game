@@ -22,7 +22,7 @@ class Simulator:
     def __init__(self, version):
         self.semantic_result = None
         self.version = version
-        self.output_directory = './outputs/simulation/version' + str(self.version)
+        self.output_directory = '../data/3_parallel_game_outputs/simulation/version' + str(self.version)
         self.tag = None
         self.scenario = None
         self.agent_lt = None
