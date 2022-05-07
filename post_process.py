@@ -16,13 +16,12 @@ save_fig = 0
 save_data = 0
 
 
-def get_results(gs_ipv, lt_ipv):
-
+def get_results(rd, case_id):
     # import data
-    version_num = '25'
+    version_num = '27'
     filename = './outputs/simulation/version' + str(version_num) + '/data/agents_info' \
-               + '_gs_' + str(gs_ipv) \
-               + '_lt_' + str(lt_ipv) \
+               + '_round_' + str(rd) \
+               + '_case_' + str(case_id) \
                + '.pckl'
     f = open(filename, 'rb')
     agent_lt, agent_gs = pickle.load(f)
@@ -32,7 +31,7 @@ def get_results(gs_ipv, lt_ipv):
     # lt track (observed and planned)
     lt_ob_trj = agent_lt.observed_trajectory[:, 0:2]
     lt_trj_coll = agent_lt.trj_solution_collection[0][:, 0:2]
-    for i in range(int(len(lt_ob_trj)/2-1)):
+    for i in range(int(len(lt_ob_trj) / 2 - 1)):
         coll_temp = agent_lt.trj_solution_collection[(i + 1) * 2][:, 0:2]
         lt_trj_coll = np.concatenate([lt_trj_coll, coll_temp], axis=1)
     v_lt = np.linalg.norm(agent_lt.observed_trajectory[:, 2:4], axis=1)
@@ -41,7 +40,7 @@ def get_results(gs_ipv, lt_ipv):
     # gs track (observed and planned)
     gs_ob_trj = agent_gs.observed_trajectory[:, 0:2]
     gs_trj_coll = agent_gs.trj_solution_collection[0][:, 0:2]
-    for i in range(int(len(lt_ob_trj)/2-1)):
+    for i in range(int(len(lt_ob_trj) / 2 - 1)):
         coll_temp = agent_gs.trj_solution_collection[(i + 1) * 2][:, 0:2]
         gs_trj_coll = np.concatenate([gs_trj_coll, coll_temp], axis=1)
     v_gs = np.linalg.norm(agent_gs.observed_trajectory[:, 2:4], axis=1)
@@ -49,7 +48,7 @@ def get_results(gs_ipv, lt_ipv):
 
     # link from gs to lt
     link = np.concatenate([[lt_ob_trj[0, :]], [gs_ob_trj[0, :]]])
-    for i in range(int(len(lt_ob_trj)/2)):
+    for i in range(int(len(lt_ob_trj) / 2)):
         link = np.concatenate([link, np.concatenate([[lt_ob_trj[(i + 1) * 2, :]],
                                                      [gs_ob_trj[(i + 1) * 2, :]]])], axis=1)
     # process data for figures
@@ -81,7 +80,7 @@ def get_results(gs_ipv, lt_ipv):
         dis2cv_lt_min = np.amin(dis2cv_lt_norm)
         cv_index_lt = np.where(dis2cv_lt_min == dis2cv_lt_norm)
         long_progress_lt = progress_lt[cv_index_lt]
-        ttcp_lt.append((long_progress_lt_cp - long_progress_lt)/v_lt_smoothed[t])
+        ttcp_lt.append((long_progress_lt_cp - long_progress_lt) / v_lt_smoothed[t])
 
         dis2cv_gs = cv_gs - gs_ob_trj[t, 0:2]
         dis2cv_gs_norm = np.linalg.norm(dis2cv_gs, axis=1)
@@ -110,8 +109,8 @@ def get_results(gs_ipv, lt_ipv):
         df_estimated_lt_ipv_error = pd.DataFrame(agent_gs.estimated_inter_agent.ipv_error_collection, columns=['error'])
 
         with pd.ExcelWriter('outputs/simulation/version' + str(version_num) + '/excel/output'
-                            + '_gs_' + str(gs_ipv)
-                            + '_lt_' + str(lt_ipv) + '.xlsx',
+                            + '_round_' + str(rd)
+                            + '_case_' + str(case_id) + '.xlsx',
                             mode='a',
                             if_sheet_exists="overlay") as writer:
             df_lt_ob_trj.to_excel(writer, index=False, sheet_name='lt_ob_trj')
@@ -121,7 +120,7 @@ def get_results(gs_ipv, lt_ipv):
             df_link.to_excel(writer, index=False, sheet_name='link')
             df_pet.to_excel(writer, index=False, sheet_name='PET')
             df_estimated_gs_ipv.to_excel(writer, index=False, startcol=0, sheet_name='ipv_gs')
-            df_estimated_gs_ipv_error.to_excel(writer, index=False,  startcol=1, sheet_name='ipv_gs')
+            df_estimated_gs_ipv_error.to_excel(writer, index=False, startcol=1, sheet_name='ipv_gs')
             df_estimated_lt_ipv.to_excel(writer, index=False, startcol=0, sheet_name='ipv_lt')
             df_estimated_lt_ipv_error.to_excel(writer, index=False, startcol=1, sheet_name='ipv_lt')
 
@@ -186,7 +185,7 @@ def get_results(gs_ipv, lt_ipv):
                  [lt_ob_trj[t, 1], gs_ob_trj[t, 1]],
                  color='gray',
                  alpha=0.1)
-    ax1.set_title('gs_' + str(gs_ipv) + '_lt_' + str(lt_ipv), fontsize=12)
+    ax1.set_title('gs_' + str(agent_gs.ipv) + '_lt_' + str(agent_lt.ipv), fontsize=12)
 
     "====ipv estimation===="
     x_range = np.array(range(len(agent_lt.estimated_inter_agent.ipv_collection)))
@@ -210,7 +209,7 @@ def get_results(gs_ipv, lt_ipv):
                          color='blue',
                          label='estimated gs IPV')
     # ground truth
-    ax2.plot(x_range, gs_ipv * math.pi / 8 * np.ones_like(x_range),
+    ax2.plot(x_range, agent_gs.ipv * np.ones_like(x_range),
              linewidth=5,
              label='actual gs IPV')
 
@@ -234,7 +233,7 @@ def get_results(gs_ipv, lt_ipv):
                          color='red',
                          label='estimated lt IPV')
     # ground truth
-    ax2.plot(x_range, lt_ipv * math.pi / 8 * np.ones_like(x_range),
+    ax2.plot(x_range, agent_lt.ipv * np.ones_like(x_range),
              linewidth=5,
              label='actual lt IPV')
 
@@ -247,8 +246,8 @@ def get_results(gs_ipv, lt_ipv):
     # save figure
     if save_fig:
         plt.savefig('./outputs/simulation/version' + str(version_num) + '/figures/'
-                    + 'gs=' + str(gs_ipv)
-                    + '_lt=' + str(lt_ipv) + '.png')
+                    + '_round_' + str(rd)
+                    + '_case_' + str(case_id) + '.png')
         plt.clf()
         plt.close()
         gc.collect()
@@ -257,7 +256,10 @@ def get_results(gs_ipv, lt_ipv):
 if __name__ == '__main__':
     # ipv_list = [-3, -2, -1, 0, 1, 2, 3]
     # ipv_list = [-2, 0, 2]
-    ipv_list = [-2]
-    for gs in [2]:
-        for lt in ipv_list:
-            get_results(gs, lt)
+    # ipv_list = [-2]
+    # for gs in [2]:
+    #     for lt in ipv_list:
+    #         get_results(gs, lt)
+    rd = 1
+    caseid = 4
+    get_results(rd, caseid)
