@@ -22,7 +22,7 @@ class Simulator:
     def __init__(self, version):
         self.semantic_result = None
         self.version = version
-        self.output_directory = './outputs/simulation/version' + str(self.version)
+        self.output_directory = '../data/3_parallel_game_outputs/simulation/version' + str(self.version)
         self.tag = None
         self.scenario = None
         self.agent_lt = None
@@ -220,9 +220,7 @@ class Simulator:
 
         "====show IPV and uncertainty===="
         ax2 = fig.add_subplot(132, title='ipv')
-        x_range = np.array(range(len(self.agent_lt.estimated_inter_agent.ipv_collection)))
-        y_lt = np.array(self.agent_gs.estimated_inter_agent.ipv_collection)
-        y_gs = np.array(self.agent_lt.estimated_inter_agent.ipv_collection)
+        x_range = np.array(range(len(self.agent_gs.estimated_inter_agent.ipv_collection)))
 
         # actual ipv
         ax2.plot(x_range, self.agent_lt.ipv * np.ones_like(x_range),
@@ -235,20 +233,24 @@ class Simulator:
                  label='actual gs IPV')
 
         # estimated ipv
-        ax2.plot(x_range, y_lt, color='red', label='estimated lt IPV')
-        ax2.plot(x_range, y_gs, color='blue', label='estimated gs IPV')
+        if controller_type == 'VGIM':
+            y_gs = np.array(self.agent_lt.estimated_inter_agent.ipv_collection)
+            ax2.plot(x_range, y_gs, color='blue', label='estimated gs IPV')
+            # error bar
+            y_error_gs = np.array(self.agent_gs.estimated_inter_agent.ipv_error_collection)
+            ax2.fill_between(x_range, y_gs - y_error_gs, y_gs + y_error_gs,
+                             alpha=0.3,
+                             color='blue',
+                             label='lt IPV error')
 
+        y_lt = np.array(self.agent_gs.estimated_inter_agent.ipv_collection)
+        ax2.plot(x_range, y_lt, color='red', label='estimated lt IPV')
         # error bar
-        y_error_lt = np.array(self.agent_lt.estimated_inter_agent.ipv_error_collection)
+        y_error_lt = np.array(self.agent_gs.estimated_inter_agent.ipv_error_collection)
         ax2.fill_between(x_range, y_lt - y_error_lt, y_lt + y_error_lt,
                          alpha=0.3,
                          color='red',
                          label='gs IPV error')
-        y_error_gs = np.array(self.agent_gs.estimated_inter_agent.ipv_error_collection)
-        ax2.fill_between(x_range, y_gs - y_error_gs, y_gs + y_error_gs,
-                         alpha=0.3,
-                         color='blue',
-                         label='lt IPV error')
 
         "====show velocity===="
         ax3 = fig.add_subplot(133, title='velocity')
@@ -268,8 +270,8 @@ class Simulator:
                     + '_case_' + str(raw_num)
                     + '.png')
 
-        plt.pause(1)
-        plt.close('all')
+        # plt.pause(1)
+        # plt.close('all')
 
 
 def main1():
@@ -333,25 +335,27 @@ def main2():
     4*. straight-through traffic are endless and generated with random ipv and gap
     :return:
     """
-    for i in range(10):
+    for i in range(1):
 
-        task_id = 4
-        max_steps = 30
+        task_id = 1
+        # max_steps = 30
 
-        tag = 'VGIM-coop'
+        # tag = 'VGIM-coop'
         # tag = 'VGIM-dyna'
         # tag = 'OPT-coop'
         # tag = 'OPT-safe'
-        # tag = 'OPT-dyna'
+        tag = 'OPT-dyna'
 
         # generate gs position
-        init_gs_px = 10 * (np.random.random() - 0.5) + 28
+        init_gs_px = 15 * (np.random.random() - 0.5) + 25.5
+        # init_gs_px = 30
 
         # initial state of the go-straight vehicle
         init_position_gs = [init_gs_px, -2]
         init_velocity_gs = [-5, 0]
         init_heading_gs = math.pi
-        ipv_gs = math.pi / 4 * 2 * (np.random.random() - 0.5)
+        ipv_gs = math.pi * 3 / 16 * 2 * (np.random.random() - 0.5) + math.pi / 16
+        # ipv_gs = 0.4158454196582392
 
         # initial state of the left-turn vehicle
         init_position_lt = [11, -5.8]
@@ -360,7 +364,7 @@ def main2():
         if tag in {'VGIM-coop', 'OPT-coop'}:
             ipv_lt = math.pi / 8
         elif tag in {'OPT-safe'}:
-            ipv_lt = math.pi / 4
+            ipv_lt = 3 * math.pi / 16
         else:
             if init_gs_px > 30:
                 ipv_lt = 0
@@ -371,7 +375,7 @@ def main2():
                                  [init_velocity_lt, init_velocity_gs],
                                  [init_heading_lt, init_heading_gs],
                                  [ipv_lt, ipv_gs])
-        simu = Simulator(29)
+        simu = Simulator(32)
 
         print('==== start main for random interaction ====')
         print('task type: ', tag)
@@ -390,7 +394,7 @@ def main2():
         simu.ibr_iteration(lt_controller_type=controller_type)
         simu.post_process()
         simu.save_data(print_to_excel=True, raw_num=i, task_id=task_id)
-        simu.visualize(raw_num=i, task_id=task_id)
+        simu.visualize(raw_num=i, task_id=task_id, controller_type=controller_type)
 
 
 if __name__ == '__main__':

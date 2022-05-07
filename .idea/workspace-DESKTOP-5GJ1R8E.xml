@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="b6d67249-dfb2-4c55-9ac1-0c5777aa3a57" name="Default Changelist" comment="modify weight of interior cost &amp; change delta IPV into pi/8">
+      <change beforePath="$PROJECT_DIR$/NDS_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/NDS_analysis.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="ProjectId" id="1xizMgK0xOtniit6ZDG0Ki1zvOC" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/outputs" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\3_parallel_game\outputs" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs\version8" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs\version7" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs\version6" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\3_parallel_game\outputs\Simulation" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\3_parallel_game\outputs\version_test\data" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\3_parallel_game\outputs\version_test" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game\outputs\old" />
+      <recent name="D:\OneDrive - tongji.edu.cn\Desktop\Study\1_Codes\4_parallel_game" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.NDS_analysis">
+    <configuration name="NDS_analysis" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="3_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/NDS_analysis.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="gridspec" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="3_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../../../TEMP" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../../../TEMP/gridspec.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="3_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="post_process" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="3_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/post_process.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="slsqp" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="3_parallel_game" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../envs/pg38/Lib/site-packages/scipy/optimize" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../envs/pg38/Lib/site-packages/scipy/optimize/slsqp.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.NDS_analysis" />
+      <item itemvalue="Python.gridspec" />
+      <item itemvalue="Python.main" />
+      <item itemvalue="Python.post_process" />
+      <item itemvalue="Python.slsqp" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.NDS_analysis" />
+        <item itemvalue="Python.post_process" />
+        <item itemvalue="Python.NDS_analysis" />
+        <item itemvalue="Python.NDS_analysis" />
+        <item itemvalue="Python.NDS_analysis" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b6d67249-dfb2-4c55-9ac1-0c5777aa3a57" name="Default Changelist" comment="" />
+      <created>1630852654065</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1630852654065</updated>
+    </task>
+    <task id="LOCAL-00025" summary="before run version">
+      <created>1632731929865</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1632731929866</updated>
+    </task>
+    <task id="LOCAL-00026" summary="before run version 5">
+      <created>1632790252489</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1632790252489</updated>
+    </task>
+    <task id="LOCAL-00027" summary="before run version 6">
+      <created>1632813498123</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1632813498123</updated>
+    </task>
+    <task id="LOCAL-00028" summary="reconstruct main">
+      <created>1633150586103</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1633150586103</updated>
+    </task>
+    <task id="LOCAL-00029" summary="reconstruct main">
+      <created>1633150646297</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1633150646297</updated>
+    </task>
+    <task id="LOCAL-00030" summary="update NDS analysis">
+      <created>1633168299964</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1633168299964</updated>
+    </task>
+    <task id="LOCAL-00031" summary="update agent">
+      <created>1633168679959</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1633168679959</updated>
+    </task>
+    <task id="LOCAL-00032" summary="change ipv generation policy and run version 7">
+      <created>1633169920211</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1633169920211</updated>
+    </task>
+    <task id="LOCAL-00033" summary="fix bugs">
+      <created>1633172025454</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1633172025454</updated>
+    </task>
+    <task id="LOCAL-00034" summary="rollback ipv generation method (-4：4)">
+      <created>1633177364563</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1633177364563</updated>
+    </task>
+    <task id="LOCAL-00035" summary="fix bug in cal relative distance">
+      <created>1633185756742</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1633185756743</updated>
+    </task>
+    <task id="LOCAL-00036" summary="add visualization in NDS analysis">
+      <created>1633247860093</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1633247860093</updated>
+    </task>
+    <task id="LOCAL-00037" summary="modify figures and change some cost parameters">
+      <created>1633267146412</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1633267146412</updated>
+    </task>
+    <task id="LOCAL-00038" summary="modify illustration">
+      <created>1633333818089</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1633333818089</updated>
+    </task>
+    <task id="LOCAL-00039" summary="modify illustration">
+      <created>1633333856686</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1633333856686</updated>
+    </task>
+    <task id="LOCAL-00040" summary="add background picture">
+      <created>1633333914023</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1633333914023</updated>
+    </task>
+    <task id="LOCAL-00041" summary="add rational perspective method for updating ipv">
+      <created>1633356745785</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1633356745785</updated>
+    </task>
+    <task id="LOCAL-00042" summary="fix bugs in plot">
+      <created>1633360373908</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1633360373908</updated>
+    </task>
+    <task id="LOCAL-00043" summary="finish rational perspective method">
+      <created>1633430707513</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1633430707513</updated>
+    </task>
+    <task id="LOCAL-00044" summary="modify plot in post process">
+      <created>1633438478347</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1633438478347</updated>
+    </task>
+    <task id="LOCAL-00045" summary="modify ipv update method 2">
+      <created>1633438615091</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1633438615091</updated>
+    </task>
+    <task id="LOCAL-00046" summary="modify interior cost func">
+      <created>1633585212503</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1633585212503</updated>
+    </task>
+    <task id="LOCAL-00047" summary="before run version11.&#10;this version runs for analyzing performance between agents with different pairs of ipv">
+      <created>1633620881948</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1633620881948</updated>
+    </task>
+    <task id="LOCAL-00048" summary="add visualize NDS">
+      <created>1633930957752</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1633930957752</updated>
+    </task>
+    <task id="LOCAL-00049" summary="update visualize NDS">
+      <created>1633931652100</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1633931652100</updated>
+    </task>
+    <task id="LOCAL-00050" summary="update visualize NDS">
+      <created>1633933678838</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1633933678838</updated>
+    </task>
+    <task id="LOCAL-00051" summary="fix central vertices and change initial state">
+      <created>1634027519628</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1634027519628</updated>
+    </task>
+    <task id="LOCAL-00052" summary="modify illustration">
+      <created>1634027623182</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1634027623182</updated>
+    </task>
+    <task id="LOCAL-00053" summary="add git ignore">
+      <created>1634027848231</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1634027848231</updated>
+    </task>
+    <task id="LOCAL-00054" summary="upload results of version11">
+      <created>1634027914941</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1634027914941</updated>
+    </task>
+    <task id="LOCAL-00055" summary="add codes for saving figures &amp; before run version14">
+      <created>1634124465288</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1634124465288</updated>
+    </task>
+    <task id="LOCAL-00056" summary="version 15">
+      <created>1636450304080</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1636450304081</updated>
+    </task>
+    <task id="LOCAL-00057" summary="version 16">
+      <created>1636472589676</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1636472589677</updated>
+    </task>
+    <task id="LOCAL-00058" summary="version 17">
+      <created>1636472961089</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1636472961089</updated>
+    </task>
+    <task id="LOCAL-00059" summary="version 18">
+      <created>1636509454650</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1636509454650</updated>
+    </task>
+    <task id="LOCAL-00060" summary="fix a bug in cal_utility &amp; before rerun version 17 &amp; 18">
+      <created>1637154003432</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1637154003432</updated>
+    </task>
+    <task id="LOCAL-00061" summary="update cv generation in nds analysis">
+      <created>1637160715354</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1637160715354</updated>
+    </task>
+    <task id="LOCAL-00062" summary="modify weight of interior cost &amp; change delta IPV into pi/8">
+      <created>1637512061942</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1637512061942</updated>
+    </task>
+    <task id="LOCAL-00063" summary="update NDS analysis">
+      <created>1638423780081</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1638423780081</updated>
+    </task>
+    <task id="LOCAL-00064" summary="add savitzky_golay">
+      <created>1638423800881</created>
+      <option name="number" value="00064" />
+      <option name="presentableId" value="LOCAL-00064" />
+      <option name="project" value="LOCAL" />
+      <updated>1638423800881</updated>
+    </task>
+    <task id="LOCAL-00065" summary="add PET calculation">
+      <created>1638423872290</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1638423872290</updated>
+    </task>
+    <task id="LOCAL-00066" summary="other updates">
+      <created>1638423907913</created>
+      <option name="number" value="00066" />
+      <option name="presentableId" value="LOCAL-00066" />
+      <option name="project" value="LOCAL" />
+      <updated>1638423907913</updated>
+    </task>
+    <task id="LOCAL-00067" summary="fix error in data info. description">
+      <created>1641899896172</created>
+      <option name="number" value="00067" />
+      <option name="presentableId" value="LOCAL-00067" />
+      <option name="project" value="LOCAL" />
+      <updated>1641899896172</updated>
+    </task>
+    <task id="LOCAL-00068" summary="output mean ipv of each type of events">
+      <created>1642675148784</created>
+      <option name="number" value="00068" />
+      <option name="presentableId" value="LOCAL-00068" />
+      <option name="project" value="LOCAL" />
+      <updated>1642675148785</updated>
+    </task>
+    <task id="LOCAL-00069" summary="add some notes &amp; funcs">
+      <created>1645165882885</created>
+      <option name="number" value="00069" />
+      <option name="presentableId" value="LOCAL-00069" />
+      <option name="project" value="LOCAL" />
+      <updated>1645165882885</updated>
+    </task>
+    <task id="LOCAL-00070" summary="enrich data recorded when analyzing dns">
+      <created>1645879873804</created>
+      <option name="number" value="00070" />
+      <option name="presentableId" value="LOCAL-00070" />
+      <option name="project" value="LOCAL" />
+      <updated>1645879873804</updated>
+    </task>
+    <task id="LOCAL-00071" summary="fix minor bugs in show_ipv_distribution">
+      <created>1645970311750</created>
+      <option name="number" value="00071" />
+      <option name="presentableId" value="LOCAL-00071" />
+      <option name="project" value="LOCAL" />
+      <updated>1645970311750</updated>
+    </task>
+    <task id="LOCAL-00072" summary="update the method for finding crossing event">
+      <created>1645971324616</created>
+      <option name="number" value="00072" />
+      <option name="presentableId" value="LOCAL-00072" />
+      <option name="project" value="LOCAL" />
+      <updated>1645971324616</updated>
+    </task>
+    <task id="LOCAL-00073" summary="fix a minor bug in method for finding crossing event">
+      <created>1645971621535</created>
+      <option name="number" value="00073" />
+      <option name="presentableId" value="LOCAL-00073" />
+      <option name="project" value="LOCAL" />
+      <updated>1645971621535</updated>
+    </task>
+    <option name="localTasksCounter" value="74" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="add visualize NDS" />
+    <MESSAGE value="update visualize NDS" />
+    <MESSAGE value="fix central vertices and change initial state" />
+    <MESSAGE value="modify illustration" />
+    <MESSAGE value="add git ignore" />
+    <MESSAGE value="upload results of version11" />
+    <MESSAGE value="add codes for saving figures &amp; before run version14" />
+    <MESSAGE value="version 15" />
+    <MESSAGE value="version 16" />
+    <MESSAGE value="version 17" />
+    <MESSAGE value="version 18" />
+    <MESSAGE value="fix a bug in cal_utility &amp; before rerun version 17 &amp; 18" />
+    <MESSAGE value="update cv generation in nds analysis" />
+    <MESSAGE value="modify weight of interior cost &amp; change delta IPV into pi/8" />
+    <MESSAGE value="update NDS analysis" />
+    <MESSAGE value="add savitzky_golay" />
+    <MESSAGE value="add PET calculation" />
+    <MESSAGE value="other updates" />
+    <MESSAGE value="fix error in data info. description" />
+    <MESSAGE value="output mean ipv of each type of events" />
+    <MESSAGE value="add some notes &amp; funcs" />
+    <MESSAGE value="enrich data recorded when analyzing dns" />
+    <MESSAGE value="fix minor bugs in show_ipv_distribution" />
+    <MESSAGE value="update the method for finding crossing event" />
+    <MESSAGE value="fix a minor bug in method for finding crossing event" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix a minor bug in method for finding crossing event" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/post_process.py</url>
+          <line>36</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/post_process.py</url>
+          <line>103</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="lt_info" />
+      </configuration>
+    </watches-manager>
+  </component>
+</project>

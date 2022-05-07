@@ -20,7 +20,7 @@ if TARGET == 'nds analysis':
     dt = 0.12  # stable for nds analysis
 elif TARGET == 'simulation':
     dt = 0.1  # stable for simulation
-TRACK_LEN = 10
+TRACK_LEN = 20
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
