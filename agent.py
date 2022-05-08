@@ -20,7 +20,7 @@ if TARGET == 'nds analysis':
     dt = 0.12  # stable for nds analysis
 elif TARGET == 'simulation':
     dt = 0.1  # stable for simulation
-TRACK_LEN = 20
+TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
@@ -33,7 +33,7 @@ weight_metric = weight_metric / weight_metric.sum()
 MAX_STEERING_ANGLE = math.pi / 6
 MAX_ACCELERATION = 3
 # MAX_SPEED = 20
-MAX_SPEED = 8
+MAX_SPEED = 10
 
 # initial guess on interacting agent's IPV
 INITIAL_IPV_GUESS = 0
@@ -127,7 +127,7 @@ class Agent:
         interact with the estimated interacting agent. this agent's IPV is continuously updated.
         :return:
         """
-        if controller_type == 'VGIM':
+        if controller_type in {'VGIM-coop', 'VGIM-dyna', 'VGIM'}:
             count_iter = 0  # count number of iteration
             last_self_track = np.zeros_like(self.trj_solution)  # initialize a track reservation
             while np.linalg.norm(self.trj_solution[:, 0:2] - last_self_track[:, 0:2]) > 1e-3:
@@ -137,7 +137,7 @@ class Agent:
                 self.estimated_inter_agent.solve_game_IBR(self.trj_solution)
                 if count_iter > iter_limit:  # limited to less than 10 iterations
                     break
-        elif controller_type == 'OPT':
+        elif controller_type in {'OPT-coop', 'OPT-dyna', 'OPT-safe'}:
             self.estimated_inter_agent.solve_game_IBR(self.trj_solution)
             self.solve_game_IBR(self.estimated_inter_agent.trj_solution)
 
@@ -159,7 +159,7 @@ class Agent:
         self.trj_solution_collection.append(self.trj_solution)
         self.action_collection.append(self.action)
 
-        if controller_type == 'VGIM':
+        if controller_type in {'VGIM-coop', 'VGIM-dyna', 'VGIM'}:
             # update IPV
             current_time = np.size(self.observed_trajectory, 0) - 2
             if current_time > 1:
@@ -185,56 +185,9 @@ class Agent:
                 self.estimated_inter_agent.ipv_error_collection.append(error)
                 "====end of parallel game method===="
 
-                # elif method == 2:
-                #     "====rational perspective method===="
-                #
-                #     # rearrange conducted actions at each time step
-                #     # u_list_self = []
-                #     # u_list_inter = []
-                #     # for i in range(start_time, current_time):
-                #     #     u_list_self.append([self.action_collection[i][0, 0], self.action_collection[i][0, 1]])
-                #     #     u_list_inter.append(
-                #     #         [inter_agent.action_collection[i][0, 0], inter_agent.action_collection[i][0, 1]])
-                #     #
-                #     # # initial state
-                #     # init_state_4_kine_self = self.observed_trajectory[start_time, :]
-                #     # init_state_4_kine_inter = inter_agent.observed_trajectory[start_time, :]
-                #     #
-                #     # u_conducted_self = np.array(u_list_self)
-                #     # u_conducted_inter = np.array(u_list_inter)
-                #     #
-                #     # # info at margin1
-                #     # u_margin_self1 = u_conducted_self * 1.01
-                #     # u_margin_inter1 = u_conducted_inter * 1.01
-                #     # track_margin_inter1 = kinematic_model(u_margin_inter1, init_state_4_kine_inter, time_duration + 1, dt)
-                #     # track_margin_self1 = kinematic_model(u_margin_self1, init_state_4_kine_self, time_duration + 1, dt)
-                #     # cost_inerior_margin1 = cal_interior_cost(track_margin_inter1[:, 0:2], inter_agent.target)
-                #     # cost_group_margin1 = cal_group_cost([track_margin_inter1[:, 0:2], track_margin_self1[:, 0:2]])
-                #     #
-                #     # # # info at margin2
-                #     # # u_margin_self2 = u_conducted_self * 0.999
-                #     # # u_margin_inter2 = u_conducted_inter * 0.999
-                #     # # track_margin_inter2 = kinematic_model(u_margin_inter2, init_state_4_kine_inter, time_duration + 1, dt)
-                #     # # track_margin_self2 = kinematic_model(u_margin_self2, init_state_4_kine_self, time_duration + 1, dt)
-                #     # # cost_inerior_margin2 = cal_interior_cost(u_margin_inter2,
-                #     # #                                          track_margin_inter2[:, 0:2],
-                #     # #                                          inter_agent.target)
-                #     # # cost_group_margin2 = cal_group_cost([track_margin_inter2[:, 0:2], track_margin_self2[:, 0:2]])
-                #     # # # atan
-                #     # # self.estimated_inter_agent.ipv = - math.atan((cost_inerior_margin1 - cost_inerior_margin2)
-                #     # #                                              / (cost_group_margin1 - cost_group_margin2))
-                #     #
-                #     # # info at actual solution
-                #     # track_actual_inter = inter_agent.observed_trajectory[start_time:current_time + 1, 0:2]
-                #     # track_actual_self = self.observed_trajectory[start_time:current_time + 1, 0:2]
-                #     # cost_inerior = cal_interior_cost(track_actual_inter, inter_agent.target)
-                #     # cost_group = cal_group_cost([track_actual_inter, track_actual_self])
-                #     # # atan
-                #     # self.estimated_inter_agent.ipv = - math.atan((cost_inerior - cost_inerior_margin1)
-                #     #                                              / (cost_group - cost_group_margin1))
-                #     # # save updated ipv and estimation error
-                #     # self.estimated_inter_agent.ipv_collection.append(self.estimated_inter_agent.ipv)
-                #     "====end of rational perspective method===="
+            # modify ipv for 'dyna' models
+            if controller_type in {'VGIM-dyna'} and self.estimated_inter_agent.ipv > math.pi * 3/16:
+                self.ipv = 0
 
     def estimate_self_ipv_in_NDS(self, self_actual_track, inter_track):
         self_virtual_track_collection = []

@@ -47,7 +47,7 @@ class Simulator:
             print('time_step: ', t, '/', self.num_step)
 
             "==plan for left-turn=="
-            if lt_controller_type == 'VGIM':
+            if lt_controller_type in {'VGIM-coop', 'VGIM-dyna', 'VGIM'}:
 
                 # ==interaction with parallel virtual agents
                 self.agent_lt.interact_with_parallel_virtual_agents(self.agent_gs, iter_limit=iter_limit)
@@ -55,7 +55,7 @@ class Simulator:
                 # ==interaction with estimated agent
                 self.agent_lt.interact_with_estimated_agents(iter_limit=iter_limit)
 
-            elif lt_controller_type == 'OPT':
+            elif lt_controller_type in {'OPT-coop', 'OPT-dyna', 'OPT-safe'}:
 
                 # ==interaction with estimated agent
                 self.agent_lt.interact_with_estimated_agents(controller_type=lt_controller_type)
@@ -233,7 +233,7 @@ class Simulator:
                  label='actual gs IPV')
 
         # estimated ipv
-        if controller_type == 'VGIM':
+        if controller_type in {'VGIM-coop', 'VGIM-dyna', 'VGIM'}:
             y_gs = np.array(self.agent_lt.estimated_inter_agent.ipv_collection)
             ax2.plot(x_range, y_gs, color='blue', label='estimated gs IPV')
             # error bar
