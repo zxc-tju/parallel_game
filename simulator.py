@@ -270,8 +270,9 @@ class Simulator:
                     + '_case_' + str(raw_num)
                     + '.png')
 
-        # plt.pause(1)
-        # plt.close('all')
+        plt.pause(1)
+        plt.close('all')
+        # plt.show()
 
 
 def main1():
@@ -335,10 +336,9 @@ def main2():
     4*. straight-through traffic are endless and generated with random ipv and gap
     :return:
     """
-    for i in range(1):
+    for i in range(100):
 
-        task_id = 1
-        # max_steps = 30
+        task_id = 3
 
         # tag = 'VGIM-coop'
         # tag = 'VGIM-dyna'
@@ -347,15 +347,15 @@ def main2():
         tag = 'OPT-dyna'
 
         # generate gs position
-        init_gs_px = 15 * (np.random.random() - 0.5) + 25.5
-        # init_gs_px = 30
+        init_gs_px = 2 * 2 * (np.random.random() - 0.5) + 23
+        # init_gs_px = 25
 
         # initial state of the go-straight vehicle
         init_position_gs = [init_gs_px, -2]
         init_velocity_gs = [-5, 0]
         init_heading_gs = math.pi
-        ipv_gs = math.pi * 3 / 16 * 2 * (np.random.random() - 0.5) + math.pi / 16
-        # ipv_gs = 0.4158454196582392
+        ipv_gs = math.pi * 1 / 16 * 2 * (np.random.random() - 0.5) + math.pi * 3 / 16
+        # ipv_gs = math.pi/4
 
         # initial state of the left-turn vehicle
         init_position_lt = [11, -5.8]
@@ -366,8 +366,8 @@ def main2():
         elif tag in {'OPT-safe'}:
             ipv_lt = 3 * math.pi / 16
         else:
-            if init_gs_px > 30:
-                ipv_lt = 0
+            if init_gs_px > 22 and ipv_gs > 3/16 * math.pi:
+                ipv_lt = -0.1
             else:
                 ipv_lt = math.pi / 8
 
@@ -375,7 +375,7 @@ def main2():
                                  [init_velocity_lt, init_velocity_gs],
                                  [init_heading_lt, init_heading_gs],
                                  [ipv_lt, ipv_gs])
-        simu = Simulator(32)
+        simu = Simulator(33)
 
         print('==== start main for random interaction ====')
         print('task type: ', tag)
@@ -386,15 +386,10 @@ def main2():
 
         simu.initialize(simu_scenario, tag)
 
-        if tag in {'VGIM-coop', 'VGIM-dyna'}:
-            controller_type = 'VGIM'
-        else:
-            controller_type = 'OPT'
-
-        simu.ibr_iteration(lt_controller_type=controller_type)
+        simu.ibr_iteration(lt_controller_type=tag, num_step=30)
         simu.post_process()
         simu.save_data(print_to_excel=True, raw_num=i, task_id=task_id)
-        simu.visualize(raw_num=i, task_id=task_id, controller_type=controller_type)
+        simu.visualize(raw_num=i, task_id=task_id, controller_type=tag)
 
 
 if __name__ == '__main__':

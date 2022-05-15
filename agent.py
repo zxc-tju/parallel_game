@@ -185,9 +185,9 @@ class Agent:
                 self.estimated_inter_agent.ipv_error_collection.append(error)
                 "====end of parallel game method===="
 
-            # modify ipv for 'dyna' models
-            if controller_type in {'VGIM-dyna'} and self.estimated_inter_agent.ipv > math.pi * 3/16:
-                self.ipv = 0
+            # # modify ipv for 'dyna' models
+            # if controller_type in {'VGIM-dyna'} and self.estimated_inter_agent.ipv > math.pi * 3/16:
+            #     self.ipv = 0
 
     def estimate_self_ipv_in_NDS(self, self_actual_track, inter_track):
         self_virtual_track_collection = []
