@@ -4,6 +4,12 @@ for visualize driving trajectories in the Jianhe-Xianxia Intersection
 import scipy.io
 import numpy as np
 from matplotlib import pyplot as plt
+import pandas as pd
+import xlsxwriter
+from datetime import datetime
+
+# save trajectories into excel?
+save_trajectory = True
 
 
 def vis_nds(case_id='all'):
@@ -37,10 +43,21 @@ def vis_nds(case_id='all'):
                      alpha=0.5,
                      color='red')
 
+            if save_trajectory:
+                pd_trj_gs = pd.DataFrame(gs_info_multi[gs_id][invalid_len:, 0:2],
+                                         columns=['case-' + str(i) + '-x', 'case-' + str(i) + '-y'])
+                with pd.ExcelWriter(filename, mode='a', if_sheet_exists="overlay", engine="openpyxl") as writer:
+                    pd_trj_gs.to_excel(writer, startcol=2 * i + 1, index=False, sheet_name='go-straight')
         # left-turn trajectories
         ax.plot(lt_info[:, 0], lt_info[:, 1],
                 alpha=0.5,
                 color='blue')
+
+        if save_trajectory:
+            pd_trj_lt = pd.DataFrame(lt_info[:, 0:2],
+                                     columns=['case-' + str(i) + '-x', 'case-' + str(i) + '-y'])
+            with pd.ExcelWriter(filename, mode='a', if_sheet_exists="overlay", engine="openpyxl") as writer:
+                pd_trj_lt.to_excel(writer, startcol=2 * i + 1, index=False, sheet_name='turn-left')
     plt.show()
 
 
@@ -64,5 +81,17 @@ if __name__ == '__main__':
 
     # the number of go-straight vehicles that interact with the left-turn vehicle in each scenario
     inter_num = mat['interact_agent_num']
+
+    if save_trajectory:
+        data_path = '../data/3_parallel_game_outputs/'
+        # date = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
+        date = datetime.now().strftime("%Y%m%d")
+        filename = data_path + 'NDS_analysis/trajectory_collection' + date + '.xlsx'
+
+        workbook = xlsxwriter.Workbook(filename)
+        # 新增工作簿。
+        worksheet = workbook.add_worksheet('turn-left')
+        #  关闭工作簿。在文件夹中打开文件，查看写入的结果。
+        workbook.close()  # 一定要关闭workbook后才会产生文件！
 
     vis_nds()
