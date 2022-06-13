@@ -10,7 +10,6 @@ import pandas as pd
 from scipy.interpolate import interp2d
 from openpyxl import load_workbook
 
-
 illustration_needed = False
 print_needed = False
 save_data_needed = True
@@ -32,7 +31,9 @@ inter_num = mat['interact_agent_num']
 
 # virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
-current_nds_data_version = 3
+current_nds_data_version = 5
+
+data_path = '../data/3_parallel_game_outputs/'
 
 
 def draw_rectangle(x, y, deg):
@@ -188,7 +189,7 @@ def analyze_nds(case_id):
 
     inter_id = 0
     inter_id_save = inter_id
-    file_name = './outputs/NDS_analysis/v' + str(current_nds_data_version) + '/' + str(case_id) + '.xlsx'
+    file_name = data_path + 'NDS_analysis/v' + str(current_nds_data_version) + '/' + str(case_id) + '.xlsx'
 
     for t in range(np.size(lt_info, 0)):
 
@@ -372,7 +373,7 @@ def analyze_nds(case_id):
 
 
 def analyze_ipv_in_nds(case_id, fig=False):
-    file_name = './outputs/NDS_analysis/v' + str(current_nds_data_version) + '/' + str(case_id) + '.xlsx'
+    file_name = data_path + 'NDS_analysis/v' + str(current_nds_data_version) + '/' + str(case_id) + '.xlsx'
     file = pd.ExcelFile(file_name)
     num_sheet = len(file.sheet_names)
     # print(num_sheet)
@@ -597,7 +598,7 @@ def cal_pet(trj_a, trj_b, type_cal):
     "PET and APET"
     apet = np.abs(ttcp_a[:solid_len] - ttcp_b[:solid_len])
 
-    pet = max(ttcp_a[solid_len-1], ttcp_b[solid_len-1]) - min(ttcp_a[solid_len-1], ttcp_b[solid_len-1])
+    pet = max(ttcp_a[solid_len - 1], ttcp_b[solid_len - 1]) - min(ttcp_a[solid_len - 1], ttcp_b[solid_len - 1])
 
     if type_cal == 'pet':
 
@@ -652,7 +653,7 @@ def divide_pet_in_nds():
             vel_gs_max = max(vel_gs)
             vel_ave = (vel_mean_lt + vel_mean_gs) * 0.5
 
-            acc_gs = (vel_gs[1:] - vel_gs[:-1])/0.12
+            acc_gs = (vel_gs[1:] - vel_gs[:-1]) / 0.12
             acc_mean_gs = np.mean(acc_gs)
             acc_min_gs = min(acc_gs)
 
@@ -670,13 +671,18 @@ def divide_pet_in_nds():
                                            acc_mean_gs, acc_min_gs, ttcp_lt[0], ttcp_gs[0]])
                 ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="green", alpha=0.5)
 
+            # delete invalid (0,0) positions
+            gs_trj_temp = gs_info_multi[cross_id][:, 0:2]
+            invalid_len = len((np.where(gs_trj_temp[:, 0] == 0))[0])
             if gs_ipv < 0:
                 comp_gs_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave, vel_mean_gs, vel_gs_max])
-                ax1.plot(gs_info_multi[cross_id][:, 0], gs_info_multi[cross_id][:, 1], color="red", alpha=0.5)
+                ax1.plot(gs_info_multi[cross_id][invalid_len:, 0],
+                         gs_info_multi[cross_id][invalid_len:, 1], color="red", alpha=0.5)
 
             else:
                 coop_gs_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave, vel_mean_gs, vel_gs_max])
-                ax1.plot(gs_info_multi[cross_id][:, 0], gs_info_multi[cross_id][:, 1], color="green", alpha=0.5)
+                ax1.plot(gs_info_multi[cross_id][invalid_len:, 0],
+                         gs_info_multi[cross_id][invalid_len:, 1], color="green", alpha=0.5)
 
     # reconstruct data into array
     pet_collection = np.array(all_collection)
@@ -757,20 +763,32 @@ def divide_pet_in_nds():
     plt.xlabel('max GS speed')
     plt.ylabel('Counts')
 
+    plt.show()
+
     # save pet data
-    filename = './outputs/pet_distribution_v' + str(current_nds_data_version) + '.xlsx'
+    filename = data_path + 'NDS_analysis/ipv_estimation/v' + str(current_nds_data_version) + '/collection_analysis_v' \
+               + str(current_nds_data_version) + '.xlsx'
     with pd.ExcelWriter(filename) as writer:
         df_all = pd.DataFrame(pet_collection,
                               columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel', 'acc_mean_gs', 'acc_min_gs'])
+        # data divided by LT's IPV
+        df_comp_lt = pd.DataFrame(comp_lt_collection,
+                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
+                                           'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
+        df_coop_lt = pd.DataFrame(coop_lt_collection,
+                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
+                                           'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
+        # data divided by GS's IPV
+        df_comp_gs = pd.DataFrame(comp_gs_collection,
+                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
+        df_coop_gs = pd.DataFrame(coop_gs_collection,
+                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
+
         df_all.to_excel(writer, startcol=0, index=False, sheet_name="all")
-        df_comp = pd.DataFrame(comp_lt_collection,
-                               columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
-                                        'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
-        df_coop = pd.DataFrame(coop_lt_collection,
-                               columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
-                                        'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
-        df_comp.to_excel(writer, startcol=0, index=False, sheet_name="competitive")
-        df_coop.to_excel(writer, startcol=0, index=False, sheet_name="cooperative")
+        df_comp_lt.to_excel(writer, startcol=0, index=False, sheet_name="competitive_lt")
+        df_coop_lt.to_excel(writer, startcol=0, index=False, sheet_name="cooperative_lt")
+        df_comp_gs.to_excel(writer, startcol=0, index=False, sheet_name="competitive_gs")
+        df_coop_gs.to_excel(writer, startcol=0, index=False, sheet_name="cooperative_gs")
 
 
 def show_crossing_event(case_index, isfig=True, issavedata=False):
@@ -802,8 +820,8 @@ def show_crossing_event(case_index, isfig=True, issavedata=False):
             plt.text(55, 30, 'PET:' + str(pet))
             lt_mean_ipv = np.mean(data_cross[4:, 0])
             gs_mean_ipv = np.mean(data_cross[4:, 7])
-            ax1.text(0, 60, 'LT:'+str(lt_mean_ipv), fontsize=10)
-            ax1.text(0, 65, 'GS:'+str(gs_mean_ipv), fontsize=10)
+            ax1.text(0, 60, 'LT:' + str(lt_mean_ipv), fontsize=10)
+            ax1.text(0, 65, 'GS:' + str(gs_mean_ipv), fontsize=10)
             #
 
             # if np.mean(data_cross[4:, 0] * (1 - data_cross[4:, 1])) < 0:
@@ -816,8 +834,8 @@ def show_crossing_event(case_index, isfig=True, issavedata=False):
                 ax1.plot(lt_trj[:, 0], lt_trj[:, 1], color="green", alpha=0.5)
                 ax1.plot(gs_trj[:, 0], gs_trj[:, 1], color="green", alpha=0.5)
             # if issavedata:
-                # plt.savefig('./outputs/NDS_analysis/crossing_event_v' + str(current_nds_data_version)
-                #             + '/' + str(case_index) + '.png')
+            # plt.savefig('./outputs/NDS_analysis/crossing_event_v' + str(current_nds_data_version)
+            #             + '/' + str(case_index) + '.png')
 
         # calculate anticipated PET of the process
         apet, ttc_lt, ttc_gs = cal_pet(lt_trj, gs_trj, "apet")
@@ -829,7 +847,7 @@ def show_crossing_event(case_index, isfig=True, issavedata=False):
             df_ttc_lt = pd.DataFrame(ttc_lt[0: len(apet)], columns=['TTCP_lt'])
             df_ttc_gs = pd.DataFrame(ttc_gs[0: len(apet)], columns=['TTCP_gs'])
             df_pet = pd.DataFrame(np.array([pet]), columns=['PET'])
-            filename = './outputs/NDS_analysis/v' + str(current_nds_data_version) \
+            filename = data_path + 'NDS_analysis/v' + str(current_nds_data_version) \
                        + '/APET_case_' + str(case_index) + '.xlsx'
             with pd.ExcelWriter(filename) as writer:
                 df_xrange.to_excel(writer, startcol=0, index=False)
@@ -860,15 +878,15 @@ if __name__ == '__main__':
     # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
 
     "show ipv distribution in whole dataset"
-    show_ipv_distribution()
+    # show_ipv_distribution()
 
     "find the origin and ending of the each interaction event in a single case"
     # o, d = find_inter_od(30)
 
     # draw_rectangle(5, 5, 45)
 
-    "divide pet distribution according to the ipv of two agents"
-    # divide_pet_in_nds()
+    "show properties divided by the ipv of two agents"
+    divide_pet_in_nds()
 
     "show crossing trajectories and pet process in a case"
     # show_crossing_event(30, isfig=True, issavedata=True)
