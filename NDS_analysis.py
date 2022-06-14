@@ -7,6 +7,9 @@ import matplotlib.transforms as mt
 from agent import Agent, cal_interior_cost, cal_group_cost
 from tools.utility import get_central_vertices, smooth_ployline, get_intersection_point
 import pandas as pd
+from datetime import datetime
+import xlsxwriter
+
 from scipy.interpolate import interp2d
 from openpyxl import load_workbook
 
@@ -373,7 +376,8 @@ def analyze_nds(case_id):
 
 
 def analyze_ipv_in_nds(case_id, fig=False):
-    file_name = data_path + 'NDS_analysis/v' + str(current_nds_data_version) + '/' + str(case_id) + '.xlsx'
+    file_name = data_path + 'NDS_analysis/ipv_estimation/v' + str(current_nds_data_version) \
+                + '/' + str(case_id) + '.xlsx'
     file = pd.ExcelFile(file_name)
     num_sheet = len(file.sheet_names)
     # print(num_sheet)
@@ -609,18 +613,34 @@ def cal_pet(trj_a, trj_b, type_cal):
         return apet, ttcp_a, ttcp_b
 
 
-def divide_pet_in_nds():
+def divide_pet_in_nds(save_collection_analysis=False,
+                      save_divided_trj=False,
+                      show_fig=False):
     comp_lt_collection = []
     coop_lt_collection = []
     comp_gs_collection = []
     coop_gs_collection = []
     all_collection = []
+    num_coop_lt_trj = 0
+    num_comp_lt_trj = 0
+    # date = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
+    date = datetime.now().strftime("%Y%m%d")
+    filename_divided_trj = data_path + 'NDS_analysis/ipv_estimation/v' + str(current_nds_data_version) \
+               + '/divide_trj_by_ipv' + date + '.xlsx'
 
     fig = plt.figure(1)
     ax1 = fig.add_subplot(111)
     ax1.set(xlim=[-23, 53], ylim=[-31, 57])
     img = plt.imread('background_pic/Jianhexianxia.jpg')
     ax1.imshow(img, extent=[-23, 53, -31, 57])
+
+    if save_divided_trj:
+
+        workbook = xlsxwriter.Workbook(filename_divided_trj)
+        # 新增工作簿。
+        worksheet = workbook.add_worksheet('lt_coop')
+        #  关闭工作簿。在文件夹中打开文件，查看写入的结果。
+        workbook.close()  # 一定要关闭workbook后才会产生文件！
 
     for case_index in range(131):
 
@@ -666,10 +686,31 @@ def divide_pet_in_nds():
                 ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="red", alpha=0.5)
                 # alpha=-np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57
 
+                if save_divided_trj:
+                    lt_trj_comp = pd.DataFrame(inter_info[case_index][0][:, 0:2],
+                                               columns=['case-' + str(case_index) + '-x', 'y'])
+                    with pd.ExcelWriter(filename_divided_trj,
+                                        mode='a',
+                                        if_sheet_exists="overlay",
+                                        engine="openpyxl") as writer:
+                        lt_trj_comp.to_excel(writer, startcol=2 * num_comp_lt_trj, index=False, sheet_name='lt_comp')
+
+                num_comp_lt_trj += 1
             else:
                 coop_lt_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave,
                                            acc_mean_gs, acc_min_gs, ttcp_lt[0], ttcp_gs[0]])
                 ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="green", alpha=0.5)
+
+                if save_divided_trj:
+                    lt_trj_coop = pd.DataFrame(inter_info[case_index][0][:, 0:2],
+                                               columns=['case-' + str(case_index) + '-x', 'y'])
+                    with pd.ExcelWriter(filename_divided_trj,
+                                        mode='a',
+                                        if_sheet_exists="overlay",
+                                        engine="openpyxl") as writer:
+                        lt_trj_coop.to_excel(writer, startcol=2 * num_coop_lt_trj, index=False, sheet_name='lt_coop')
+
+                num_coop_lt_trj += 1
 
             # delete invalid (0,0) positions
             gs_trj_temp = gs_info_multi[cross_id][:, 0:2]
@@ -691,104 +732,107 @@ def divide_pet_in_nds():
     comp_gs_collection = np.array(comp_gs_collection)
     coop_gs_collection = np.array(coop_gs_collection)
 
-    plt.figure(2)
-    plt.title('PET distribution (divided by ipv of LT vehicles)')
-    plt.hist(comp_lt_collection[:, 2], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
-             alpha=0.5,
-             color='red',
-             label='competitive')
-    plt.hist(coop_lt_collection[:, 2], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
-             alpha=0.5,
-             color='green',
-             label='cooperative')
-    plt.legend()
-    plt.xlabel('PET')
-    plt.ylabel('Counts')
+    if show_fig:
 
-    plt.figure(3)
-    ax1 = plt.subplot(121)
-    plt.title('mean GS acc distribution (divided by ipv of LT vehicles)')
-    ax1.hist(comp_lt_collection[:, 4],
-             alpha=0.5,
-             color='red',
-             label='competitive')
-    ax1.hist(coop_lt_collection[:, 4],
-             alpha=0.5,
-             color='green',
-             label='cooperative')
-    ax1.legend()
-    plt.xlabel('mean GS acc')
-    plt.ylabel('Counts')
+        plt.figure(2)
+        plt.title('PET distribution (divided by ipv of LT vehicles)')
+        plt.hist(comp_lt_collection[:, 2], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+                 alpha=0.5,
+                 color='red',
+                 label='competitive')
+        plt.hist(coop_lt_collection[:, 2], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+                 alpha=0.5,
+                 color='green',
+                 label='cooperative')
+        plt.legend()
+        plt.xlabel('PET')
+        plt.ylabel('Counts')
 
-    ax2 = plt.subplot(122)
-    plt.title('min GS acc distribution (divided by ipv of LT vehicles)')
-    ax2.hist(comp_lt_collection[:, 5],
-             alpha=0.5,
-             color='red',
-             label='competitive')
-    ax2.hist(coop_lt_collection[:, 5],
-             alpha=0.5,
-             color='green',
-             label='cooperative')
-    ax2.legend()
-    plt.xlabel('min GS acc')
-    plt.ylabel('Counts')
+        plt.figure(3)
+        ax1 = plt.subplot(121)
+        plt.title('mean GS acc distribution (divided by ipv of LT vehicles)')
+        ax1.hist(comp_lt_collection[:, 4],
+                 alpha=0.5,
+                 color='red',
+                 label='competitive')
+        ax1.hist(coop_lt_collection[:, 4],
+                 alpha=0.5,
+                 color='green',
+                 label='cooperative')
+        ax1.legend()
+        plt.xlabel('mean GS acc')
+        plt.ylabel('Counts')
 
-    plt.figure(4)
-    ax1 = plt.subplot(121)
-    plt.title('mean GS speed (divided by ipv of GS vehicles)')
-    ax1.hist(comp_gs_collection[:, 4],
-             alpha=0.5,
-             color='red',
-             label='competitive')
-    ax1.hist(coop_gs_collection[:, 4],
-             alpha=0.5,
-             color='green',
-             label='cooperative')
-    ax1.legend()
-    plt.xlabel('mean GS speed')
-    plt.ylabel('Counts')
+        ax2 = plt.subplot(122)
+        plt.title('min GS acc distribution (divided by ipv of LT vehicles)')
+        ax2.hist(comp_lt_collection[:, 5],
+                 alpha=0.5,
+                 color='red',
+                 label='competitive')
+        ax2.hist(coop_lt_collection[:, 5],
+                 alpha=0.5,
+                 color='green',
+                 label='cooperative')
+        ax2.legend()
+        plt.xlabel('min GS acc')
+        plt.ylabel('Counts')
 
-    ax2 = plt.subplot(122)
-    plt.title('max GS speed distribution (divided by ipv of GS vehicles)')
-    ax2.hist(comp_gs_collection[:, 5],
-             alpha=0.5,
-             color='red',
-             label='competitive')
-    ax2.hist(coop_gs_collection[:, 5],
-             alpha=0.5,
-             color='green',
-             label='cooperative')
-    ax2.legend()
-    plt.xlabel('max GS speed')
-    plt.ylabel('Counts')
+        plt.figure(4)
+        ax1 = plt.subplot(121)
+        plt.title('mean GS speed (divided by ipv of GS vehicles)')
+        ax1.hist(comp_gs_collection[:, 4],
+                 alpha=0.5,
+                 color='red',
+                 label='competitive')
+        ax1.hist(coop_gs_collection[:, 4],
+                 alpha=0.5,
+                 color='green',
+                 label='cooperative')
+        ax1.legend()
+        plt.xlabel('mean GS speed')
+        plt.ylabel('Counts')
 
-    plt.show()
+        ax2 = plt.subplot(122)
+        plt.title('max GS speed distribution (divided by ipv of GS vehicles)')
+        ax2.hist(comp_gs_collection[:, 5],
+                 alpha=0.5,
+                 color='red',
+                 label='competitive')
+        ax2.hist(coop_gs_collection[:, 5],
+                 alpha=0.5,
+                 color='green',
+                 label='cooperative')
+        ax2.legend()
+        plt.xlabel('max GS speed')
+        plt.ylabel('Counts')
 
-    # save pet data
-    filename = data_path + 'NDS_analysis/ipv_estimation/v' + str(current_nds_data_version) + '/collection_analysis_v' \
-               + str(current_nds_data_version) + '.xlsx'
-    with pd.ExcelWriter(filename) as writer:
-        df_all = pd.DataFrame(pet_collection,
-                              columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel', 'acc_mean_gs', 'acc_min_gs'])
-        # data divided by LT's IPV
-        df_comp_lt = pd.DataFrame(comp_lt_collection,
-                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
-                                           'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
-        df_coop_lt = pd.DataFrame(coop_lt_collection,
-                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
-                                           'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
-        # data divided by GS's IPV
-        df_comp_gs = pd.DataFrame(comp_gs_collection,
-                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
-        df_coop_gs = pd.DataFrame(coop_gs_collection,
-                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
+        plt.show()
 
-        df_all.to_excel(writer, startcol=0, index=False, sheet_name="all")
-        df_comp_lt.to_excel(writer, startcol=0, index=False, sheet_name="competitive_lt")
-        df_coop_lt.to_excel(writer, startcol=0, index=False, sheet_name="cooperative_lt")
-        df_comp_gs.to_excel(writer, startcol=0, index=False, sheet_name="competitive_gs")
-        df_coop_gs.to_excel(writer, startcol=0, index=False, sheet_name="cooperative_gs")
+    if save_collection_analysis:
+        # save pet data
+        filename = data_path + 'NDS_analysis/ipv_estimation/v' + str(current_nds_data_version) + '/collection_analysis_v' \
+                   + str(current_nds_data_version) + '.xlsx'
+        with pd.ExcelWriter(filename) as writer:
+            df_all = pd.DataFrame(pet_collection,
+                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel', 'acc_mean_gs', 'acc_min_gs'])
+            # data divided by LT's IPV
+            df_comp_lt = pd.DataFrame(comp_lt_collection,
+                                      columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
+                                               'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
+            df_coop_lt = pd.DataFrame(coop_lt_collection,
+                                      columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
+                                               'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
+            # data divided by GS's IPV
+            df_comp_gs = pd.DataFrame(comp_gs_collection,
+                                      columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
+            df_coop_gs = pd.DataFrame(coop_gs_collection,
+                                      columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
+
+            df_all.to_excel(writer, startcol=0, index=False, sheet_name="all")
+            df_comp_lt.to_excel(writer, startcol=0, index=False, sheet_name="competitive_lt")
+            df_coop_lt.to_excel(writer, startcol=0, index=False, sheet_name="cooperative_lt")
+            df_comp_gs.to_excel(writer, startcol=0, index=False, sheet_name="competitive_gs")
+            df_coop_gs.to_excel(writer, startcol=0, index=False, sheet_name="cooperative_gs")
 
 
 def show_crossing_event(case_index, isfig=True, issavedata=False):
@@ -886,7 +930,7 @@ if __name__ == '__main__':
     # draw_rectangle(5, 5, 45)
 
     "show properties divided by the ipv of two agents"
-    divide_pet_in_nds()
+    divide_pet_in_nds(save_collection_analysis=False, save_divided_trj=True, show_fig=False)
 
     "show crossing trajectories and pet process in a case"
     # show_crossing_event(30, isfig=True, issavedata=True)
