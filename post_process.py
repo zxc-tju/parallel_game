@@ -3,26 +3,26 @@ analysis of simulation results
 """
 
 import pickle
+import xlsxwriter
 import math
 import gc
 import pandas as pd
 from matplotlib import pyplot as plt
 from tools.utility import get_central_vertices, smooth_ployline, savitzky_golay
+from NDS_analysis import cal_pet
 import numpy as np
 
 ipv_update_method = 1
-show_gif = 1
+show_gif = 0
 save_fig = 0
-save_data = 0
+save_data = 1
 
 
 def get_results(rd, case_id):
     # import data
     version_num = '27'
-    filename = './outputs/simulation/version' + str(version_num) + '/data/agents_info' \
-               + '_round_' + str(rd) \
-               + '_case_' + str(case_id) \
-               + '.pckl'
+    filedir = '../data/3_parallel_game_outputs/simulation/version' + str(version_num)
+    filename = filedir + '/data/agents_info' + '_round_' + str(rd) + '_case_' + str(case_id) + '.pckl'
     f = open(filename, 'rb')
     agent_lt, agent_gs = pickle.load(f)
     f.close()
@@ -31,23 +31,22 @@ def get_results(rd, case_id):
     # lt track (observed and planned)
     lt_ob_trj = agent_lt.observed_trajectory[:, 0:2]
     lt_trj_coll = agent_lt.trj_solution_collection[0][:, 0:2]
+    # skip one trj every two trjs
     for i in range(int(len(lt_ob_trj) / 2 - 1)):
         coll_temp = agent_lt.trj_solution_collection[(i + 1) * 2][:, 0:2]
         lt_trj_coll = np.concatenate([lt_trj_coll, coll_temp], axis=1)
-    v_lt = np.linalg.norm(agent_lt.observed_trajectory[:, 2:4], axis=1)
-    v_lt_smoothed = savitzky_golay(v_lt, 5, 3)
 
     # gs track (observed and planned)
     gs_ob_trj = agent_gs.observed_trajectory[:, 0:2]
     gs_trj_coll = agent_gs.trj_solution_collection[0][:, 0:2]
+    # skip one trj every two trjs
     for i in range(int(len(lt_ob_trj) / 2 - 1)):
         coll_temp = agent_gs.trj_solution_collection[(i + 1) * 2][:, 0:2]
         gs_trj_coll = np.concatenate([gs_trj_coll, coll_temp], axis=1)
-    v_gs = np.linalg.norm(agent_gs.observed_trajectory[:, 2:4], axis=1)
-    v_gs_smoothed = savitzky_golay(v_gs, 5, 3)
 
     # link from gs to lt
     link = np.concatenate([[lt_ob_trj[0, :]], [gs_ob_trj[0, :]]])
+    # skip one trj every two trjs
     for i in range(int(len(lt_ob_trj) / 2)):
         link = np.concatenate([link, np.concatenate([[lt_ob_trj[(i + 1) * 2, :]],
                                                      [gs_ob_trj[(i + 1) * 2, :]]])], axis=1)
@@ -56,45 +55,59 @@ def get_results(rd, case_id):
     cv_gs, progress_gs = get_central_vertices('gs', None)
 
     "====calculate PET===="
-    # find longitudinal position of conflict point
-    conflict_point = np.array([13, -2])
-    dis2cv_lt_cp = cv_lt - conflict_point
-    dis2cv_lt_cp_norm = np.linalg.norm(dis2cv_lt_cp, axis=1)
-    dis2cv_lt_cp_min = np.amin(dis2cv_lt_cp_norm)
-    cv_index_lt_cp = np.where(dis2cv_lt_cp_min == dis2cv_lt_cp_norm)
-    long_progress_lt_cp = progress_lt[cv_index_lt_cp]
+    pet, _, _ = cal_pet(lt_ob_trj, gs_ob_trj, 'apet')
 
-    dis2cv_gs_cp = cv_gs - conflict_point
-    dis2cv_gs_cp_norm = np.linalg.norm(dis2cv_gs_cp, axis=1)
-    dis2cv_gs_cp_min = np.amin(dis2cv_gs_cp_norm)
-    cv_index_gs_cp = np.where(dis2cv_gs_cp_min == dis2cv_gs_cp_norm)
-    long_progress_gs_cp = progress_gs[cv_index_gs_cp]
-
-    # find longitudinal progress at each time point
-    ttcp_lt = []
-    ttcp_gs = []
-    pet = []
-    for t in range(len(lt_ob_trj)):
-        dis2cv_lt = cv_lt - lt_ob_trj[t, 0:2]
-        dis2cv_lt_norm = np.linalg.norm(dis2cv_lt, axis=1)
-        dis2cv_lt_min = np.amin(dis2cv_lt_norm)
-        cv_index_lt = np.where(dis2cv_lt_min == dis2cv_lt_norm)
-        long_progress_lt = progress_lt[cv_index_lt]
-        ttcp_lt.append((long_progress_lt_cp - long_progress_lt) / v_lt_smoothed[t])
-
-        dis2cv_gs = cv_gs - gs_ob_trj[t, 0:2]
-        dis2cv_gs_norm = np.linalg.norm(dis2cv_gs, axis=1)
-        dis2cv_gs_min = np.amin(dis2cv_gs_norm)
-        cv_index_gs = np.where(dis2cv_gs_min == dis2cv_gs_norm)
-        long_progress_gs = progress_gs[cv_index_gs]
-        ttcp_gs.append((long_progress_gs_cp - long_progress_gs) / v_gs_smoothed[t])
-
-        if ttcp_lt[-1] > 0 and ttcp_gs[-1] > 0:
-            temp_pet = np.abs(ttcp_gs[-1] - ttcp_lt[-1])
-            pet.append(float(temp_pet))
-        else:
-            pet.append(0)
-    pet = np.array(pet)
+    # ----archived version---- #
+    # # lt speed
+    # v_lt = np.linalg.norm(agent_lt.observed_trajectory[:, 2:4], axis=1)
+    # v_lt_smoothed = savitzky_golay(v_lt, 5, 3)
+    #
+    # # gs speed
+    # for i in range(int(len(lt_ob_trj) / 2 - 1)):
+    #     coll_temp = agent_gs.trj_solution_collection[(i + 1) * 2][:, 0:2]
+    #     gs_trj_coll = np.concatenate([gs_trj_coll, coll_temp], axis=1)
+    # v_gs = np.linalg.norm(agent_gs.observed_trajectory[:, 2:4], axis=1)
+    # v_gs_smoothed = savitzky_golay(v_gs, 5, 3)
+    #
+    # # find longitudinal position of conflict point
+    # conflict_point = np.array([13, -2])
+    # dis2cv_lt_cp = cv_lt - conflict_point
+    # dis2cv_lt_cp_norm = np.linalg.norm(dis2cv_lt_cp, axis=1)
+    # dis2cv_lt_cp_min = np.amin(dis2cv_lt_cp_norm)
+    # cv_index_lt_cp = np.where(dis2cv_lt_cp_min == dis2cv_lt_cp_norm)
+    # long_progress_lt_cp = progress_lt[cv_index_lt_cp]
+    #
+    # dis2cv_gs_cp = cv_gs - conflict_point
+    # dis2cv_gs_cp_norm = np.linalg.norm(dis2cv_gs_cp, axis=1)
+    # dis2cv_gs_cp_min = np.amin(dis2cv_gs_cp_norm)
+    # cv_index_gs_cp = np.where(dis2cv_gs_cp_min == dis2cv_gs_cp_norm)
+    # long_progress_gs_cp = progress_gs[cv_index_gs_cp]
+    #
+    # # find longitudinal progress at each time point
+    # ttcp_lt = []
+    # ttcp_gs = []
+    # pet = []
+    # for t in range(len(lt_ob_trj)):
+    #     dis2cv_lt = cv_lt - lt_ob_trj[t, 0:2]
+    #     dis2cv_lt_norm = np.linalg.norm(dis2cv_lt, axis=1)
+    #     dis2cv_lt_min = np.amin(dis2cv_lt_norm)
+    #     cv_index_lt = np.where(dis2cv_lt_min == dis2cv_lt_norm)
+    #     long_progress_lt = progress_lt[cv_index_lt]
+    #     ttcp_lt.append((long_progress_lt_cp - long_progress_lt) / v_lt_smoothed[t])
+    #
+    #     dis2cv_gs = cv_gs - gs_ob_trj[t, 0:2]
+    #     dis2cv_gs_norm = np.linalg.norm(dis2cv_gs, axis=1)
+    #     dis2cv_gs_min = np.amin(dis2cv_gs_norm)
+    #     cv_index_gs = np.where(dis2cv_gs_min == dis2cv_gs_norm)
+    #     long_progress_gs = progress_gs[cv_index_gs]
+    #     ttcp_gs.append((long_progress_gs_cp - long_progress_gs) / v_gs_smoothed[t])
+    #
+    #     if ttcp_lt[-1] > 0 and ttcp_gs[-1] > 0:
+    #         temp_pet = np.abs(ttcp_gs[-1] - ttcp_lt[-1])
+    #         pet.append(float(temp_pet))
+    #     else:
+    #         pet.append(0)
+    # pet = np.array(pet)
     "====save data to excel===="
     if save_data:
         df_lt_ob_trj = pd.DataFrame(lt_ob_trj)
@@ -108,11 +121,17 @@ def get_results(rd, case_id):
         df_estimated_lt_ipv = pd.DataFrame(agent_gs.estimated_inter_agent.ipv_collection, columns=['ipv'])
         df_estimated_lt_ipv_error = pd.DataFrame(agent_gs.estimated_inter_agent.ipv_error_collection, columns=['error'])
 
-        with pd.ExcelWriter('outputs/simulation/version' + str(version_num) + '/excel/output'
-                            + '_round_' + str(rd)
-                            + '_case_' + str(case_id) + '.xlsx',
+        filename_data = filedir + '/excel/output' + '_round_' + str(rd) + '_case_' + str(case_id) + '.xlsx'
+        workbook = xlsxwriter.Workbook(filename_data)
+        # 新增工作簿。
+        worksheet = workbook.add_worksheet('lt_ob_trj')
+        #  关闭工作簿。在文件夹中打开文件，查看写入的结果。
+        workbook.close()  # 一定要关闭workbook后才会产生文件！
+
+        with pd.ExcelWriter(filename_data,
                             mode='a',
-                            if_sheet_exists="overlay") as writer:
+                            if_sheet_exists="overlay",
+                            engine="openpyxl") as writer:
             df_lt_ob_trj.to_excel(writer, index=False, sheet_name='lt_ob_trj')
             df_gs_ob_trj.to_excel(writer, index=False, sheet_name='gs_ob_trj')
             df_lt_trj_coll.to_excel(writer, index=False, sheet_name='lt_trj_coll')
@@ -261,5 +280,5 @@ if __name__ == '__main__':
     #     for lt in ipv_list:
     #         get_results(gs, lt)
     rd = 1
-    caseid = 4
+    caseid = 2
     get_results(rd, caseid)
