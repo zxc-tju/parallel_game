@@ -20,7 +20,7 @@ if TARGET == 'nds analysis':
     dt = 0.12  # stable for nds analysis
 elif TARGET == 'simulation':
     dt = 0.1  # stable for simulation
-TRACK_LEN = 10
+TRACK_LEN = 20
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
 WEIGHT_DELAY = 1
@@ -322,7 +322,11 @@ def cal_group_cost(track_packed, self_target):
         "version 2: stable for simulation"
         vel_rel_along_sum = 0
         for i in range(np.size(vel_rel, 0)):
-            nearness_temp = pos_rel[i + 1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
+            if dis_rel[i + 1] > 3:
+                collision_factor = 0.5
+            else:
+                collision_factor = 1.5
+            nearness_temp = collision_factor * pos_rel[i + 1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
             # do not give reward to negative nearness (flee action)
             vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
         cost_group = vel_rel_along_sum / TRACK_LEN

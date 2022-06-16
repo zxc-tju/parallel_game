@@ -71,12 +71,12 @@ class Simulator:
             self.agent_lt.update_state(self.agent_gs, controller_type=lt_controller_type)
             self.agent_gs.update_state(self.agent_lt, controller_type='VGIM')
 
-            if self.agent_gs.observed_trajectory[-1, 0] < self.agent_lt.observed_trajectory[-1, 0] \
-                    or self.agent_lt.observed_trajectory[-1, 1] > self.agent_gs.observed_trajectory[-1, 1]:
-                self.num_step = t + 1
-                break
+            # if self.agent_gs.observed_trajectory[-1, 0] < self.agent_lt.observed_trajectory[-1, 0] \
+            #         or self.agent_lt.observed_trajectory[-1, 1] > self.agent_gs.observed_trajectory[-1, 1]:
+            #     self.num_step = t + 1
+            #     break
 
-    def save_data(self, print_to_excel=False, raw_num=None, task_id=None):
+    def save_data(self, print_to_excel=True, raw_num=0, task_id=1):
         filename = self.output_directory + '/data/' + str(self.tag) \
                    + '_task_' + str(task_id) \
                    + '_case_' + str(raw_num) \
@@ -289,32 +289,27 @@ def main1():
     4. simulation results are saved in simulation/version28
     :return:
     """
-    # tag = 'test'
 
-    # r = 5
-    # c = 6
-    # tag = 'round2-' + str(r)+'-' + str(c)
-
-    tag = 'round3-OPT-safe-gs-1'  # TODO
-    controller_type = 'OPT'
+    tag = 'NE-Coop'  # TODO
+    controller_type = 'VGIM'
 
     # initial state of the left-turn vehicle
-    init_position_lt = [11, -5.8]  # TODO
-    init_velocity_lt = [1.5, 0.3]  # TODO
-    init_heading_lt = math.pi / 4  # TODO
-    ipv_lt = math.pi / 8
+    init_position_lt = [11, -5.8]
+    init_velocity_lt = [1.5, 0.3]
+    init_heading_lt = math.pi / 4
+    ipv_lt = 0.4  # TODO
     # initial state of the go-straight vehicle
     init_position_gs = [22, -2]  # TODO
-    init_velocity_gs = [-5, 0]
+    init_velocity_gs = [-1.5, 0]
     init_heading_gs = math.pi
-    ipv_gs = math.pi / 4  # TODO
+    ipv_gs = -0.03  # TODO
 
     simu_scenario = Scenario([init_position_lt, init_position_gs],
                              [init_velocity_lt, init_velocity_gs],
                              [init_heading_lt, init_heading_gs],
                              [ipv_lt, ipv_gs])
 
-    simu = Simulator(28)
+    simu = Simulator(34)
     simu.initialize(simu_scenario, tag)
 
     simu.ibr_iteration(lt_controller_type=controller_type)
@@ -394,7 +389,7 @@ def main2():
 
 if __name__ == '__main__':
     "无保护左转实验- 多模型对比"
-    # main1()
+    main1()
 
     "无保护左转实验- 随机交互"
-    main2()
+    # main2()
