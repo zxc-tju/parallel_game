@@ -2,8 +2,6 @@ import scipy.io
 import math
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.patches as patches
-import matplotlib.transforms as mt
 from agent import Agent, cal_interior_cost, cal_group_cost
 from tools.utility import get_central_vertices, smooth_ployline, get_intersection_point
 import pandas as pd
@@ -37,27 +35,6 @@ inter_num = mat['interact_agent_num']
 current_nds_data_version = 5
 
 data_path = '../data/3_parallel_game_outputs/'
-
-
-def draw_rectangle(x, y, deg):
-    car_len = 5
-    car_wid = 2
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-    r1 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="blue", alpha=0.50)
-    r2 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="red", alpha=0.50)
-
-    t2 = mt.Affine2D().rotate_deg_around(x, y, deg) + ax.transData
-    r2.set_transform(t2)
-
-    ax.add_patch(r1)
-    ax.add_patch(r2)
-
-    plt.grid(True)
-    plt.axis('equal')
-
-    plt.show()
 
 
 def visualize_nds(case_id):

@@ -3,6 +3,8 @@ from matplotlib import pyplot as plt
 from scipy.interpolate import splrep, splev
 import math
 from shapely.geometry import LineString
+import matplotlib.patches as patches
+import matplotlib.transforms as mt
 
 
 def smooth_ployline(cv_init, point_num=1000):
@@ -153,3 +155,24 @@ def get_intersection_point(polyline1, polyline2):
 
     inter_point = s1.intersection(s2)
     return inter_point
+
+
+def draw_rectangle(x, y, deg):
+    car_len = 5
+    car_wid = 2
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    r1 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="blue", alpha=0.50)
+    r2 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="red", alpha=0.50)
+
+    t2 = mt.Affine2D().rotate_deg_around(x, y, deg) + ax.transData
+    r2.set_transform(t2)
+
+    ax.add_patch(r1)
+    ax.add_patch(r2)
+
+    plt.grid(True)
+    plt.axis('equal')
+
+    plt.show()
