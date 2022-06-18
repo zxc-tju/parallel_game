@@ -45,12 +45,10 @@ class Simulator:
         self.agent_lt.ipv = self.scenario.ipv['lt']
         self.agent_gs.ipv = self.scenario.ipv['gs']
         self.tag = case_tag
-        self.agent_gs.target = 'gs_nds'
-        self.agent_lt.target = 'lt_nds'
 
     def ibr_iteration(self, num_step=30, lt_controller_type='VGIM'):
         self.num_step = num_step
-        iter_limit = 5
+        iter_limit = 10
         for t in range(self.num_step):
             print('time_step: ', t, '/', self.num_step)
 
@@ -310,7 +308,7 @@ class Simulator:
         plt.savefig(self.output_directory + '/figures/' + str(self.tag)
                     + '_task_' + str(task_id)
                     + '_case_' + str(self.case_id)
-                    + '.png')
+                    + '.svg', format='svg')
 
         # plt.pause(1)
         # plt.close('all')
@@ -354,6 +352,8 @@ def main1():
     3. change FC vehicle' ipv and initial state, and scenario tag for each simulation
 
     4. simulation results are saved in simulation/version28
+
+    5. **** check TARGET in agent.py: TARGET = 'simulation' ****
     :return:
     """
 
@@ -364,12 +364,12 @@ def main1():
     init_position_lt = [11, -5.8]
     init_velocity_lt = [1.5, 0.3]
     init_heading_lt = math.pi / 4
-    ipv_lt = 0.4  # TODO
+    ipv_lt = 0  # TODO
     # initial state of the go-straight vehicle
     init_position_gs = [22, -2]  # TODO
     init_velocity_gs = [-1.5, 0]
     init_heading_gs = math.pi
-    ipv_gs = -0.03  # TODO
+    ipv_gs = 0  # TODO
 
     simu_scenario = Scenario([init_position_lt, init_position_gs],
                              [init_velocity_lt, init_velocity_gs],
@@ -377,11 +377,11 @@ def main1():
                              [ipv_lt, ipv_gs])
 
     simu = Simulator(34)
-    simu.initialize(simu_scenario, tag, 1)
+    simu.initialize(simu_scenario, tag)
 
-    simu.ibr_iteration(lt_controller_type=controller_type)
+    simu.ibr_iteration(lt_controller_type=controller_type, num_step=1)
     simu.post_process()
-    simu.save_data(print_semantic_result=False)
+    # simu.save_data(print_semantic_result=False)
     simu.visualize()
 
 
@@ -396,6 +396,8 @@ def main2():
     3. simulation results are saved in simulation/version29
 
     4*. straight-through traffic are endless and generated with random ipv and gap
+
+    5. **** check TARGET in agent.py: TARGET = 'simulation' ****
     :return:
     """
     for i in range(100):
@@ -446,7 +448,7 @@ def main2():
         print('gs_px: ', init_gs_px)
         print('gs_ipv: ', ipv_gs)
 
-        simu.initialize(simu_scenario, controller_tag, i)
+        simu.initialize(simu_scenario, controller_tag)
 
         simu.ibr_iteration(lt_controller_type=controller_tag, num_step=30)
         simu.post_process()
@@ -462,16 +464,20 @@ def main3():
 
     2. simulation results are saved in NDS_simulation
 
+    3.**** check TARGET in agent.py: TARGET = 'nds simulation' ****
+
     :return:
     """
-    for case_id in range(100, 130):
+    for case_id in range(1):
         # case_id = 0
-        simulation_version = 1
+        simulation_version = 2
         tag = 'nds-simu'
 
         simu = Simulator(simulation_version)
         simu.output_directory = '../data/3_parallel_game_outputs/NDS_simulation/version' + str(simulation_version)
         simu.case_id = case_id
+        simu.agent_gs.target = 'gs_nds'
+        simu.agent_lt.target = 'lt_nds'
 
         print('==== start main for NDS simulation ====')
         print('task type: ', tag)
@@ -482,7 +488,7 @@ def main3():
             simu.initialize(simu_scenario, tag)
             simu.ibr_iteration(num_step=30)
             simu.post_process()
-            simu.save_data()
+            # simu.save_data()
             simu.visualize()
         else:
             continue
