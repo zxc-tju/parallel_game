@@ -8,16 +8,14 @@ import pandas as pd
 from datetime import datetime
 import xlsxwriter
 
-from scipy.interpolate import interp2d
-from openpyxl import load_workbook
-
 illustration_needed = False
 print_needed = False
 save_data_needed = True
 # load data
-mat = scipy.io.loadmat('./data/NDS_data.mat')
+mat = scipy.io.loadmat('./data/NDS_data_fixed.mat')
 # full interaction information
 inter_info = mat['interaction_info']
+case_number = len(inter_info)
 '''
 inter_info:
 0-1: [position x] [position y]
@@ -46,8 +44,8 @@ def visualize_nds(case_id):
     gs_info_multi = case_info[1:inter_num[0, case_id] + 1]
 
     fig = plt.figure(1)
-    manager = plt.get_current_fig_manager()
-    manager.full_screen_toggle()
+    # manager = plt.get_current_fig_manager()
+    # manager.full_screen_toggle()
     ax1 = fig.add_subplot(111)
     # ax2 = fig.add_subplot(122)
     # ax2.set(xlim=[-22, 53], ylim=[-31, 57])
@@ -55,8 +53,6 @@ def visualize_nds(case_id):
     # ax2.imshow(img, extent=[-22, 53, -31, 57])
 
     for t in range(np.size(lt_info, 0)):
-        if t in {30}:
-            print('pause!')
         t_end = t + 10
         ax1.cla()
         ax1.set(xlim=[-22, 53], ylim=[-31, 57])
@@ -593,6 +589,13 @@ def cal_pet(trj_a, trj_b, type_cal):
 def divide_pet_in_nds(save_collection_analysis=False,
                       save_divided_trj=False,
                       show_fig=False):
+    """
+
+    :param save_collection_analysis:
+    :param save_divided_trj: divide all the trajectory according to the ipv
+    :param show_fig:
+    :return:
+    """
     comp_lt_collection = []
     coop_lt_collection = []
     comp_gs_collection = []
@@ -619,7 +622,7 @@ def divide_pet_in_nds(save_collection_analysis=False,
         #  关闭工作簿。在文件夹中打开文件，查看写入的结果。
         workbook.close()  # 一定要关闭workbook后才会产生文件！
 
-    for case_index in range(131):
+    for case_index in range(case_number):
 
         cross_id, data_cross, _ = analyze_ipv_in_nds(case_index)
         # save data into an excel with the format of:
@@ -628,7 +631,7 @@ def divide_pet_in_nds(save_collection_analysis=False,
         o, _ = find_inter_od(case_index)
         start_frame = int(o[cross_id])
 
-        if not cross_id == -1 and case_index not in {114, 129}:
+        if not cross_id == -1:  # and case_index not in {114, 129}:
 
             # go-straight vehicles
             gs_info_multi = inter_info[case_index][1:inter_num[0, case_index] + 1]
@@ -654,11 +657,11 @@ def divide_pet_in_nds(save_collection_analysis=False,
             acc_mean_gs = np.mean(acc_gs)
             acc_min_gs = min(acc_gs)
 
-            all_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave, acc_mean_gs, acc_min_gs])
+            all_collection.append([case_index, lt_ipv, gs_ipv, pet_temp, vel_ave, acc_mean_gs, acc_min_gs])
 
             # divide and show trajectories according to ipv
             if lt_ipv < 0:
-                comp_lt_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave,
+                comp_lt_collection.append([case_index, lt_ipv, gs_ipv, pet_temp, vel_ave,
                                            acc_mean_gs, acc_min_gs, ttcp_lt[0], ttcp_gs[0]])
                 ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="red", alpha=0.5)
                 # alpha=-np.mean(ipv_data_cross[:, 0] * (1 - ipv_data_cross[:, 1])) / 1.57
@@ -674,7 +677,7 @@ def divide_pet_in_nds(save_collection_analysis=False,
 
                 num_comp_lt_trj += 1
             else:
-                coop_lt_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave,
+                coop_lt_collection.append([case_index, lt_ipv, gs_ipv, pet_temp, vel_ave,
                                            acc_mean_gs, acc_min_gs, ttcp_lt[0], ttcp_gs[0]])
                 ax1.plot(inter_info[case_index][0][:, 0], inter_info[case_index][0][:, 1], color="green", alpha=0.5)
 
@@ -692,13 +695,14 @@ def divide_pet_in_nds(save_collection_analysis=False,
             # delete invalid (0,0) positions
             gs_trj_temp = gs_info_multi[cross_id][:, 0:2]
             invalid_len = len((np.where(gs_trj_temp[:, 0] == 0))[0])
+
             if gs_ipv < 0:
-                comp_gs_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave, vel_mean_gs, vel_gs_max])
+                comp_gs_collection.append([case_index, lt_ipv, gs_ipv, pet_temp, vel_ave, vel_mean_gs, vel_gs_max])
                 ax1.plot(gs_info_multi[cross_id][invalid_len:, 0],
                          gs_info_multi[cross_id][invalid_len:, 1], color="red", alpha=0.5)
 
             else:
-                coop_gs_collection.append([lt_ipv, gs_ipv, pet_temp, vel_ave, vel_mean_gs, vel_gs_max])
+                coop_gs_collection.append([case_index, lt_ipv, gs_ipv, pet_temp, vel_ave, vel_mean_gs, vel_gs_max])
                 ax1.plot(gs_info_multi[cross_id][invalid_len:, 0],
                          gs_info_multi[cross_id][invalid_len:, 1], color="green", alpha=0.5)
 
@@ -713,11 +717,11 @@ def divide_pet_in_nds(save_collection_analysis=False,
 
         plt.figure(2)
         plt.title('PET distribution (divided by ipv of LT vehicles)')
-        plt.hist(comp_lt_collection[:, 2], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+        plt.hist(comp_lt_collection[:, 3], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
                  alpha=0.5,
                  color='red',
                  label='competitive')
-        plt.hist(coop_lt_collection[:, 2], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+        plt.hist(coop_lt_collection[:, 3], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
                  alpha=0.5,
                  color='green',
                  label='cooperative')
@@ -728,11 +732,11 @@ def divide_pet_in_nds(save_collection_analysis=False,
         plt.figure(3)
         ax1 = plt.subplot(121)
         plt.title('mean GS acc distribution (divided by ipv of LT vehicles)')
-        ax1.hist(comp_lt_collection[:, 4],
+        ax1.hist(comp_lt_collection[:, 5],
                  alpha=0.5,
                  color='red',
                  label='competitive')
-        ax1.hist(coop_lt_collection[:, 4],
+        ax1.hist(coop_lt_collection[:, 5],
                  alpha=0.5,
                  color='green',
                  label='cooperative')
@@ -742,11 +746,11 @@ def divide_pet_in_nds(save_collection_analysis=False,
 
         ax2 = plt.subplot(122)
         plt.title('min GS acc distribution (divided by ipv of LT vehicles)')
-        ax2.hist(comp_lt_collection[:, 5],
+        ax2.hist(comp_lt_collection[:, 6],
                  alpha=0.5,
                  color='red',
                  label='competitive')
-        ax2.hist(coop_lt_collection[:, 5],
+        ax2.hist(coop_lt_collection[:, 6],
                  alpha=0.5,
                  color='green',
                  label='cooperative')
@@ -757,11 +761,11 @@ def divide_pet_in_nds(save_collection_analysis=False,
         plt.figure(4)
         ax1 = plt.subplot(121)
         plt.title('mean GS speed (divided by ipv of GS vehicles)')
-        ax1.hist(comp_gs_collection[:, 4],
+        ax1.hist(comp_gs_collection[:, 5],
                  alpha=0.5,
                  color='red',
                  label='competitive')
-        ax1.hist(coop_gs_collection[:, 4],
+        ax1.hist(coop_gs_collection[:, 5],
                  alpha=0.5,
                  color='green',
                  label='cooperative')
@@ -771,11 +775,11 @@ def divide_pet_in_nds(save_collection_analysis=False,
 
         ax2 = plt.subplot(122)
         plt.title('max GS speed distribution (divided by ipv of GS vehicles)')
-        ax2.hist(comp_gs_collection[:, 5],
+        ax2.hist(comp_gs_collection[:, 6],
                  alpha=0.5,
                  color='red',
                  label='competitive')
-        ax2.hist(coop_gs_collection[:, 5],
+        ax2.hist(coop_gs_collection[:, 6],
                  alpha=0.5,
                  color='green',
                  label='cooperative')
@@ -787,23 +791,26 @@ def divide_pet_in_nds(save_collection_analysis=False,
 
     if save_collection_analysis:
         # save pet data
-        filename = data_path + 'NDS_analysis/ipv_estimation/v' + str(current_nds_data_version) + '/collection_analysis_v' \
-                   + str(current_nds_data_version) + '.xlsx'
+        filename = data_path + 'NDS_analysis/ipv_estimation/v' + str(current_nds_data_version) \
+                   + '/collection_analysis_v' + str(current_nds_data_version) + '.xlsx'
         with pd.ExcelWriter(filename) as writer:
             df_all = pd.DataFrame(pet_collection,
-                                  columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel', 'acc_mean_gs', 'acc_min_gs'])
+                                  columns=['case_index', 'lt_ipv', 'gs_ipv',
+                                           'pet_temp', 'vel', 'acc_mean_gs', 'acc_min_gs'])
             # data divided by LT's IPV
             df_comp_lt = pd.DataFrame(comp_lt_collection,
-                                      columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
+                                      columns=['case_index', 'lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
                                                'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
             df_coop_lt = pd.DataFrame(coop_lt_collection,
-                                      columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
+                                      columns=['case_index', 'lt_ipv', 'gs_ipv', 'pet_temp', 'vel',
                                                'acc_mean_gs', 'acc_min_gs', 'init_ttcp_lt', 'init_ttcp_gs'])
             # data divided by GS's IPV
             df_comp_gs = pd.DataFrame(comp_gs_collection,
-                                      columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
+                                      columns=['case_index', 'lt_ipv', 'gs_ipv', 'pet_temp',
+                                               'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
             df_coop_gs = pd.DataFrame(coop_gs_collection,
-                                      columns=['lt_ipv', 'gs_ipv', 'pet_temp', 'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
+                                      columns=['case_index', 'lt_ipv', 'gs_ipv', 'pet_temp',
+                                               'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
 
             df_all.to_excel(writer, startcol=0, index=False, sheet_name="all")
             df_comp_lt.to_excel(writer, startcol=0, index=False, sheet_name="competitive_lt")
@@ -893,7 +900,7 @@ if __name__ == '__main__':
     # analyze_nds(30)
 
     "show trajectories in NDS"
-    # visualize_nds(30)
+    # visualize_nds(129)
 
     "find crossing event and the ipv of yield front-coming vehicle (if there is)"
     # cross_id, ipv_data_cross, ipv_data_non_cross = analyze_ipv_in_nds(30, True)
@@ -907,7 +914,7 @@ if __name__ == '__main__':
     # draw_rectangle(5, 5, 45)
 
     "show properties divided by the ipv of two agents"
-    divide_pet_in_nds(save_collection_analysis=False, save_divided_trj=True, show_fig=False)
+    divide_pet_in_nds(save_collection_analysis=True, save_divided_trj=False, show_fig=True)
 
     "show crossing trajectories and pet process in a case"
     # show_crossing_event(30, isfig=True, issavedata=True)
