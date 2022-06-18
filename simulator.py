@@ -32,8 +32,11 @@ class Simulator:
         self.agent_gs = None
         self.num_step = 0
         self.ending_point = None
+        self.gs_actual_trj = []
+        self.lt_actual_trj = []
+        self.case_id = None
 
-    def initialize(self, scenario, case_tag, case_id):
+    def initialize(self, scenario, case_tag):
         self.scenario = scenario
         self.agent_lt = Agent(scenario.position['lt'], scenario.velocity['lt'], scenario.heading['lt'], 'lt')
         self.agent_gs = Agent(scenario.position['gs'], scenario.velocity['gs'], scenario.heading['gs'], 'gs')
@@ -42,13 +45,12 @@ class Simulator:
         self.agent_lt.ipv = self.scenario.ipv['lt']
         self.agent_gs.ipv = self.scenario.ipv['gs']
         self.tag = case_tag
-        self.case_id = case_id
         self.agent_gs.target = 'gs_nds'
         self.agent_lt.target = 'lt_nds'
 
     def ibr_iteration(self, num_step=30, lt_controller_type='VGIM'):
         self.num_step = num_step
-        iter_limit = 10
+        iter_limit = 5
         for t in range(self.num_step):
             print('time_step: ', t, '/', self.num_step)
 
@@ -180,8 +182,10 @@ class Simulator:
         :return:
         """
         if self.tag == 'nds-simu':
-            cv_it, _ = get_central_vertices('lt_nds')
-            cv_gs, _ = get_central_vertices('gs_nds')
+            lt_origin_point = self.agent_lt.observed_trajectory[0, 0:2]
+            gs_origin_point = self.agent_gs.observed_trajectory[0, 0:2]
+            cv_it, _ = get_central_vertices('lt_nds', origin_point=lt_origin_point)
+            cv_gs, _ = get_central_vertices('gs_nds', origin_point=gs_origin_point)
         else:
             cv_it, _ = get_central_vertices('lt')
             cv_gs, _ = get_central_vertices('gs')
@@ -192,6 +196,9 @@ class Simulator:
 
         "====show plans at each time step===="
         ax1 = fig.add_subplot(131, title='trajectory_LT_' + self.semantic_result)
+        ax1.set(xlim=[-22, 53], ylim=[-31, 57])
+        img = plt.imread('./background_pic/Jianhexianxia.jpg')
+        ax1.imshow(img, extent=[-22, 53, -31, 57])
         # central vertices
         ax1.plot(cv_it[:, 0], cv_it[:, 1], 'r-')
         ax1.plot(cv_gs[:, 0], cv_gs[:, 1], 'b-')
@@ -199,30 +206,43 @@ class Simulator:
         # position at each time step
         ax1.scatter(self.agent_lt.observed_trajectory[:, 0],
                     self.agent_lt.observed_trajectory[:, 1],
-                    s=100,
+                    s=80,
                     alpha=0.6,
                     color='red',
                     label='left-turn')
         ax1.scatter(self.agent_gs.observed_trajectory[:, 0],
                     self.agent_gs.observed_trajectory[:, 1],
-                    s=100,
+                    s=80,
                     alpha=0.6,
                     color='blue',
                     label='go-straight')
+        if self.tag == 'nds-simu':
+            ax1.scatter(self.lt_actual_trj[:self.num_step, 0],
+                        self.lt_actual_trj[:self.num_step, 1],
+                        s=50,
+                        alpha=0.6,
+                        color='purple',
+                        label='left-turn-actual')
+            ax1.scatter(self.gs_actual_trj[:self.num_step, 0],
+                        self.gs_actual_trj[:self.num_step, 1],
+                        s=50,
+                        alpha=0.6,
+                        color='black',
+                        label='go-straight-actual')
 
-        # full tracks at each time step
-        for t in range(self.num_step):
-            lt_track = self.agent_lt.trj_solution_collection[t]
-            ax1.plot(lt_track[:, 0], lt_track[:, 1], '--', color='red')
-            gs_track = self.agent_gs.trj_solution_collection[t]
-            ax1.plot(gs_track[:, 0], gs_track[:, 1], '--', color='blue')
-
-        # connect two agents
-        for t in range(self.num_step + 1):
-            ax1.plot([self.agent_lt.observed_trajectory[t, 0], self.agent_gs.observed_trajectory[t, 0]],
-                     [self.agent_lt.observed_trajectory[t, 1], self.agent_gs.observed_trajectory[t, 1]],
-                     color='black',
-                     alpha=0.2)
+        # # full tracks at each time step
+        # for t in range(self.num_step):
+        #     lt_track = self.agent_lt.trj_solution_collection[t]
+        #     ax1.plot(lt_track[:, 0], lt_track[:, 1], '--', color='red')
+        #     gs_track = self.agent_gs.trj_solution_collection[t]
+        #     ax1.plot(gs_track[:, 0], gs_track[:, 1], '--', color='blue')
+        #
+        # # connect two agents
+        # for t in range(self.num_step + 1):
+        #     ax1.plot([self.agent_lt.observed_trajectory[t, 0], self.agent_gs.observed_trajectory[t, 0]],
+        #              [self.agent_lt.observed_trajectory[t, 1], self.agent_gs.observed_trajectory[t, 1]],
+        #              color='black',
+        #              alpha=0.2)
 
         max_x_lt = max(self.agent_lt.observed_trajectory[:, 0])
         max_y_lt = max(self.agent_lt.observed_trajectory[:, 1])
@@ -238,7 +258,7 @@ class Simulator:
         min_x = min(min_x_lt, min_x_gs)
         min_y = min(min_y_lt, min_y_gs)
 
-        ax1.set(xlim=[min_x - 3, max_x + 3], ylim=[min_y - 3, max_y + 3])
+        # ax1.set(xlim=[min_x - 3, max_x + 3], ylim=[min_y - 3, max_y + 3])
 
         "====show IPV and uncertainty===="
         ax2 = fig.add_subplot(132, title='ipv')
@@ -294,26 +314,32 @@ class Simulator:
 
         # plt.pause(1)
         # plt.close('all')
-        plt.show()
+        # plt.show()
 
     def read_nds_scenario(self):
         cross_id, data_cross, _ = analyze_ipv_in_nds(self.case_id)
         # data_cross:
         # 0-ipv_lt | ipv_lt_error | lt_px | lt_py  | lt_vx  | lt_vy  | lt_heading  |...
         # 7-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
-        init_position_lt = [data_cross[0, 2], data_cross[0, 3]]
-        init_velocity_lt = [data_cross[0, 4], data_cross[0, 5]]
-        init_heading_lt = data_cross[0, 6]
-        ipv_lt = np.mean(data_cross[4:, 0])
-        init_position_gs = [data_cross[0, 9], data_cross[0, 10]]
-        init_velocity_gs = [data_cross[0, 11], data_cross[0, 12]]
-        init_heading_gs = data_cross[0, 13]
-        ipv_gs = np.mean(data_cross[4:, 7])
 
-        return Scenario([init_position_lt, init_position_gs],
-                        [init_velocity_lt, init_velocity_gs],
-                        [init_heading_lt, init_heading_gs],
-                        [ipv_lt, ipv_gs])
+        if cross_id == -1:
+            return None
+        else:
+            init_position_lt = [data_cross[0, 2], data_cross[0, 3]]
+            init_velocity_lt = [data_cross[0, 4], data_cross[0, 5]]
+            init_heading_lt = data_cross[0, 6]
+            ipv_lt = np.mean(data_cross[4:, 0])
+            init_position_gs = [data_cross[0, 9], data_cross[0, 10]]
+            init_velocity_gs = [data_cross[0, 11], data_cross[0, 12]]
+            init_heading_gs = data_cross[0, 13]
+            ipv_gs = np.mean(data_cross[4:, 7])
+            self.lt_actual_trj = data_cross[:, 2:4]
+            self.gs_actual_trj = data_cross[:, 9:11]
+
+            return Scenario([init_position_lt, init_position_gs],
+                            [init_velocity_lt, init_velocity_gs],
+                            [init_heading_lt, init_heading_gs],
+                            [ipv_lt, ipv_gs])
 
 
 def main1():
@@ -438,28 +464,28 @@ def main3():
 
     :return:
     """
+    for case_id in range(100, 130):
+        # case_id = 0
+        simulation_version = 1
+        tag = 'nds-simu'
 
-    case_id = 0
-    simulation_version = 1
-    tag = 'nds-simu'
+        simu = Simulator(simulation_version)
+        simu.output_directory = '../data/3_parallel_game_outputs/NDS_simulation/version' + str(simulation_version)
+        simu.case_id = case_id
 
-    simu = Simulator(simulation_version)
-    simu.output_directory = '../data/3_parallel_game_outputs/NDS_simulation/version' + str(simulation_version)
+        print('==== start main for NDS simulation ====')
+        print('task type: ', tag)
+        print('case id: ' + str(case_id))
 
-    print('==== start main for NDS simulation ====')
-    print('task type: ', tag)
-    print('case id: ' + str(case_id))
-
-    simu.read_nds_scenario()
-
-    simu_scenario = simu.read_nds_scenario()
-
-    simu.initialize(simu_scenario, tag, case_id)
-
-    simu.ibr_iteration(num_step=30)
-    simu.post_process()
-    simu.save_data(print_semantic_result=True)
-    simu.visualize()
+        simu_scenario = simu.read_nds_scenario()
+        if simu_scenario:
+            simu.initialize(simu_scenario, tag)
+            simu.ibr_iteration(num_step=30)
+            simu.post_process()
+            simu.save_data()
+            simu.visualize()
+        else:
+            continue
 
 
 if __name__ == '__main__':

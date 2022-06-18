@@ -9,7 +9,7 @@ import xlsxwriter
 from datetime import datetime
 
 # save trajectories into excel?
-save_trajectory = True
+save_trajectory = False
 
 
 def vis_nds(case_id='all'):
@@ -65,7 +65,7 @@ def vis_nds(case_id='all'):
 
 if __name__ == '__main__':
     # load mat file
-    mat = scipy.io.loadmat('../data/NDS_data.mat')
+    mat = scipy.io.loadmat('../data/NDS_data_fixed.mat')
 
     # full interaction information
     inter_info = mat['interaction_info']
