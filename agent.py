@@ -42,10 +42,12 @@ virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-if TARGET in {'nds analysis', 'nds simulation'}:
+if TARGET == 'nds analysis':
     WEIGHT_GRP = 0.4  # stable for nds analysis
 elif TARGET == 'simulation':
     WEIGHT_GRP = 0.1  # stable for simulation
+elif TARGET == 'nds simulation':
+    WEIGHT_GRP = 0.4
 
 # likelihood function
 sigma = 0.02
@@ -282,7 +284,7 @@ def cal_interior_cost(track, target):
     "3. cost of overspeed"
     dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
     vel = (dis[1:] - dis[0:-1]) / dt
-    cost_overspeed = max(vel) - MAX_SPEED
+    cost_overspeed = max(max(vel) - MAX_SPEED, 0)
 
     "4. cost of jerk"
     # dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
@@ -332,7 +334,7 @@ def cal_group_cost(track_packed, self_target):
             vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
         cost_group = vel_rel_along_sum / TRACK_LEN
 
-    elif TARGET == 'nds analysis':
+    elif TARGET in {'nds analysis', 'nds simulation'}:
         "version 3: stable for nds analysis"
         acc_self_along_sum = 0
         for i in range(np.size(acc_self, 0)):
@@ -361,6 +363,7 @@ def cal_reliability(inter_track, act_trck, vir_trck_coll, target):
     delta_pref = np.zeros(candidates_num)
     cost_preference_vir = np.zeros(candidates_num)
     if np.size(inter_track) == 0:
+        # calculate with trj similarity
         for i in range(candidates_num):
             virtual_track = vir_trck_coll[i]
             rel_dis = np.linalg.norm(virtual_track - act_trck, axis=1)  # distance vector
@@ -375,6 +378,7 @@ def cal_reliability(inter_track, act_trck, vir_trck_coll, target):
                 var[i] = 0
 
     else:
+        # calculate with cost preference similarity
         interior_cost_observed = cal_interior_cost(act_trck, target)
         group_cost_observed = cal_group_cost([act_trck, inter_track], target)
         cost_preference_observed = math.atan(group_cost_observed / interior_cost_observed)
