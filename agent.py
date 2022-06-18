@@ -9,14 +9,15 @@ from tools.utility import get_intersection_point
 
 '''##========Check Target=======##'''
 
-TARGET = 'simulation'
+# TARGET = 'simulation'
+TARGET = 'nds simulation'
 # TARGET = 'nds analysis'
 
 '''==============================='''
 
 # simulation setting
 dt = 0.12
-if TARGET == 'nds analysis':
+if TARGET in {'nds analysis', 'nds simulation'}:
     dt = 0.12  # stable for nds analysis
 elif TARGET == 'simulation':
     dt = 0.1  # stable for simulation
@@ -41,7 +42,7 @@ virtual_agent_IPV_range = np.array([-3, -2, -1, 0, 1, 2, 3]) * math.pi / 8
 
 # weight of interior and group cost
 WEIGHT_INT = 1
-if TARGET == 'nds analysis':
+if TARGET in {'nds analysis', 'nds simulation'}:
     WEIGHT_GRP = 0.4  # stable for nds analysis
 elif TARGET == 'simulation':
     WEIGHT_GRP = 0.1  # stable for simulation
