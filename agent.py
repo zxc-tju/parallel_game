@@ -86,7 +86,7 @@ class Agent:
         p, v, h = self_info[0:3]
         init_state_4_kine = [p[0], p[1], v[0], v[1], h]  # initial state
         fun = utility_IBR(self_info, inter_track)  # objective function
-        u0 = np.concatenate([1 * np.ones([(track_len - 1), 1]),
+        u0 = np.concatenate([1 * np.zeros([(track_len - 1), 1]),
                              np.zeros([(track_len - 1), 1])])  # initialize solution
         bds = [(-MAX_ACCELERATION, MAX_ACCELERATION) for i in range(track_len - 1)] + \
               [(-MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) for i in range(track_len - 1)]  # boundaries
