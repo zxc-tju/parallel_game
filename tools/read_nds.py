@@ -21,9 +21,10 @@ def vis_nds(case_id='all'):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set(xlim=[-22, 53], ylim=[-31, 57])
-    img = plt.imread('background_pic/Jianhexianxia.jpg')
+    img = plt.imread('../background_pic/Jianhexianxia.jpg')
     ax.imshow(img, extent=[-22, 53, -31, 57])
 
+    gs_num = 0
     for i in target_range:
         # abstract interaction info. of a given case
         case_info = inter_info[i]
@@ -47,7 +48,8 @@ def vis_nds(case_id='all'):
                 pd_trj_gs = pd.DataFrame(gs_info_multi[gs_id][invalid_len:, 0:2],
                                          columns=['case-' + str(i) + '-x', 'case-' + str(i) + '-y'])
                 with pd.ExcelWriter(filename, mode='a', if_sheet_exists="overlay", engine="openpyxl") as writer:
-                    pd_trj_gs.to_excel(writer, startcol=2 * i + 1, index=False, sheet_name='go-straight')
+                    pd_trj_gs.to_excel(writer, startcol=2 * gs_num, index=False, sheet_name='go-straight')
+            gs_num += 1
         # left-turn trajectories
         ax.plot(lt_info[:, 0], lt_info[:, 1],
                 alpha=0.5,
@@ -57,13 +59,13 @@ def vis_nds(case_id='all'):
             pd_trj_lt = pd.DataFrame(lt_info[:, 0:2],
                                      columns=['case-' + str(i) + '-x', 'case-' + str(i) + '-y'])
             with pd.ExcelWriter(filename, mode='a', if_sheet_exists="overlay", engine="openpyxl") as writer:
-                pd_trj_lt.to_excel(writer, startcol=2 * i + 1, index=False, sheet_name='turn-left')
+                pd_trj_lt.to_excel(writer, startcol=2 * i, index=False, sheet_name='turn-left')
     plt.show()
 
 
 if __name__ == '__main__':
     # load mat file
-    mat = scipy.io.loadmat('./data/NDS_data.mat')
+    mat = scipy.io.loadmat('../data/NDS_data.mat')
 
     # full interaction information
     inter_info = mat['interaction_info']

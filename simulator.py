@@ -6,8 +6,10 @@ from tools.utility import get_central_vertices
 import pickle
 import pandas as pd
 import xlsxwriter
+import scipy.io
 import os
 import matplotlib.pyplot as plt
+from NDS_analysis import analyze_ipv_in_nds
 
 
 class Scenario:
@@ -24,13 +26,14 @@ class Simulator:
         self.version = version
         self.output_directory = '../data/3_parallel_game_outputs/simulation/version' + str(self.version)
         self.tag = None
+        self.case_id = None
         self.scenario = None
         self.agent_lt = None
         self.agent_gs = None
         self.num_step = 0
         self.ending_point = None
 
-    def initialize(self, scenario, case_tag):
+    def initialize(self, scenario, case_tag, case_id):
         self.scenario = scenario
         self.agent_lt = Agent(scenario.position['lt'], scenario.velocity['lt'], scenario.heading['lt'], 'lt')
         self.agent_gs = Agent(scenario.position['gs'], scenario.velocity['gs'], scenario.heading['gs'], 'gs')
@@ -39,10 +42,13 @@ class Simulator:
         self.agent_lt.ipv = self.scenario.ipv['lt']
         self.agent_gs.ipv = self.scenario.ipv['gs']
         self.tag = case_tag
+        self.case_id = case_id
+        self.agent_gs.target = 'gs_nds'
+        self.agent_lt.target = 'lt_nds'
 
     def ibr_iteration(self, num_step=30, lt_controller_type='VGIM'):
         self.num_step = num_step
-        iter_limit = 3
+        iter_limit = 10
         for t in range(self.num_step):
             print('time_step: ', t, '/', self.num_step)
 
@@ -76,17 +82,17 @@ class Simulator:
             #     self.num_step = t + 1
             #     break
 
-    def save_data(self, print_to_excel=True, raw_num=0, task_id=1):
+    def save_data(self, print_semantic_result=False, task_id=1):
         filename = self.output_directory + '/data/' + str(self.tag) \
                    + '_task_' + str(task_id) \
-                   + '_case_' + str(raw_num) \
+                   + '_case_' + str(self.case_id) \
                    + '.pckl'
         f = open(filename, 'wb')
         pickle.dump([self.agent_lt, self.agent_gs, self.semantic_result, self.tag, self.ending_point], f)
         f.close()
         print('case_' + str(self.tag), ' saved')
 
-        if print_to_excel:
+        if print_semantic_result:
 
             # prepare workbook
             workbook = self.output_directory + '/excel/' + self.tag + '.xlsx'
@@ -99,14 +105,14 @@ class Simulator:
             data_interaction_event = [[self.agent_gs.observed_trajectory[0, 0],
                                        self.agent_gs.ipv,
                                        self.semantic_result], ]
-            if raw_num == 0:
+            if self.case_id == 0:
                 pd_interaction_event = pd.DataFrame(data_interaction_event, columns=['gap', 'gs_ipv', 'result'])
                 # write data
                 with pd.ExcelWriter(workbook, mode='a', if_sheet_exists="overlay", engine="openpyxl") as writer:
 
                     pd_interaction_event.to_excel(writer, index=False,
                                                   sheet_name=self.tag + '-task-' + str(task_id),
-                                                  startrow=raw_num)
+                                                  startrow=self.case_id)
 
             else:
                 pd_interaction_event = pd.DataFrame(data_interaction_event)
@@ -115,9 +121,15 @@ class Simulator:
 
                     pd_interaction_event.to_excel(writer, index=False, header=False,
                                                   sheet_name=self.tag + '-task-' + str(task_id),
-                                                  startrow=raw_num + 1)
+                                                  startrow=self.case_id + 1)
 
     def post_process(self):
+        """
+        identify semantic interaction results:
+        1. crashed or not
+        2. the letf-turn vehicle yield or not
+        :return:
+        """
         track_lt = self.agent_lt.observed_trajectory
         track_gs = self.agent_gs.observed_trajectory
         pos_delta = track_gs - track_lt
@@ -160,9 +172,19 @@ class Simulator:
                     self.semantic_result = 'unfinished'
                     print('interaction is not finished. \n')
 
-    def visualize(self, raw_num=0, task_id=0, controller_type='VGIM'):
-        cv_it, _ = get_central_vertices('lt')
-        cv_gs, _ = get_central_vertices('gs')
+    def visualize(self, task_id=0, controller_type='VGIM'):
+        """
+
+        :param task_id: used whe conduct multi processed in parallel
+        :param controller_type:
+        :return:
+        """
+        if self.tag == 'nds-simu':
+            cv_it, _ = get_central_vertices('lt_nds')
+            cv_gs, _ = get_central_vertices('gs_nds')
+        else:
+            cv_it, _ = get_central_vertices('lt')
+            cv_gs, _ = get_central_vertices('gs')
 
         # set figures
         fig = plt.figure(figsize=(12, 4))
@@ -267,19 +289,38 @@ class Simulator:
         # plt.ioff()
         plt.savefig(self.output_directory + '/figures/' + str(self.tag)
                     + '_task_' + str(task_id)
-                    + '_case_' + str(raw_num)
+                    + '_case_' + str(self.case_id)
                     + '.png')
 
-        plt.pause(1)
-        plt.close('all')
-        # plt.show()
+        # plt.pause(1)
+        # plt.close('all')
+        plt.show()
+
+    def read_nds_scenario(self):
+        cross_id, data_cross, _ = analyze_ipv_in_nds(self.case_id)
+        # data_cross:
+        # 0-ipv_lt | ipv_lt_error | lt_px | lt_py  | lt_vx  | lt_vy  | lt_heading  |...
+        # 7-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
+        init_position_lt = [data_cross[0, 2], data_cross[0, 3]]
+        init_velocity_lt = [data_cross[0, 4], data_cross[0, 5]]
+        init_heading_lt = data_cross[0, 6]
+        ipv_lt = np.mean(data_cross[4:, 0])
+        init_position_gs = [data_cross[0, 9], data_cross[0, 10]]
+        init_velocity_gs = [data_cross[0, 11], data_cross[0, 12]]
+        init_heading_gs = data_cross[0, 13]
+        ipv_gs = np.mean(data_cross[4:, 7])
+
+        return Scenario([init_position_lt, init_position_gs],
+                        [init_velocity_lt, init_velocity_gs],
+                        [init_heading_lt, init_heading_gs],
+                        [ipv_lt, ipv_gs])
 
 
 def main1():
     """
     ==== main for simulating unprotected left-turning ====
 
-    1. model type is controlled by ipv and iteration number (3: VGIM , 0: Optimal controller)
+    1. model type is controlled by ipv and iteration number (VGIM: 3 iterations , Optimal controller: 0)
 
     2. manual Continuous Interaction: if LT yielded, print the ending point of the interaction and
     the next interaction starts at the ending point  (used for setting LT vehicle's initial state)
@@ -310,11 +351,11 @@ def main1():
                              [ipv_lt, ipv_gs])
 
     simu = Simulator(34)
-    simu.initialize(simu_scenario, tag)
+    simu.initialize(simu_scenario, tag, 1)
 
     simu.ibr_iteration(lt_controller_type=controller_type)
     simu.post_process()
-    simu.save_data()
+    simu.save_data(print_semantic_result=False)
     simu.visualize()
 
 
@@ -322,7 +363,7 @@ def main2():
     """
     ==== main for simulating RANDOM* unprotected left-turning ====
 
-    1. model type is controlled by ipv and iteration number (3: VGIM , 1: Optimal controller)
+    1. model type is controlled by ipv and iteration number (VGIM: 3 iterations , Optimal controller: 0)
 
     2. change tag for each simulation
 
@@ -339,7 +380,7 @@ def main2():
         # tag = 'VGIM-dyna'
         # tag = 'OPT-coop'
         # tag = 'OPT-safe'
-        tag = 'OPT-dyna'
+        controller_tag = 'OPT-dyna'
 
         # generate gs position
         init_gs_px = 2 * 2 * (np.random.random() - 0.5) + 23
@@ -356,12 +397,12 @@ def main2():
         init_position_lt = [11, -5.8]
         init_velocity_lt = [1.5, 0.23]
         init_heading_lt = math.pi / 4
-        if tag in {'VGIM-coop', 'OPT-coop'}:
+        if controller_tag in {'VGIM-coop', 'OPT-coop'}:
             ipv_lt = math.pi / 8
-        elif tag in {'OPT-safe'}:
+        elif controller_tag in {'OPT-safe'}:
             ipv_lt = 3 * math.pi / 16
         else:
-            if init_gs_px > 22 and ipv_gs > 3/16 * math.pi:
+            if init_gs_px > 22 and ipv_gs > 3 / 16 * math.pi:
                 ipv_lt = -0.1
             else:
                 ipv_lt = math.pi / 8
@@ -373,23 +414,60 @@ def main2():
         simu = Simulator(33)
 
         print('==== start main for random interaction ====')
-        print('task type: ', tag)
+        print('task type: ', controller_tag)
         print('task id: ' + str(task_id))
         print('case id: ' + str(i))
         print('gs_px: ', init_gs_px)
         print('gs_ipv: ', ipv_gs)
 
-        simu.initialize(simu_scenario, tag)
+        simu.initialize(simu_scenario, controller_tag, i)
 
-        simu.ibr_iteration(lt_controller_type=tag, num_step=30)
+        simu.ibr_iteration(lt_controller_type=controller_tag, num_step=30)
         simu.post_process()
-        simu.save_data(print_to_excel=True, raw_num=i, task_id=task_id)
-        simu.visualize(raw_num=i, task_id=task_id, controller_type=tag)
+        simu.save_data(print_semantic_result=True, task_id=task_id)
+        simu.visualize(task_id=task_id, controller_type=controller_tag)
+
+
+def main3():
+    """
+    ==== main for simulating NDS scenarios ====
+
+    1. model type is controlled by ipv and iteration number (VGIM: 3 iterations , Optimal controller: 0)
+
+    2. simulation results are saved in NDS_simulation
+
+    :return:
+    """
+
+    case_id = 0
+    simulation_version = 1
+    tag = 'nds-simu'
+
+    simu = Simulator(simulation_version)
+    simu.output_directory = '../data/3_parallel_game_outputs/NDS_simulation/version' + str(simulation_version)
+
+    print('==== start main for NDS simulation ====')
+    print('task type: ', tag)
+    print('case id: ' + str(case_id))
+
+    simu.read_nds_scenario()
+
+    simu_scenario = simu.read_nds_scenario()
+
+    simu.initialize(simu_scenario, tag, case_id)
+
+    simu.ibr_iteration(num_step=30)
+    simu.post_process()
+    simu.save_data(print_semantic_result=True)
+    simu.visualize()
 
 
 if __name__ == '__main__':
     "无保护左转实验- 多模型对比"
-    main1()
+    # main1()
 
     "无保护左转实验- 随机交互"
     # main2()
+
+    "剑河仙霞场景仿真"
+    main3()
