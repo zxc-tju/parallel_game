@@ -157,22 +157,22 @@ def get_intersection_point(polyline1, polyline2):
     return inter_point
 
 
-def draw_rectangle(x, y, deg):
-    car_len = 5
+def draw_rectangle(x, y, deg, ax, para_alpha=0.5, para_color='blue'):
+    car_len = 1
     car_wid = 2
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
 
-    r1 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="blue", alpha=0.50)
-    r2 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="red", alpha=0.50)
+    # r1 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color="blue", alpha=transp)
+    r2 = patches.Rectangle((x - car_wid / 2, y - car_len / 2), car_wid, car_len, color=para_color, alpha=para_alpha)
 
     t2 = mt.Affine2D().rotate_deg_around(x, y, deg) + ax.transData
     r2.set_transform(t2)
 
-    ax.add_patch(r1)
+    # ax.add_patch(r1)
     ax.add_patch(r2)
 
-    plt.grid(True)
-    plt.axis('equal')
-
-    plt.show()
+    # plt.grid(True)
+    # plt.axis('equal')
+    #
+    # plt.show()
