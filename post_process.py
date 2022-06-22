@@ -16,12 +16,13 @@ ipv_update_method = 1
 show_gif = 1
 save_fig = 1
 save_data = 0
+save_fig_for_paper = 1
 
 
 def get_results(rd, case_id):
     # import data
     version_num = '28'
-    tag = 'VGIM-coop-gs-4'
+    tag = 'OPT-coop-gs-5'
     filedir = '../data/3_parallel_game_outputs/simulation/version' + str(version_num)
     filename = filedir + '/data/agents_infocase' + '_round' + str(rd) + '-' + tag + '.pckl'
     # filename = filedir + '/data/agents_info' + '_round_' + str(rd) + '_case_' + str(case_id) + '.pckl'
@@ -108,14 +109,15 @@ def get_results(rd, case_id):
 
         "====final observed_trajectory===="
         num_frame = len(lt_ob_trj)
+        # num_frame = 16
         for t in range(num_frame):
             ax1.cla()
             ax1.imshow(img, extent=[-9.1, 24.9, -13, 8])
             ax1.set(xlim=[-9.1, 35], ylim=[-13, 8])
-            # central vertices
-            ax1.plot(cv_lt[:, 0], cv_lt[:, 1], 'r-')
-            ax1.plot(cv_gs[:, 0], cv_gs[:, 1], 'b-')
-
+            if not save_fig_for_paper:
+                # central vertices
+                ax1.plot(cv_lt[:, 0], cv_lt[:, 1], 'r-')
+                ax1.plot(cv_gs[:, 0], cv_gs[:, 1], 'b-')
             # # ---- show position: version 1 ---- #
             # # left-turn
             # ax1.scatter(lt_ob_trj[:t + 1, 0],
@@ -134,40 +136,43 @@ def get_results(rd, case_id):
 
             # ---- show position: version 2 ----#
             for s in range(t+1):
-                draw_rectangle(lt_ob_trj[s, 0], lt_ob_trj[s, 1], lt_heading[s], ax1, 
-                               para_alpha=(s+1)/2/num_frame, para_color='blue')
+                draw_rectangle(lt_ob_trj[s, 0], lt_ob_trj[s, 1], lt_heading[s], ax1,
+                               para_alpha=(s+1)/num_frame, para_color='#0E76CF')
                 draw_rectangle(gs_ob_trj[s, 0], gs_ob_trj[s, 1], gs_heading[s], ax1,
-                               para_alpha=(s+1)/2/num_frame, para_color='purple')
+                               para_alpha=(s+1)/num_frame, para_color='#7030A0')
 
-                draw_rectangle(30-s*0.5-0.5, -2, 0, ax1, para_alpha=(s+1)/2/num_frame, para_color='black')
+                # non-interacting following car
+                # draw_rectangle(30-s*0.5-0.5, -2, 0, ax1, para_alpha=(s+1)/num_frame, para_color='gray')
 
-            if t < len(lt_ob_trj) - 1:
-                # real-time virtual plans of ## ego ## at time step t
-                lt_track = agent_lt.trj_solution_collection[t]
-                ax1.plot(lt_track[:, 0], lt_track[:, 1], '--', linewidth=3)
-                gs_track = agent_gs.trj_solution_collection[t]
-                ax1.plot(gs_track[:, 0], gs_track[:, 1], '--', linewidth=3)
-                if ipv_update_method == 1:
-                    # real-time virtual plans of ## interacting agent ## at time step t
-                    candidates_lt = agent_lt.estimated_inter_agent.virtual_track_collection[t]
-                    candidates_gs = agent_gs.estimated_inter_agent.virtual_track_collection[t]
-                    for track_lt in candidates_lt:
-                        ax1.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
-                    for track_gs in candidates_gs:
-                        ax1.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
-            # position link
-            ax1.plot([lt_ob_trj[t, 0], gs_ob_trj[t, 0]],
-                     [lt_ob_trj[t, 1], gs_ob_trj[t, 1]],
-                     color='gray',
-                     alpha=0.2)
+            if not save_fig_for_paper:
+                if t < len(lt_ob_trj) - 1:
+                    # real-time virtual plans of ## ego ## at time step t
+                    lt_track = agent_lt.trj_solution_collection[t]
+                    ax1.plot(lt_track[:, 0], lt_track[:, 1], '--', linewidth=3)
+                    gs_track = agent_gs.trj_solution_collection[t]
+                    ax1.plot(gs_track[:, 0], gs_track[:, 1], '--', linewidth=3)
+                    if ipv_update_method == 1:
+                        # real-time virtual plans of ## interacting agent ## at time step t
+                        candidates_lt = agent_lt.estimated_inter_agent.virtual_track_collection[t]
+                        candidates_gs = agent_gs.estimated_inter_agent.virtual_track_collection[t]
+                        for track_lt in candidates_lt:
+                            ax1.plot(track_lt[:, 0], track_lt[:, 1], color='green', alpha=0.5)
+                        for track_gs in candidates_gs:
+                            ax1.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
+                # position link
+                ax1.plot([lt_ob_trj[t, 0], gs_ob_trj[t, 0]],
+                         [lt_ob_trj[t, 1], gs_ob_trj[t, 1]],
+                         color='gray',
+                         alpha=0.2)
             if show_gif:
                 plt.pause(0.1)
-        # full position link
-        for t in range(len(lt_ob_trj)):
-            ax1.plot([lt_ob_trj[t, 0], gs_ob_trj[t, 0]],
-                     [lt_ob_trj[t, 1], gs_ob_trj[t, 1]],
-                     color='gray',
-                     alpha=0.1)
+        if not save_fig_for_paper:
+            # full position link
+            for t in range(len(lt_ob_trj)):
+                ax1.plot([lt_ob_trj[t, 0], gs_ob_trj[t, 0]],
+                         [lt_ob_trj[t, 1], gs_ob_trj[t, 1]],
+                         color='gray',
+                         alpha=0.1)
         ax1.set_title('gs_' + str(agent_gs.ipv) + '_lt_' + str(agent_lt.ipv), fontsize=12)
 
         "====ipv estimation===="
@@ -228,7 +233,7 @@ def get_results(rd, case_id):
 
         # save figure
         if save_fig:
-            plt.savefig(filedir + '/figures/'
+            plt.savefig(filedir + '/figures/' + tag
                         + '_round_' + str(rd)
                         + '_case_' + str(case_id) + '.svg', format='svg')
             # plt.clf()
