@@ -48,7 +48,7 @@ class Simulator:
 
     def ibr_iteration(self, num_step=30, lt_controller_type='VGIM'):
         self.num_step = num_step
-        iter_limit = 10
+        iter_limit = 3
         for t in range(self.num_step):
             print('time_step: ', t, '/', self.num_step)
 
@@ -468,28 +468,31 @@ def main3():
 
     :return:
     """
-    for case_id in range(1):
+    for case_id in range(51, 52):
         # case_id = 0
-        simulation_version = 2
+        task_id = 6  # change task id if conduct multi tasks
+        simulation_version = 3
         tag = 'nds-simu'
 
         simu = Simulator(simulation_version)
         simu.output_directory = '../data/3_parallel_game_outputs/NDS_simulation/version' + str(simulation_version)
         simu.case_id = case_id
-        simu.agent_gs.target = 'gs_nds'
-        simu.agent_lt.target = 'lt_nds'
 
         print('==== start main for NDS simulation ====')
         print('task type: ', tag)
         print('case id: ' + str(case_id))
 
         simu_scenario = simu.read_nds_scenario()
+        simu_scenario.ipv['lt'] += 0
+        simu_scenario.ipv['gs'] -= 0
         if simu_scenario:
             simu.initialize(simu_scenario, tag)
+            simu.agent_gs.target = 'gs_nds'
+            simu.agent_lt.target = 'lt_nds'
             simu.ibr_iteration(num_step=30)
             simu.post_process()
-            # simu.save_data()
-            simu.visualize()
+            simu.save_data(task_id=task_id)
+            simu.visualize(task_id=task_id)
         else:
             continue
 
