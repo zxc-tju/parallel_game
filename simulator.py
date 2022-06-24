@@ -24,7 +24,7 @@ class Simulator:
     def __init__(self, version):
         self.semantic_result = None
         self.version = version
-        self.output_directory = '../data/3_parallel_game_outputs/simulation/version' + str(self.version)
+        self.output_directory = None
         self.tag = None
         self.case_id = None
         self.scenario = None
@@ -34,7 +34,6 @@ class Simulator:
         self.ending_point = None
         self.gs_actual_trj = []
         self.lt_actual_trj = []
-        self.case_id = None
 
     def initialize(self, scenario, case_tag):
         self.scenario = scenario
@@ -46,7 +45,7 @@ class Simulator:
         self.agent_gs.ipv = self.scenario.ipv['gs']
         self.tag = case_tag
 
-    def ibr_iteration(self, num_step=30, lt_controller_type='VGIM'):
+    def ibr_iteration(self, num_step=30, lt_controller_type='VGIM', break_when_finish=False):
         self.num_step = num_step
         iter_limit = 3
         for t in range(self.num_step):
@@ -77,10 +76,11 @@ class Simulator:
             self.agent_lt.update_state(self.agent_gs, controller_type=lt_controller_type)
             self.agent_gs.update_state(self.agent_lt, controller_type='VGIM')
 
-            # if self.agent_gs.observed_trajectory[-1, 0] < self.agent_lt.observed_trajectory[-1, 0] \
-            #         or self.agent_lt.observed_trajectory[-1, 1] > self.agent_gs.observed_trajectory[-1, 1]:
-            #     self.num_step = t + 1
-            #     break
+            if break_when_finish:
+                if self.agent_gs.observed_trajectory[-1, 0] < self.agent_lt.observed_trajectory[-1, 0] \
+                        or self.agent_lt.observed_trajectory[-1, 1] > self.agent_gs.observed_trajectory[-1, 1]:
+                    self.num_step = t + 1
+                    break
 
     def save_data(self, print_semantic_result=False, task_id=1):
         filename = self.output_directory + '/data/' + str(self.tag) \
@@ -400,30 +400,30 @@ def main2():
     5. **** check TARGET in agent.py: TARGET = 'simulation' ****
     :return:
     """
-    for i in range(100):
+    for case_id in range(1):
 
         task_id = 3
 
-        # tag = 'VGIM-coop'
-        # tag = 'VGIM-dyna'
-        # tag = 'OPT-coop'
-        # tag = 'OPT-safe'
-        controller_tag = 'OPT-dyna'
+        # controller_tag = 'VGIM-coop'
+        # controller_tag = 'VGIM-dyna'
+        # controller_tag = 'OPT-coop'
+        controller_tag = 'OPT-safe'
+        # controller_tag = 'OPT-dyna'
 
         # generate gs position
-        init_gs_px = 2 * 2 * (np.random.random() - 0.5) + 23
-        # init_gs_px = 25
+        # init_gs_px = 5 * (2 * (np.random.random() - 0.5)) + 28
+        init_gs_px = 35
 
         # initial state of the go-straight vehicle
         init_position_gs = [init_gs_px, -2]
         init_velocity_gs = [-5, 0]
         init_heading_gs = math.pi
-        ipv_gs = math.pi * 1 / 16 * 2 * (np.random.random() - 0.5) + math.pi * 3 / 16
-        # ipv_gs = math.pi/4
+        # ipv_gs = math.pi * 1 / 16 * 2 * (np.random.random() - 0.5) + math.pi * 3 / 16
+        ipv_gs = 0 * math.pi/4
 
         # initial state of the left-turn vehicle
         init_position_lt = [11, -5.8]
-        init_velocity_lt = [1.5, 0.23]
+        init_velocity_lt = [1.5, 0.3]
         init_heading_lt = math.pi / 4
         if controller_tag in {'VGIM-coop', 'OPT-coop'}:
             ipv_lt = math.pi / 8
@@ -439,18 +439,20 @@ def main2():
                                  [init_velocity_lt, init_velocity_gs],
                                  [init_heading_lt, init_heading_gs],
                                  [ipv_lt, ipv_gs])
-        simu = Simulator(33)
+        simu = Simulator(34)
+        simu.output_directory = '../data/3_parallel_game_outputs/simulation/version' + str(simu.version)
+        simu.case_id = case_id
 
         print('==== start main for random interaction ====')
         print('task type: ', controller_tag)
         print('task id: ' + str(task_id))
-        print('case id: ' + str(i))
+        print('case id: ' + str(case_id))
         print('gs_px: ', init_gs_px)
         print('gs_ipv: ', ipv_gs)
 
         simu.initialize(simu_scenario, controller_tag)
 
-        simu.ibr_iteration(lt_controller_type=controller_tag, num_step=30)
+        simu.ibr_iteration(lt_controller_type=controller_tag, num_step=30, break_when_finish=True)
         simu.post_process()
         simu.save_data(print_semantic_result=True, task_id=task_id)
         simu.visualize(task_id=task_id, controller_type=controller_tag)
@@ -502,7 +504,7 @@ if __name__ == '__main__':
     # main1()
 
     "无保护左转实验- 随机交互"
-    # main2()
+    main2()
 
     "剑河仙霞场景仿真"
-    main3()
+    # main3()
