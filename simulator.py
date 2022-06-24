@@ -179,24 +179,39 @@ class Simulator:
         :param controller_type:
         :return:
         """
-        if self.tag == 'nds-simu':
+        # set figures
+        fig = plt.figure(figsize=(12, 4))
+        fig.suptitle('case_' + str(self.tag))
+        ax1 = fig.add_subplot(131, title='trajectory_LT_' + self.semantic_result)
+
+        if self.tag == 'nds-simu':  # nds simulation case
+            ax1.set(xlim=[-22, 53], ylim=[-31, 57])
+            img = plt.imread('./background_pic/Jianhexianxia.jpg')
+            ax1.imshow(img, extent=[-22, 53, -31, 57])
             lt_origin_point = self.agent_lt.observed_trajectory[0, 0:2]
             gs_origin_point = self.agent_gs.observed_trajectory[0, 0:2]
             cv_it, _ = get_central_vertices('lt_nds', origin_point=lt_origin_point)
             cv_gs, _ = get_central_vertices('gs_nds', origin_point=gs_origin_point)
-        else:
+        else:  # simulation case
             cv_it, _ = get_central_vertices('lt')
             cv_gs, _ = get_central_vertices('gs')
+            max_x_lt = max(self.agent_lt.observed_trajectory[:, 0])
+            max_y_lt = max(self.agent_lt.observed_trajectory[:, 1])
+            max_x_gs = max(self.agent_gs.observed_trajectory[:, 0])
+            max_y_gs = max(self.agent_gs.observed_trajectory[:, 1])
+            max_x = max(max_x_lt, max_x_gs)
+            max_y = max(max_y_lt, max_y_gs)
 
-        # set figures
-        fig = plt.figure(figsize=(12, 4))
-        fig.suptitle('case_' + str(self.tag))
+            min_x_lt = min(self.agent_lt.observed_trajectory[:, 0])
+            min_y_lt = min(self.agent_lt.observed_trajectory[:, 1])
+            min_x_gs = min(self.agent_gs.observed_trajectory[:, 0])
+            min_y_gs = min(self.agent_gs.observed_trajectory[:, 1])
+            min_x = min(min_x_lt, min_x_gs)
+            min_y = min(min_y_lt, min_y_gs)
+
+            ax1.set(xlim=[min_x - 3, max_x + 3], ylim=[min_y - 3, max_y + 3])
 
         "====show plans at each time step===="
-        ax1 = fig.add_subplot(131, title='trajectory_LT_' + self.semantic_result)
-        ax1.set(xlim=[-22, 53], ylim=[-31, 57])
-        img = plt.imread('./background_pic/Jianhexianxia.jpg')
-        ax1.imshow(img, extent=[-22, 53, -31, 57])
         # central vertices
         ax1.plot(cv_it[:, 0], cv_it[:, 1], 'r-')
         ax1.plot(cv_gs[:, 0], cv_gs[:, 1], 'b-')
@@ -228,35 +243,19 @@ class Simulator:
                         color='black',
                         label='go-straight-actual')
 
-        # # full tracks at each time step
-        # for t in range(self.num_step):
-        #     lt_track = self.agent_lt.trj_solution_collection[t]
-        #     ax1.plot(lt_track[:, 0], lt_track[:, 1], '--', color='red')
-        #     gs_track = self.agent_gs.trj_solution_collection[t]
-        #     ax1.plot(gs_track[:, 0], gs_track[:, 1], '--', color='blue')
-        #
-        # # connect two agents
-        # for t in range(self.num_step + 1):
-        #     ax1.plot([self.agent_lt.observed_trajectory[t, 0], self.agent_gs.observed_trajectory[t, 0]],
-        #              [self.agent_lt.observed_trajectory[t, 1], self.agent_gs.observed_trajectory[t, 1]],
-        #              color='black',
-        #              alpha=0.2)
+        # full tracks at each time step
+        for t in range(self.num_step):
+            lt_track = self.agent_lt.trj_solution_collection[t]
+            ax1.plot(lt_track[:, 0], lt_track[:, 1], '--', color='red')
+            gs_track = self.agent_gs.trj_solution_collection[t]
+            ax1.plot(gs_track[:, 0], gs_track[:, 1], '--', color='blue')
 
-        max_x_lt = max(self.agent_lt.observed_trajectory[:, 0])
-        max_y_lt = max(self.agent_lt.observed_trajectory[:, 1])
-        max_x_gs = max(self.agent_gs.observed_trajectory[:, 0])
-        max_y_gs = max(self.agent_gs.observed_trajectory[:, 1])
-        max_x = max(max_x_lt, max_x_gs)
-        max_y = max(max_y_lt, max_y_gs)
-
-        min_x_lt = min(self.agent_lt.observed_trajectory[:, 0])
-        min_y_lt = min(self.agent_lt.observed_trajectory[:, 1])
-        min_x_gs = min(self.agent_gs.observed_trajectory[:, 0])
-        min_y_gs = min(self.agent_gs.observed_trajectory[:, 1])
-        min_x = min(min_x_lt, min_x_gs)
-        min_y = min(min_y_lt, min_y_gs)
-
-        # ax1.set(xlim=[min_x - 3, max_x + 3], ylim=[min_y - 3, max_y + 3])
+        # connect two agents
+        for t in range(self.num_step + 1):
+            ax1.plot([self.agent_lt.observed_trajectory[t, 0], self.agent_gs.observed_trajectory[t, 0]],
+                     [self.agent_lt.observed_trajectory[t, 1], self.agent_gs.observed_trajectory[t, 1]],
+                     color='black',
+                     alpha=0.2)
 
         "====show IPV and uncertainty===="
         ax2 = fig.add_subplot(132, title='ipv')
