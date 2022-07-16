@@ -9,8 +9,8 @@ from tools.utility import get_intersection_point
 
 '''##========Check Target=======##'''
 
-# TARGET = 'simulation'
-TARGET = 'nds simulation'
+TARGET = 'simulation'
+# TARGET = 'nds simulation'
 # TARGET = 'nds analysis'
 
 '''==============================='''
@@ -20,11 +20,13 @@ dt = 0.12
 if TARGET in {'nds analysis', 'nds simulation'}:
     dt = 0.12  # stable for nds analysis
 elif TARGET == 'simulation':
-    dt = 0.1  # stable for simulation
+    dt = 0.15  # stable for simulation
 TRACK_LEN = 10
 MAX_DELTA_UT = 1e-4
 # weights for calculate interior cost
-WEIGHT_DELAY = 1
+WEIGHT_DELAY = 0.6
+if TARGET in {'nds analysis', 'nds simulation'}:
+    WEIGHT_DELAY = 0.3
 WEIGHT_DEVIATION = 0.8
 WEIGHT_OVERSPEED = 0.2
 weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_OVERSPEED])
@@ -45,7 +47,7 @@ WEIGHT_INT = 1
 if TARGET == 'nds analysis':
     WEIGHT_GRP = 0.4  # stable for nds analysis
 elif TARGET == 'simulation':
-    WEIGHT_GRP = 0.1  # stable for simulation
+    WEIGHT_GRP = 0.3  # stable for simulation
 elif TARGET == 'nds simulation':
     WEIGHT_GRP = 0.4
 

@@ -22,7 +22,7 @@ save_fig_for_paper = 1
 def get_results(rd, case_id):
     # import data
     version_num = '28'
-    tag = 'OPT-coop-gs-5'
+    tag = 'VGIM-dyna-gs-4'
     filedir = '../data/3_parallel_game_outputs/simulation/version' + str(version_num)
     filename = filedir + '/data/agents_infocase' + '_round' + str(rd) + '-' + tag + '.pckl'
     # filename = filedir + '/data/agents_info' + '_round_' + str(rd) + '_case_' + str(case_id) + '.pckl'
@@ -142,7 +142,7 @@ def get_results(rd, case_id):
                                para_alpha=(s+1)/num_frame, para_color='#7030A0')
 
                 # non-interacting following car
-                # draw_rectangle(30-s*0.5-0.5, -2, 0, ax1, para_alpha=(s+1)/num_frame, para_color='gray')
+                draw_rectangle(30-s*0.5-0.5, -2, 0, ax1, para_alpha=(s+1)/num_frame, para_color='gray')
 
             if not save_fig_for_paper:
                 if t < len(lt_ob_trj) - 1:

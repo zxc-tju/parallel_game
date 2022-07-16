@@ -309,8 +309,8 @@ class Simulator:
                     + '_case_' + str(self.case_id)
                     + '.svg', format='svg')
 
-        # plt.pause(1)
-        # plt.close('all')
+        plt.pause(1)
+        plt.close('all')
         # plt.show()
 
     def read_nds_scenario(self):
@@ -399,37 +399,37 @@ def main2():
     5. **** check TARGET in agent.py: TARGET = 'simulation' ****
     :return:
     """
-    for case_id in range(1):
+    for case_id in range(100):
 
         task_id = 3
 
         # controller_tag = 'VGIM-coop'
         # controller_tag = 'VGIM-dyna'
         # controller_tag = 'OPT-coop'
-        controller_tag = 'OPT-safe'
-        # controller_tag = 'OPT-dyna'
+        # controller_tag = 'OPT-safe'
+        controller_tag = 'OPT-dyna'
 
         # generate gs position
-        # init_gs_px = 5 * (2 * (np.random.random() - 0.5)) + 28
-        init_gs_px = 35
+        init_gs_px = 2 * (2 * (np.random.random() - 0.5)) + 25
+        # init_gs_px = 26
 
         # initial state of the go-straight vehicle
         init_position_gs = [init_gs_px, -2]
         init_velocity_gs = [-5, 0]
         init_heading_gs = math.pi
-        # ipv_gs = math.pi * 1 / 16 * 2 * (np.random.random() - 0.5) + math.pi * 3 / 16
-        ipv_gs = 0 * math.pi/4
+        ipv_gs = math.pi * 1 / 4 * (2 * (np.random.random() - 0.5))
+        # ipv_gs = -0.5 * math.pi/4
 
         # initial state of the left-turn vehicle
         init_position_lt = [11, -5.8]
-        init_velocity_lt = [1.5, 0.3]
+        init_velocity_lt = [1.5, 1]
         init_heading_lt = math.pi / 4
         if controller_tag in {'VGIM-coop', 'OPT-coop'}:
             ipv_lt = math.pi / 8
         elif controller_tag in {'OPT-safe'}:
             ipv_lt = 3 * math.pi / 16
         else:
-            if init_gs_px > 22 and ipv_gs > 3 / 16 * math.pi:
+            if init_gs_px > 35 and ipv_gs > 3 / 16 * math.pi:
                 ipv_lt = -0.1
             else:
                 ipv_lt = math.pi / 8
@@ -438,7 +438,7 @@ def main2():
                                  [init_velocity_lt, init_velocity_gs],
                                  [init_heading_lt, init_heading_gs],
                                  [ipv_lt, ipv_gs])
-        simu = Simulator(34)
+        simu = Simulator(36)
         simu.output_directory = '../data/3_parallel_game_outputs/simulation/version' + str(simu.version)
         simu.case_id = case_id
 
