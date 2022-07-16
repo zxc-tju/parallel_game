@@ -601,12 +601,13 @@ def divide_pet_in_nds(save_collection_analysis=False,
     comp_gs_collection = []
     coop_gs_collection = []
     all_collection = []
+    non_cross_apet_collection = []
     num_coop_lt_trj = 0
     num_comp_lt_trj = 0
     # date = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
     date = datetime.now().strftime("%Y%m%d")
     filename_divided_trj = data_path + 'NDS_analysis/ipv_estimation/v' + str(current_nds_data_version) \
-               + '/divide_trj_by_ipv' + date + '.xlsx'
+                           + '/divide_trj_by_ipv' + date + '.xlsx'
 
     fig = plt.figure(1)
     ax1 = fig.add_subplot(111)
@@ -615,7 +616,6 @@ def divide_pet_in_nds(save_collection_analysis=False,
     ax1.imshow(img, extent=[-23, 53, -31, 57])
 
     if save_divided_trj:
-
         workbook = xlsxwriter.Workbook(filename_divided_trj)
         # 新增工作簿。
         worksheet = workbook.add_worksheet('lt_coop')
@@ -624,13 +624,14 @@ def divide_pet_in_nds(save_collection_analysis=False,
 
     for case_index in range(case_number):
 
-        cross_id, data_cross, _ = analyze_ipv_in_nds(case_index)
+        cross_id, data_cross, data_non_cross = analyze_ipv_in_nds(case_index)
         # save data into an excel with the format of:
         # 0-ipv_lt | ipv_lt_error | lt_px | lt_py  | lt_vx  | lt_vy  | lt_heading  |...
         # 7-ipv_gs | ipv_gs_error | gs_px | gs_py  | gs_vx  | gs_vy  | gs_heading  |
         o, _ = find_inter_od(case_index)
         start_frame = int(o[cross_id])
 
+        "1. analyse cross cases"
         if not cross_id == -1:  # and case_index not in {114, 129}:
 
             # go-straight vehicles
@@ -706,15 +707,31 @@ def divide_pet_in_nds(save_collection_analysis=False,
                 ax1.plot(gs_info_multi[cross_id][invalid_len:, 0],
                          gs_info_multi[cross_id][invalid_len:, 1], color="green", alpha=0.5)
 
+        "2. analyse non-cross cases"
+        for non_cross_id in range(len(data_non_cross)):
+            if not non_cross_id == cross_id:
+                start_frame = int(o[non_cross_id])
+                # go-straight vehicles
+                gs_info_multi = inter_info[case_index][1:inter_num[0, case_index] + 1]
+                gs_trj = gs_info_multi[non_cross_id][start_frame:, 0:2]
+
+                # left-turn vehicle
+                lt_trj = inter_info[case_index][0][start_frame:, 0:2]
+
+                # pet_temp, _ = cal_pet(lt_trj, gs_trj, 'pet')
+                if np.size(gs_trj, 0)>8:
+                    apet, ttcp_lt, ttcp_gs = cal_pet(lt_trj, gs_trj, 'apet')
+                    non_cross_apet_collection.append([ttcp_lt[0], ttcp_gs[0]])
+
     # reconstruct data into array
     pet_collection = np.array(all_collection)
     comp_lt_collection = np.array(comp_lt_collection)
     coop_lt_collection = np.array(coop_lt_collection)
     comp_gs_collection = np.array(comp_gs_collection)
     coop_gs_collection = np.array(coop_gs_collection)
+    non_cross_apet_collection = np.array(non_cross_apet_collection)
 
     if show_fig:
-
         plt.figure(2)
         plt.title('PET distribution (divided by ipv of LT vehicles)')
         plt.hist(comp_lt_collection[:, 3], bins=[1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -812,11 +829,14 @@ def divide_pet_in_nds(save_collection_analysis=False,
                                       columns=['case_index', 'lt_ipv', 'gs_ipv', 'pet_temp',
                                                'vel_ave', 'vel_mean_gs', 'vel_gs_max'])
 
+            df_non_cross_init_apet = pd.DataFrame(non_cross_apet_collection, columns=['ttcp_lt', 'ttcp_gs'])
+
             df_all.to_excel(writer, startcol=0, index=False, sheet_name="all")
             df_comp_lt.to_excel(writer, startcol=0, index=False, sheet_name="competitive_lt")
             df_coop_lt.to_excel(writer, startcol=0, index=False, sheet_name="cooperative_lt")
             df_comp_gs.to_excel(writer, startcol=0, index=False, sheet_name="competitive_gs")
             df_coop_gs.to_excel(writer, startcol=0, index=False, sheet_name="cooperative_gs")
+            df_non_cross_init_apet.to_excel(writer, startcol=0, index=False, sheet_name="non_cross_init_apet")
 
 
 def show_crossing_event(case_index, isfig=True, issavedata=False):
@@ -914,7 +934,7 @@ if __name__ == '__main__':
     # draw_rectangle(5, 5, 45)
 
     "show properties divided by the ipv of two agents"
-    divide_pet_in_nds(save_collection_analysis=True, save_divided_trj=False, show_fig=True)
+    divide_pet_in_nds(save_collection_analysis=True, save_divided_trj=True, show_fig=False)
 
     "show crossing trajectories and pet process in a case"
     # show_crossing_event(30, isfig=True, issavedata=True)
