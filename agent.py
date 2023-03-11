@@ -9,9 +9,9 @@ from tools.utility import get_intersection_point
 
 '''##========Check Target=======##'''
 
-TARGET = 'simulation'
+# TARGET = 'simulation'
 # TARGET = 'nds simulation'
-# TARGET = 'nds analysis'
+TARGET = 'nds analysis'
 
 '''==============================='''
 

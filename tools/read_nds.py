@@ -20,9 +20,9 @@ def vis_nds(case_id='all'):
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.set(xlim=[-22, 53], ylim=[-31, 57])
-    img = plt.imread('../background_pic/Jianhexianxia.jpg')
-    ax.imshow(img, extent=[-22, 53, -31, 57])
+    ax.set(xlim=[-25, 51], ylim=[-31, 57])
+    img = plt.imread('../background_pic/Jianhexianxia-v2.png')
+    plt.imshow(img, extent=[-28, 58, -42, 64])
 
     gs_num = 0
     for i in target_range:
@@ -41,7 +41,7 @@ def vis_nds(case_id='all'):
             invalid_len = len((np.where(gs_trj_temp[:, 0] == 0))[0])
 
             plt.plot(gs_info_multi[gs_id][invalid_len:, 0], gs_info_multi[gs_id][invalid_len:, 1],
-                     alpha=0.5,
+                     alpha=0.2,
                      color='red')
 
             if save_trajectory:
@@ -52,7 +52,7 @@ def vis_nds(case_id='all'):
             gs_num += 1
         # left-turn trajectories
         ax.plot(lt_info[:, 0], lt_info[:, 1],
-                alpha=0.5,
+                alpha=0.2,
                 color='blue')
 
         if save_trajectory:
