@@ -1,5 +1,4 @@
 import copy
-
 import scipy.io
 import math
 import numpy as np
@@ -9,10 +8,11 @@ from tools.utility import get_central_vertices, smooth_ployline, get_intersectio
 import pandas as pd
 from datetime import datetime
 import xlsxwriter
+from time import gmtime, strftime
 
-illustration_needed = False
+illustration_needed = True
 print_needed = False
-save_data_needed = True
+save_data_needed = False
 # load data
 mat = scipy.io.loadmat('./data/NDS_data_fixed.mat')
 # full interaction information
@@ -32,7 +32,7 @@ inter_num = mat['interact_agent_num']
 
 # virtual_agent_IPV_range = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]) * math.pi / 9
 
-current_nds_data_version = 7
+current_nds_data_version = 8
 
 data_path = 'D:/OneDrive - tongji.edu.cn/Desktop/Study/1_Codes/outputs/3_parallel_game_outputs/'
 
@@ -161,17 +161,12 @@ def analyze_nds(case_id):
     ipv_error_collection = np.ones_like(lt_info[:, 0:2])
     de_collection = np.zeros_like(lt_info[:, 0:4])  # Displacement Error
 
-    # set figure
-    if illustration_needed:
-        fig = plt.figure(1, figsize=[24, 8])
-        ax1 = fig.add_subplot(131)
-        ax2 = fig.add_subplot(132)
-        ax3 = fig.add_subplot(133)
-
     inter_id = 0
     inter_id_save = inter_id
+
+    simu_time = strftime("%Y-%m-%d-%H", gmtime())
     file_name = data_path + 'NDS_analysis/ipv_estimation/v' \
-                + str(current_nds_data_version) + '/' + str(case_id) + '.xlsx'
+                + str(current_nds_data_version) + '/' + str(case_id)  + '-' + simu_time + '.xlsx'
 
     for t in range(np.size(lt_info, 0)):
 
@@ -216,17 +211,18 @@ def analyze_nds(case_id):
                 df_motion_gs = pd.DataFrame(gs_info_multi[inter_id_save]
                                             [int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:5],
                                             columns=["gs_px", "gs_py", "gs_vx", "gs_vy", "gs_heading"])
-                df_de_collection = pd.DataFrame(de_collection
-                                                [int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:4],
-                                                columns=["ADE with ipv", "ADE without ipv",
-                                                         "FDE with ipv", "FDE without ipv"])
 
-                # if inter_id_save == 0:
-                #     Writer = pd.ExcelWriter(file_name)
-                # else:
-                #     Writer = pd.ExcelWriter(file_name, mode="a", if_sheet_exists="overlay")
+                # for trajectory prediction task
+                # df_de_collection = pd.DataFrame(de_collection
+                #                                 [int(inter_o[inter_id_save]): int(inter_d[inter_id_save]), 0:4],
+                #                                 columns=["ADE with ipv", "ADE without ipv",
+                #                                          "FDE with ipv", "FDE without ipv"])
 
-                with pd.ExcelWriter(file_name) as writer:
+                if inter_id_save == 0:
+                    Writer = pd.ExcelWriter(file_name)
+                else:
+                    Writer = pd.ExcelWriter(file_name, mode="a", engine="openpyxl", if_sheet_exists="overlay")
+                with Writer as writer:
                     df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
                     df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
                     df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
@@ -234,17 +230,8 @@ def analyze_nds(case_id):
                     df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
                     df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
                     df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
-                    df_de_collection.to_excel(writer, startcol=13, index=False, sheet_name=str(inter_id_save))
-                # else:
-                #     with pd.ExcelWriter(file_name, mode="a", if_sheet_exists="overlay") as writer:
-                #         df_ipv_lt.to_excel(writer, startcol=0, index=False, sheet_name=str(inter_id_save))
-                #         df_ipv_lt_error.to_excel(writer, startcol=1, index=False, sheet_name=str(inter_id_save))
-                #         df_motion_lt.to_excel(writer, startcol=2, index=False, sheet_name=str(inter_id_save))
-                #
-                #         df_ipv_gs.to_excel(writer, startcol=7, index=False, sheet_name=str(inter_id_save))
-                #         df_ipv_gs_error.to_excel(writer, startcol=8, index=False, sheet_name=str(inter_id_save))
-                #         df_motion_gs.to_excel(writer, startcol=9, index=False, sheet_name=str(inter_id_save))
-                #         df_de_collection.to_excel(writer, startcol=13, index=False, sheet_name=str(inter_id_save))
+                    # for trajectory prediction task
+                    # df_de_collection.to_excel(writer, startcol=13, index=False, sheet_name=str(inter_id_save))
 
                 inter_id_save = inter_id
 
@@ -293,56 +280,64 @@ def analyze_nds(case_id):
             # ipv_collection[t, 1] =
             "====end of cost-based method===="
 
+            # for trajectory prediction task
             "Trajectory prediction"
-            # ground truth
-            lt_track = lt_info[t: end_time, 0:2]
-            gs_track = gs_info_multi[inter_id][t: end_time, 0:2]
-            ground_truth_track = np.concatenate((lt_track, gs_track), axis=0)
-
-            # generate two agents
-            init_position_lt = lt_info[t, 0:2]
-            init_velocity_lt = lt_info[t, 2:4]
-            init_heading_lt = lt_info[t, 4]
-            agent_lt_ipv = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt_nds')
-            agent_lt_non_ipv = copy.deepcopy(agent_lt_ipv)  # copy agent for non ipv prediction
-            agent_lt_ipv.ipv = agent_lt.ipv
-            agent_lt_non_ipv.ipv = 0
-
-            init_position_gs = gs_info_multi[inter_id][t, 0:2]
-            init_velocity_gs = gs_info_multi[inter_id][t, 2:4]
-            init_heading_gs = gs_info_multi[inter_id][t, 4]
-            agent_gs_ipv = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs_nds')
-            agent_gs_non_ipv = copy.deepcopy(agent_gs_ipv)  # copy agent for non ipv prediction
-            agent_gs_ipv.ipv = agent_gs.ipv
-            agent_gs_non_ipv.ipv = 0
-
-            # get interaction results with ipv
-            agent_lt_ipv.estimated_inter_agent = copy.deepcopy(agent_gs_ipv)
-            agent_lt_ipv.interact_with_estimated_agents()
-            lt_track_pred_ipv = agent_lt_ipv.trj_solution[:np.size(lt_track, 0), 0:2]
-            gs_track_pred_ipv = agent_lt_ipv.estimated_inter_agent.trj_solution[:np.size(lt_track, 0), 0:2]
-            pred_track_with_ipv = np.concatenate((lt_track_pred_ipv, gs_track_pred_ipv), axis=0)
-
-            # get interaction results without ipv
-            agent_lt_non_ipv.estimated_inter_agent = copy.deepcopy(agent_gs_non_ipv)
-            agent_lt_non_ipv.interact_with_estimated_agents()
-            lt_track_pred_non_ipv = agent_lt_non_ipv.trj_solution[:np.size(lt_track, 0), 0:2]
-            gs_track_pred_non_ipv = agent_lt_non_ipv.estimated_inter_agent.trj_solution[:np.size(lt_track, 0), 0:2]
-            pred_track_without_ipv = np.concatenate((lt_track_pred_non_ipv, gs_track_pred_non_ipv), axis=0)
-
-            # calculate prediction error
-            DE_with_ipv = np.linalg.norm(ground_truth_track - pred_track_with_ipv, axis=1)
-            ADE_with_ipv = np.mean(DE_with_ipv)  # Average Displacement Error
-            FDE_with_ipv = (DE_with_ipv[-1] + DE_with_ipv[np.size(lt_track, 0) - 1]) / 2  # Final Displacement Error
-
-            DE_without_ipv = np.linalg.norm(ground_truth_track - pred_track_without_ipv, axis=1)
-            ADE_without_ipv = np.mean(DE_without_ipv)
-            FDE_without_ipv = (DE_without_ipv[-1] + DE_without_ipv[np.size(lt_track, 0) - 1]) / 2
-
-            de_collection[t, :] = ADE_with_ipv, ADE_without_ipv, FDE_with_ipv, FDE_without_ipv
+            # # ground truth
+            # lt_track = lt_info[t: end_time, 0:2]
+            # gs_track = gs_info_multi[inter_id][t: end_time, 0:2]
+            # ground_truth_track = np.concatenate((lt_track, gs_track), axis=0)
+            #
+            # # generate two agents
+            # init_position_lt = lt_info[t, 0:2]
+            # init_velocity_lt = lt_info[t, 2:4]
+            # init_heading_lt = lt_info[t, 4]
+            # agent_lt_ipv = Agent(init_position_lt, init_velocity_lt, init_heading_lt, 'lt_nds')
+            # agent_lt_non_ipv = copy.deepcopy(agent_lt_ipv)  # copy agent for non ipv prediction
+            # agent_lt_ipv.ipv = agent_lt.ipv
+            # agent_lt_non_ipv.ipv = 0
+            #
+            # init_position_gs = gs_info_multi[inter_id][t, 0:2]
+            # init_velocity_gs = gs_info_multi[inter_id][t, 2:4]
+            # init_heading_gs = gs_info_multi[inter_id][t, 4]
+            # agent_gs_ipv = Agent(init_position_gs, init_velocity_gs, init_heading_gs, 'gs_nds')
+            # agent_gs_non_ipv = copy.deepcopy(agent_gs_ipv)  # copy agent for non ipv prediction
+            # agent_gs_ipv.ipv = agent_gs.ipv
+            # agent_gs_non_ipv.ipv = 0
+            #
+            # # get interaction results with ipv
+            # agent_lt_ipv.estimated_inter_agent = copy.deepcopy(agent_gs_ipv)
+            # agent_lt_ipv.interact_with_estimated_agents()
+            # lt_track_pred_ipv = agent_lt_ipv.trj_solution[:np.size(lt_track, 0), 0:2]
+            # gs_track_pred_ipv = agent_lt_ipv.estimated_inter_agent.trj_solution[:np.size(lt_track, 0), 0:2]
+            # pred_track_with_ipv = np.concatenate((lt_track_pred_ipv, gs_track_pred_ipv), axis=0)
+            #
+            # # get interaction results without ipv
+            # agent_lt_non_ipv.estimated_inter_agent = copy.deepcopy(agent_gs_non_ipv)
+            # agent_lt_non_ipv.interact_with_estimated_agents()
+            # lt_track_pred_non_ipv = agent_lt_non_ipv.trj_solution[:np.size(lt_track, 0), 0:2]
+            # gs_track_pred_non_ipv = agent_lt_non_ipv.estimated_inter_agent.trj_solution[:np.size(lt_track, 0), 0:2]
+            # pred_track_without_ipv = np.concatenate((lt_track_pred_non_ipv, gs_track_pred_non_ipv), axis=0)
+            #
+            # # calculate prediction error
+            # DE_with_ipv = np.linalg.norm(ground_truth_track - pred_track_with_ipv, axis=1)
+            # ADE_with_ipv = np.mean(DE_with_ipv)  # Average Displacement Error
+            # FDE_with_ipv = (DE_with_ipv[-1] + DE_with_ipv[np.size(lt_track, 0) - 1]) / 2  # Final Displacement Error
+            #
+            # DE_without_ipv = np.linalg.norm(ground_truth_track - pred_track_without_ipv, axis=1)
+            # ADE_without_ipv = np.mean(DE_without_ipv)
+            # FDE_without_ipv = (DE_without_ipv[-1] + DE_without_ipv[np.size(lt_track, 0) - 1]) / 2
+            #
+            # de_collection[t, :] = ADE_with_ipv, ADE_without_ipv, FDE_with_ipv, FDE_without_ipv
 
             "Visualization"
             if illustration_needed:
+                fig = plt.figure(1, figsize=[24, 8])
+                ax1 = fig.add_subplot(121)
+                ax2 = fig.add_subplot(122)
+
+                # for trajectory prediction task
+                # ax3 = fig.add_subplot(133)
+
                 ax1.cla()
                 ax1.set(ylim=[-2, 2])
 
@@ -401,15 +396,16 @@ def analyze_nds(case_id):
                     ax2.plot(track_gs[:, 0], track_gs[:, 1], color='green', alpha=0.5)
                 ax2.legend()
 
+                # for trajectory prediction task
                 # displacement error
-                ax3.cla()
-                ax3.set(ylim=[-2, 2])
-                x_range = range(3, t)
-                ax3.plot(x_range, de_collection[x_range, 0], color='green', label="ADE with ipv")
-                ax3.plot(x_range, de_collection[x_range, 1], color='red', label="ADE without ipv")
-                ax3.plot(x_range, de_collection[x_range, 2], color='green', label="FDE with ipv")
-                ax3.plot(x_range, de_collection[x_range, 3], color='red', label="FDE without ipv")
-                ax3.legend()
+                # ax3.cla()
+                # ax3.set(ylim=[-2, 2])
+                # x_range = range(3, t)
+                # ax3.plot(x_range, de_collection[x_range, 0], color='green', label="ADE with ipv")
+                # ax3.plot(x_range, de_collection[x_range, 1], color='red', label="ADE without ipv")
+                # ax3.plot(x_range, de_collection[x_range, 2], color='green', label="FDE with ipv")
+                # ax3.plot(x_range, de_collection[x_range, 3], color='red', label="FDE without ipv")
+                # ax3.legend()
 
                 plt.pause(0.3)
 
@@ -989,9 +985,9 @@ def show_crossing_event(case_index, isfig=True, issavedata=False):
 if __name__ == '__main__':
     "calculate ipv in NDS"
     # estimate IPV in natural driving data and write results into excels (along with all agents' motion info)
-    for case_index in range(130):
-        analyze_nds(case_index)
-    # analyze_nds(30)
+    # for case_index in range(130):
+    #     analyze_nds(case_index)
+    analyze_nds(30)
 
     "show trajectories in NDS"
     # visualize_nds(129)

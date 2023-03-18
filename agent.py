@@ -29,7 +29,10 @@ if TARGET in {'nds analysis', 'nds simulation'}:
     WEIGHT_DELAY = 0.3
 WEIGHT_DEVIATION = 0.8
 WEIGHT_OVERSPEED = 0.2
-weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_OVERSPEED])
+WEIGHT_JERK = 0.01
+# weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION])
+# weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_OVERSPEED])
+weight_metric = np.array([WEIGHT_DELAY, WEIGHT_DEVIATION, WEIGHT_JERK])
 weight_metric = weight_metric / weight_metric.sum()
 
 # parameters of action bounds
@@ -268,35 +271,49 @@ def cal_interior_cost(track, target):
     else:
         cv, s = get_central_vertices(target, None)
 
+    dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
+    vel = (dis[1:] - dis[0:-1]) / dt
+    track_len = np.size(dis, 0)
+
     # initialize an array to store distance from each point in the track to cv
     dis2cv = np.zeros([np.size(track, 0), 1])
     for i in range(np.size(track, 0)):
         dis2cv[i] = np.amin(np.linalg.norm(cv - track[i, 0:2], axis=1))
 
     "1. cost of travel delay"
+    # version 1: stable
     # calculate the on-reference distance of the given track (the longer the better)
     travel_distance = np.linalg.norm(track[-1, 0:2] - track[0, 0:2]) / np.size(track, 0)
-    cost_travel_distance = - travel_distance
-    # print('cost of travel delay:', cost_travel_distance)
+    cost_travel_progress = - travel_distance
+
+    # version 2: for comparison (stable)
+    # speed_gap = 0
+    # for i in range(track_len - 1):
+    #     speed_gap += min(0, vel[i] - MAX_SPEED)
+    # speed_gap /= track_len
+    # cost_travel_progress = speed_gap / 10
+
+    # print('cost of travel delay:', cost_travel_progress)
 
     "2. cost of lane deviation"
     cost_mean_deviation = max(0.2, dis2cv.mean())
     # print('cost of lane deviation:', cost_mean_deviation)
 
+    # cost_metric = np.array([cost_travel_progress, cost_mean_deviation])
+
     "3. cost of overspeed"
-    dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
-    vel = (dis[1:] - dis[0:-1]) / dt
-    cost_overspeed = max(max(vel) - MAX_SPEED, 0)
+    # cost_overspeed = max(max(vel) - MAX_SPEED, 0)
+
+    # cost_metric = np.array([cost_travel_progress, cost_mean_deviation, cost_overspeed])
 
     "4. cost of jerk"
-    # dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
-    # vel = (dis[1:] - dis[0:-1]) / dt
-    # acc = (vel[1:] - vel[0:-1]) / dt
-    # jerk = (acc[1:] - acc[0:-1]) / dt
-    # cost_jerk = max(np.abs(jerk))
-    cost_jerk = 0
+    dis = np.linalg.norm(track[1:, :] - track[0:-1, :], axis=1)
+    vel = (dis[1:] - dis[0:-1]) / dt
+    acc = (vel[1:] - vel[0:-1]) / dt
+    jerk = (acc[1:] - acc[0:-1]) / dt
+    cost_jerk = max(np.abs(jerk))
 
-    cost_metric = np.array([cost_travel_distance, cost_mean_deviation, cost_overspeed])
+    cost_metric = np.array([cost_travel_progress, cost_mean_deviation, cost_jerk])
 
     "overall cost"
     cost_interior = weight_metric.dot(cost_metric.T)
@@ -333,7 +350,7 @@ def cal_group_cost(track_packed, self_target):
                 collision_factor = 1.5
             nearness_temp = collision_factor * pos_rel[i + 1, :].dot(vel_rel[i, :]) / dis_rel[i + 1]
             # do not give reward to negative nearness (flee action)
-            vel_rel_along_sum = vel_rel_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
+            vel_rel_along_sum += (nearness_temp + np.abs(nearness_temp)) * 0.5
         cost_group = vel_rel_along_sum / TRACK_LEN
 
     elif TARGET in {'nds analysis', 'nds simulation'}:
@@ -341,7 +358,7 @@ def cal_group_cost(track_packed, self_target):
         acc_self_along_sum = 0
         for i in range(np.size(acc_self, 0)):
             nearness_temp = pos_rel[i + 2, :].dot(acc_self[i, :]) / dis_rel[i + 2]
-            acc_self_along_sum = acc_self_along_sum + nearness_temp
+            acc_self_along_sum += nearness_temp
             # acc_self_along_sum = acc_self_along_sum + (nearness_temp + np.abs(nearness_temp)) * 0.5
         cost_group = acc_self_along_sum / TRACK_LEN / MAX_ACCELERATION  # [-1,1]
 
